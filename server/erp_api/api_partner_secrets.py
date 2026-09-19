@@ -5,7 +5,7 @@
 모양 = {"<tenant>/<channel>": {"id":…, "pw":…, "note":…, "received_at":…, "updated_by":…}}  · tenant = jo/dc/… · channel = naver-blog/naver-cafe/danggn/instagram/threads/google/kakao-channel
 
   GET  /api/admin/partner-secrets                 회사 관리자(ERP_PLATFORM_ADMINS)만 · 목록(아이디 앞 2자만 · 비밀번호는 있다/없다)
-  POST /api/admin/partner-secrets/reveal          {"code","tenant","channel"} → 코드가 맞을 때만 {id, pw}
+  POST /api/admin/partner-secrets/reveal          {"tenant","channel"} + X-Vault-Token(GM 금고 패스키 표 · api_vault.py) → {id, pw} · 코드만으론 안 열린다(배 12843)
   POST /api/admin/partner-secrets                 {"code","tenant","channel","id","pw","note"} 저장 · {"code","tenant","channel","delete":true} 삭제
   GET  /api/partner-secrets/fetch?tenant=&channel=  발행 PC 자동화용 · 로그인 없이 열쇠 헤더(X-Token-Push-Key = ERP_TOKEN_PUSH_KEY)로만 · nginx partner-secrets.nginx.conf
 코드 검사 = approval_pins 표의 APPROVAL_PIN_GM(결재 GM 코드와 같은 값) — approval_pin.judge 재사용 · 화면 JS 에 코드를 박지 않는다.
@@ -43,14 +43,22 @@ def _load():
     if not os.path.exists(SECRETS_FILE):
         return {}
     with open(SECRETS_FILE, encoding="utf-8") as f:
-        return json.load(f) or {}
+        data = json.load(f) or {}
+    # 배 12843 — pw 는 암호문(api_vault.seal · 열쇠 /srv/erp/vault.key)으로 저장된다. 옛 평문 행은 그대로 읽힌다(다음 저장 때 암호화).
+    for k, v in data.items():
+        if isinstance(v.get("pw"), dict):
+            import api_vault
+            v["pw"] = api_vault.unseal(v["pw"], k)
+    return data
 
 
 def _save(data):
     d = os.path.dirname(SECRETS_FILE) or "."
     fd, tmp = tempfile.mkstemp(dir=d, prefix=".ps-")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        import api_vault
+        json.dump({k: dict(v, pw=api_vault.seal(v["pw"], k)) if v.get("pw") else v for k, v in data.items()},
+                  f, ensure_ascii=False, indent=2)
     os.chmod(tmp, 0o600)
     os.replace(tmp, SECRETS_FILE)
 
@@ -123,9 +131,11 @@ async def reveal(request: Request):
     key = _key(body)
     if not key:
         return JSONResponse({"ok": False, "error": "tenant/channel"}, status_code=400)
-    if not _code_ok(str(body.get("code") or "")):
-        print("[partner-secrets] %s 보기 거부(코드 불일치) %s" % (who, key), flush=True)
-        return JSONResponse({"ok": False, "error": "코드가 맞지 않습니다"}, status_code=403)
+    import api_vault   # 배 12843 — 사람 보기는 코드(1531)가 아니라 GM 금고 문(로그인 cao@ + 패스키 표)만
+    bad = api_vault.require_unlock(request)
+    if bad:
+        print("[partner-secrets] %s 보기 거부(금고 잠김) %s" % (who, key), flush=True)
+        return bad
     v = _load().get(key)
     if not v:
         return JSONResponse({"ok": False, "error": "없음"}, status_code=404)
@@ -188,6 +198,10 @@ def selftest():
     global SECRETS_FILE
     with tempfile.TemporaryDirectory() as d:
         SECRETS_FILE = os.path.join(d, "s.json")
+        import api_vault
+        api_vault.KEY_FILE = os.path.join(d, "k")
+        with open(api_vault.KEY_FILE, "wb") as f:
+            f.write(os.urandom(32))
         assert _load() == {}
         _save({"jo/naver-blog": {"id": "gocheok_golf", "pw": "Xample1234!", "note": "", "received_at": "2026-09-15 13:40"}})
         assert stat.S_IMODE(os.stat(SECRETS_FILE).st_mode) == 0o600 or os.name == "nt"
