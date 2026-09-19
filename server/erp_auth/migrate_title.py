@@ -34,15 +34,18 @@ def _ranks_raw() -> dict:
 
 
 def suffixes() -> list:
-    """[(접미사, 정식직급명), ...] 긴 접미사부터 — "AM" 이 "M" 보다 먼저 매칭돼야 한다.
-    표기(예: 매니저→M · 어시스트매니저→AM)가 있으면 그 표기를, 없으면 직급명 그대로 접미사로 쓴다."""
+    """[(접미사, 정식직급명), ...] 긴 접미사부터 — "어시스트매니저"·"AM" 이 "매니저"·"M" 보다 먼저 매칭돼야 한다.
+    직급명 그대로("매니저"·"실장" …)와, 표기가 있으면 그 표기(매니저→M · 어시스트매니저→AM)도 함께 접미사 후보로 둔다
+    — 신청 화면·옛 관행이 둘 다 쓰였다(예: "최준용 매니저"·"나우열M"). title 은 항상 정식 직급명으로 남긴다."""
     out = []
     for r in (_ranks_raw().get("ranks") or []):
         name = str(r.get("name") or "").strip()
         if not name:
             continue
+        out.append((name, name))
         m = re.search(r"표기\s*([A-Za-z]+)", str(r.get("note") or ""))
-        out.append((m.group(1) if m else name, name))
+        if m:
+            out.append((m.group(1), name))
     seen, uniq = set(), []
     for suf, name in sorted(out, key=lambda x: -len(x[0])):
         if suf not in seen:
