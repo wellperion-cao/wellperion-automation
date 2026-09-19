@@ -10,6 +10,7 @@ kpi_collector.py  --  KPI 자동집계 (2차 확장 · 2026-06-23)
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import urllib.request
@@ -23,6 +24,11 @@ QUEUE_PATH = ROOT / "status" / "_queue.json"
 OUT_PATH   = ROOT / "status" / "kpi_values.json"
 
 KST = timezone(timedelta(hours=9))
+
+# ~/.claude/rules/lessons.md 줄 머리 "- [날짜…]" 파싱용(웰리 북극성 ③지표 전용).
+_LESSON_HEADER_RE = re.compile(r"^- \[([^\]]*)\]")
+_FULL_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_SHORT_DATE_RE = re.compile(r"\b(\d{2})-(\d{2})\b")
 ACTIVE = {"PENDING", "IN_PROGRESS"}
 DONE   = {"DONE"}
 
@@ -733,8 +739,11 @@ def _ceo_gm_burden_indicators() -> dict:
     ① gm_words_trend_delta = 이번 주(월요일) GM 말 수 → 가장 최근 완결일 GM 말 수의 증감.
        worklog.jsonl 의 GM_AREAS 접수(warn) 줄 수(hangro_board._gm_answered_yesterday 와
        같은 방식, 날짜만 바꿔 두 날을 비교). 줄어야(<=0) 정상.
-    ② gm_directive_same_day_rate = 이번 주 접수된 GM지시·GM요청 중 **같은 날 완료(ok) 짝난**
-       비율(%). 아직 안 닫힌 건은 분모에서 뺀다(진행중을 실패로 세지 않는다). 목표 90%.
+    ② gm_directive_same_day_rate = 이번 주 접수된 GM지시·GM요청 중 **사람이 증거를 남기고
+       같은 날 완료(ok) 짝난** 비율(%). 아직 안 닫힌 건은 분모에서 뺀다(진행중을 실패로
+       세지 않는다). ★close_gm_refs 의 자동종결(⚠️ 상투어 detail)은 "증거 없이 닫힘"이라
+       완료로 안 센다 — kungjjak_board._is_auto_closed 그대로 재사용(GM 09-18 교훈 재발
+       2026-09-19: 100%가 나온 원인이 자동종결까지 완료로 센 것이었다). 목표 90%.
     ③ gm_repeat_directive_count = 이번 주 날짜로 lessons.md 에 「재지적·재발·N회째」가 붙은
        줄 수(같은 실수를 두 번 지적받은 건). 세는 법: 그 줄 머리 "- [YYYY-MM-DD]" 의 날짜가
        이번 주 안이고, 줄 안에 저 세 낱말 중 하나가 있으면 1건. 목표 0.
@@ -747,6 +756,7 @@ def _ceo_gm_burden_indicators() -> dict:
     try:
         sys.path.insert(0, str(ROOT / "scripts"))
         from worklog import GM_AREAS, WORKLOG_PATH  # type: ignore
+        from kungjjak_board import _is_auto_closed  # type: ignore — 정본 판정(약속 L01), 새로 안 만든다
     except Exception:
         return out
     if not WORKLOG_PATH.exists():
@@ -779,7 +789,9 @@ def _ceo_gm_burden_indicators() -> dict:
                         warns.append((d.get("role"), ref, ts_d))
                 elif d.get("result") == "ok":
                     ref = str(d.get("ref") or "")
-                    if ref.startswith("GM-"):
+                    if ref.startswith("GM-") and not _is_auto_closed(d.get("detail")):
+                        # 자동종결(증거 없음)은 완료로 안 센다 — 아래서 "아직 안 닫힘"과
+                        # 똑같이 분모에서 빠진다(GM 09-18·09-19 재지적).
                         key = (d.get("role"), ref)
                         if key not in closes or ts_d < closes[key]:
                             closes[key] = ts_d
@@ -822,18 +834,35 @@ def _ceo_gm_burden_indicators() -> dict:
         out["gm_directive_same_day_rate"] = round(same_day / total * 100)
 
     # ③ 이번 주 재지적·재발 건수 — lessons.md
+    # ★줄 머리 날짜(최초 지적일)만 보면 과소집계된다(2026-09-19 GM 지적으로 실측 확인 —
+    #   같은 줄을 새로 안 만들고 기존 줄 머리 [...] 안에 재발 날짜를 이어붙이는 게 이
+    #   파일의 실제 관례라, "[2026-09-05·09-07·09-15 재지적]"처럼 최초일은 지난 주라도
+    #   재발일(09-15)은 이번 주인 줄이 3건 있었다(30건→33건). 그래서 머리 [...] 안의
+    #   모든 날짜(전체 YYYY-MM-DD + 뒤에 붙는 MM-DD)를 보고, 그중 하나라도 이번 주면 센다.
     try:
         lessons_path = Path.home() / ".claude" / "rules" / "lessons.md"
         if lessons_path.exists():
             n = 0
             week_s, today_s = week_start.isoformat(), today.isoformat()
+            base_year = week_start.strftime("%Y")
             for line in lessons_path.read_text(encoding="utf-8").splitlines():
-                if not line.startswith("- ["):
+                m = _LESSON_HEADER_RE.match(line)
+                if not m:
                     continue
-                date_s = line[3:13]
-                if not (week_s <= date_s <= today_s):
+                header = m.group(1)
+                full_dates = _FULL_DATE_RE.findall(header)
+                if not full_dates:
                     continue
-                if ("재지적" in line) or ("재발" in line) or ("회째" in line):
+                if not (("재지적" in line) or ("재발" in line) or ("회째" in line)):
+                    continue
+                in_week = any(week_s <= fd <= today_s for fd in full_dates)
+                if not in_week:
+                    header_rest = _FULL_DATE_RE.sub("          ", header)  # 겹침 방지(같은 길이로 지움)
+                    for mm, dd in _SHORT_DATE_RE.findall(header_rest):
+                        if week_s <= f"{base_year}-{mm}-{dd}" <= today_s:
+                            in_week = True
+                            break
+                if in_week:
                     n += 1
             out["gm_repeat_directive_count"] = n
     except Exception:
