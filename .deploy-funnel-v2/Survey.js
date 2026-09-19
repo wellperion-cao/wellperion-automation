@@ -2063,13 +2063,11 @@ var _SURVEY_PUBLIC_ACTIONS = {
   cpo_today_stats:            true,  // 2026-06-24 CPO 오늘/이번달 문의·등록 건수(PII 미노출)
   cpo_churn_stats:            true,  // 2026-07-02 이탈 현황 실측(유효·이탈·이탈율·갱신임박 리스트) — 페이지 게이트 뒤(전체공개 정책과 동일)
   // 강습문의 페이지(CPO) — 멤버십 member_* 와 동일 정책(2026-06-26)
-  lesson_inquiry_list:        true,  // 성인 강습 문의 목록(관리 필드 포함)
+  // lesson_inquiry_list·lesson_registered_roster·lesson_registry_list — 공개 목록에서 뺐다(배 2859 · 2026-09-19 시토). 전화 원문 명단이라 게이트 뒤로. 화면은 서버 거울(/api/inquiries·/api/lesson/*), 서버·PC 스크립트는 key 를 붙인다.
   lesson_stats:               true,  // 강습 통계(총·이번달·종목·경로 분포)
   lesson_calendar:            true,  // 상담예약 달력
   lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
   lesson_inquiry_add:         true,  // 2026-08-25 전화·직접 강습문의 수기 추가(member_inquiry_add 동일 취급)
-  lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
-  lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
   lesson_team_sheet_diag:     true,  // [진단] 강습 팀시트 구조(헤더·상태열·빈칸 수) — 셀 값 미반환·토큰 필요. 2026-07-23 시포·GM
   member_hold_intake_migrate: true,  // 휴회 접수 탭 이관(회원DB→종합접수처) — 대조키 복사·원본 보존·기본 예행·토큰 필요. 배9948
   warm_cache_trigger:         true,  // 명단 캐시 워머 트리거 설치/해제/상태 — 읽기 전용 워밍·토큰 필요. 2026-07-23 시포·GM

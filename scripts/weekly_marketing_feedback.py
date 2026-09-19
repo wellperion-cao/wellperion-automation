@@ -331,11 +331,20 @@ def fetch_member_registered(date_from: str, date_to: str) -> dict | None:
 
 def fetch_lesson_registry(date_from: str, date_to: str) -> dict | None:
     """lesson_registry_list — 등록일 기준 기간 내 강습 신규 등록 명단(종목별, type 미지정=성인+유소년 전체).
-    실패 시 None(→ 미집계 표기). 2026-06-27 원장 시드 이전 등록자는 원장 자체에 없어 과소집계될 수 있음."""
+    실패 시 None(→ 미집계 표기). 2026-06-27 원장 시드 이전 등록자는 원장 자체에 없어 과소집계될 수 있음.
+    배 2859(2026-09-19) — 공개 목록에서 뺀 전화 원문 명단이라 ops_shared.gas_get() 로 key 부착(재사용, 신규 배관 없음)."""
     try:
-        data = _http_get(
-            f"{GAS_URL}?action=lesson_registry_list&from={date_from}&to={date_to}", timeout=40
+        from collectors.ops_shared import gas_get, FUNNEL_EXEC_URL  # noqa: E402 — 회원 GAS 게이트 key 부착 재사용
+        # gas_get() 은 url == FUNNEL_EXEC_URL 일 때만 key 를 붙인다 — 이 파일의 GAS_URL 은 값은 같지만
+        # 별개 상수(env 로 갈릴 수 있음)라, 그 상수 자체를 넘겨 판정이 항상 맞도록 한다.
+        resp = gas_get(
+            FUNNEL_EXEC_URL, {"action": "lesson_registry_list", "from": date_from, "to": date_to},
+            timeout=40, label="lesson_registry_list",
         )
+        if resp is None:
+            print("[WARN] lesson_registry_list 수집 실패")
+            return None
+        data = resp.json()
         if not data.get("ok"):
             print(f"[WARN] lesson_registry_list ok=false: {data}")
             return None
