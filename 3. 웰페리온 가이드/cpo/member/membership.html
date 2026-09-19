@@ -12308,9 +12308,12 @@ function _lmcLoadBrojay(digits) {
       if (reqId !== _lmcBrojayReq) return;
       var it = (d && d.items && d.items[digits]) || null;
       var rows = [];
+      // 상태는 브로제이 영문 코드(고객 단위 1개) 대신 기간별로 날짜에서 계산 — 실무진 화면에 영문 금지 (직접실행: 두 줄 교체)
+      var today = new Date().toISOString().slice(0, 10);
+      var st = function(s, e){ return (e && e < today) ? '만료' : (s && s > today) ? '시작 전' : '이용 중'; };
       if (it) {
-        if (it.member_start || it.member_end) rows.push(['회원권', it.member_start || '—', it.member_end || '—', it.status || '—']);
-        if (it.lesson_start || it.lesson_end) rows.push(['수강권', it.lesson_start || '—', it.lesson_end || '—', it.status || '—']);
+        if (it.member_start || it.member_end) rows.push(['회원권', it.member_start || '—', it.member_end || '—', st(it.member_start, it.member_end)]);
+        if (it.lesson_start || it.lesson_end) rows.push(['수강권', it.lesson_start || '—', it.lesson_end || '—', st(it.lesson_start, it.lesson_end)]);
       }
       if (!rows.length) { body.innerHTML = '<span style="font-size:12px;color:var(--dim)">브로제이 기록 없음</span>'; return; }
       body.innerHTML = '<div class="reg-table-wrap"><table class="reg-table"><thead><tr><th class="left">상품</th><th>시작일</th><th>종료일</th><th>상태</th></tr></thead><tbody>' +
