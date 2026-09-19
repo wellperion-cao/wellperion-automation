@@ -4536,6 +4536,29 @@ def main():
     )
     logger.info("parking_revenue_crawler 등록 완료 (매일 07:00) — 주차 매출 ERP 발행")
 
+    # ── 전사일정 자동 정리 점검 (매일 07:05) — GM 지시 2026-09-19 "시우가 좀 관리해줘 자동으로" ──
+    # 중복·지난 필러·GM 시간 빈칸·휴관일 충돌 4종을 스스로 재고 로그만 남긴다(발송 없음).
+    # ③ GM 시간 빈칸만 안전 규칙으로 자동 채움(--apply) — 나머지는 시우가 판단해 병합·삭제.
+    def _schedule_hygiene_check():
+        try:
+            subprocess.run(
+                [sys.executable, "scripts/schedule_hygiene.py", "--apply"],
+                cwd=str(BASE.parent), timeout=180,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            logger.info("schedule_hygiene 실행 완료 (전사일정 자동 정리 점검)")
+        except Exception as e:
+            logger.error(f"schedule_hygiene 실행 실패: {e}")
+
+    scheduler.add_job(
+        _schedule_hygiene_check,
+        trigger=CronTrigger(hour=7, minute=5, timezone="Asia/Seoul"),
+        id="schedule_hygiene_check",
+        misfire_grace_time=1800,
+        coalesce=True,
+    )
+    logger.info("schedule_hygiene_check 등록 완료 (매일 07:05) — 전사일정 자동 정리 점검(결과는 로그·worklog만)")
+
     # ── 마케팅 대시보드 캐시 워밍 (15분 주기) — 무거운 집계를 미리 데워 사용자 항상 ~1.5초 — CTO 2026-06-19 ──
     # 콜드 컴퓨트(type_channel 23s·funnel_conversion 13s)를 백그라운드에서 nocache=1로 강제 재계산·재캐싱.
     # Claude/LLM 토큰 무관(구글 GAS 실행). TTL 30분 > 주기 15분이라 항상 따뜻하게 유지.
