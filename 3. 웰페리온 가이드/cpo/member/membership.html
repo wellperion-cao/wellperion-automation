@@ -7207,10 +7207,9 @@ function renderRentbiz(t) {
   var b = document.getElementById('rentbizBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  // ★2026-09-09 배1050 — 서버 퍼널 미러 우선, 실패하면 종전 GAS(공간렌트·비즈니스 문의).
+  // ★2026-09-19 시포(배2859) — 서버 퍼널 미러만(연락처가 든 GAS 공개 목록은 잠금 예정). 비-ERP 공개 사본은 조회 안 함. (직접실행: 두 곳 GAS 폴백 제거)
   var _rbQs = 'type=' + t + (st.scope === 'all' ? '&scope=all' : '');
-  var _rbGas = function(){ return fetch(GAS_URL + '?action=rentbiz_inquiry_list&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/rentbiz_inquiry_list?' + _rbQs).catch(function(e){ console.warn('[렌트비즈 문의] API 실패 → GAS 폴백:', e && e.message); return _rbGas(); }) : _rbGas())
+  (ERP_API_ON ? _apiJson('/api/funnel/rentbiz_inquiry_list?' + _rbQs) : Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.')))
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
       st.rows = d.data || [];
@@ -7237,10 +7236,10 @@ function _rentbizStatsFail(t){
 function rentbizLoadStats(t) {
   var st = _rentbizState[t];
   if (!st || GAS_URL === GAS_PLACEHOLDER) return;
-  // ★2026-09-09 배1050 — 서버 퍼널 미러 우선, 실패하면 종전 GAS.
+  // ★2026-09-19 시포(배2859) — 서버 퍼널 미러만. 비-ERP 공개 사본은 조회 안 함(— 표시). (직접실행: GAS 폴백 제거)
+  if (!ERP_API_ON) { _rentbizStatsFail(t); return; }
   var _rsQs = 'type=' + t + (st.scope === 'all' ? '&scope=all' : '');
-  var _rsGas = function(){ return fetch(GAS_URL + '?action=rentbiz_stats&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/rentbiz_stats?' + _rsQs).catch(function(){ return _rsGas(); }) : _rsGas())
+  _apiJson('/api/funnel/rentbiz_stats?' + _rsQs).catch(function(){ return null; })
     .then(function(d){
       if (!d || !d.ok) { _rentbizStatsFail(t); return; }
       var elTotal = document.getElementById('rentbizStatTotal_' + t);
