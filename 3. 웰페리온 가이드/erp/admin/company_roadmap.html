@@ -119,11 +119,11 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </table>
 
 </details>
-<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-4. AI 비서 — 회의비서 · 상담봇 · 번역기 한 제품 · 3층 · 3루프 (GM 09-19 · 배 12838)</summary>
+<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-4. AI 비서 — AI 회의비서 · AI 상담비서 · AI 번역비서 한 제품 · 3층 · 3루프 (GM 09-19 · 배 12838)</summary>
 <p class="note">GM 09-19 「직원이 쓰고, 파트너 관리자는 자기 회사 내역, 랩스는 전체를 데이터화해 분석 자료 · 3루프로 완벽한 AI 비서 · 목표는 비즈니스 확장 수익 · 제품 목표는 목소리 다양화·고도화 + 움직이는 캐릭터」. 세 화면을 따로 안 팔고 <b>「AI 비서」 한 제품</b>으로.</p>
 <table><colgroup><col style="width:18%"><col style="width:30%"><col></colgroup>
 <tr><th>층</th><th>누가</th><th>무엇을 보나 · 하나</th></tr>
-<tr><td>① 사용</td><td>ERP 직원(파트너 현장)</td><td>회의비서(meeting_note) · 상담봇(counsel_admin) · 번역기(translator) 를 쓴다 — 사용 기록은 자동으로 남는다(원문 저장 없음 · 길이·언어·종류만)</td></tr>
+<tr><td>① 사용</td><td>ERP 직원(파트너 현장)</td><td>AI 회의비서(meeting_note) · AI 상담비서(counsel_admin) · AI 번역비서(translator) 를 쓴다 — 사용 기록은 자동으로 남는다(원문 저장 없음 · 길이·언어·종류만)</td></tr>
 <tr><td>② 자기 회사 내역</td><td>파트너 ERP 관리자</td><td>자기 회사 사용 내역만 — 누가·언제·몇 번·무엇을(assistant_usage · tenant 로 거름). 남의 회사 내역은 안 보인다</td></tr>
 <tr><td>③ 전체 · 분석</td><td>웰페리온 AX 랩스</td><td>전 파트너 내역을 합쳐 주기적으로 분석 자료를 낸다 — 모듈별 사용량·반복 질문·답 못 한 질문·언어 분포 → 다음 고도화 후보</td></tr>
 </table>
@@ -131,7 +131,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><th>3루프</th><td>§2-3 원장 그대로(새 원장 없음) — 모듈 이름 「AI 비서」로 <code>labs_loop.py --log --module "AI 비서"</code>. ③ 파트너 피드백 = 각 파트너의 사용 내역(②층 기록)</td></tr>
 <tr><th>원천(실측 09-19)</th><td>사용 기록 usage.jsonl · 상담 기록 chat_log.jsonl(tenant 칸) · 화면 assistant_usage.html · 목소리 13언어 assistant_langs.json · 캐릭터 프리셋 concept_presets.json</td></tr>
 <tr><th>제품 궁극 목표</th><td>목소리 다양화·고도화 + 콘셉트 캐릭터가 움직이며 답하는 모습</td></tr>
-<tr><th>다음 단계</th><td>① 번역기 — 말한 언어 자동 판별 통역(한↔영 · 배 12831) ② 회의비서 — 화상회의(GM 09-19) ③ 목소리 → 캐릭터 순</td></tr>
+<tr><th>다음 단계</th><td>① AI 번역비서 — 말한 언어 자동 판별 통역(한↔영 · 배 12831) ② AI 회의비서 — 화상회의(GM 09-19) ③ 목소리 → 캐릭터 순</td></tr>
 <tr><th>최종 목표</th><td>비즈니스 확장으로 수익 — 가격·파트너 대외 문안은 이 절에서 다루지 않는다(GM 승인 범위 09-19)</td></tr>
 <tr><th>재는 숫자</th><td>파트너별 주간 사용 횟수(모듈별) · 답 못 한 질문 비율 · 분석 자료 발행 주기(주 1회)</td></tr>
 </table>
@@ -246,7 +246,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><th>사람 손이 병목</th><td>셋업마다 시보 시간이 든다 → 질문은행·발행 스크립트·문서 템플릿으로 셋업 1주 안(3단계 끝 기준)</td></tr>
 <tr><th>카톡이 PC 에 묶임</th><td>카카오 채널 API 전환은 결제 결재 · 2·3호 시점(시토)</td></tr>
 <tr><th>파트너 회신 속도</th><td>한 번호씩 묻지 않는다 — 번호 질문 한 통(GM 09-15) · 재촉은 「남은 번호 N개」</td></tr>
-<tr><th>정본 어긋남</th><td>client.json ↔ 상담봇 정본 대조 스크립트를 매일(고척에서 가동 중)</td></tr>
+<tr><th>정본 어긋남</th><td>client.json ↔ AI 상담비서 정본 대조 스크립트를 매일(고척에서 가동 중)</td></tr>
 <tr><th>보안</th><td>파트너 계정은 서버 한 곳(코드 1531) · 개인정보 든 원문은 저장소 밖</td></tr>
 </table>
 
@@ -322,7 +322,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><td>1</td><td>자료 한 통 (1일차)</td><td>자료 목록 한 통 — 로고·사진·영상 1편·요금표·규정·채널 계정·대표 프로필. <b>있는 것만 먼저</b> — 전부 올 때까지 안 기다린다</td><td>_받을것.md(센터별 · 상태 칸)</td></tr>
 <tr><td>2</td><td>초안 페이지 3장 먼저 (2일차)</td><td>받은 것만으로 <b>회사소개서·브랜드가이드·운영전략 v0.1</b> 을 파트너 라인에 올린다. 빈칸은 「미수령·설문 N번」 표시(GM 09-17). dc.css 구조 복제 · design_audit 경고 0 · 값 지어내기 0</td><td>erp/admin/{센터}/{intro,brand,strategy}.html · deploy_{센터}.sh · design_audit.py</td></tr>
 <tr><td>3</td><td>번호 설문 한 통 (같은 날)</td><td>페이지 3장 링크 + 빈칸 번호 전부를 카톡 한 통으로. 답 있는 번호 제외 · 같은 뜻은 한 번호로 <b>재질문 없음</b>(GM 09-17). 설문 뒤엔 저녁 통 「남은 번호 N개」 한 줄만</td><td>partner_onboarding_publish --kakao(답 있는 번호 제외) · diet_camp_agent evening_body(open_n)</td></tr>
-<tr><td>4</td><td>답 → Before/After (답 온 날)</td><td>답 오면 그날 안에 qa 답 → 사실 정본(client.json) → 페이지 3장 → 상담봇 정본 순 반영, 저녁 통에 <b>「답 주신 N번 반영 — 화면 링크」</b> 자동(GM 09-17 「받았습니다」로 안 끝냄)</td><td>tenants/{센터}_qa.json answered_on · diet_camp_agent evening_facts</td></tr>
+<tr><td>4</td><td>답 → Before/After (답 온 날)</td><td>답 오면 그날 안에 qa 답 → 사실 정본(client.json) → 페이지 3장 → AI 상담비서 정본 순 반영, 저녁 통에 <b>「답 주신 N번 반영 — 화면 링크」</b> 자동(GM 09-17 「받았습니다」로 안 끝냄)</td><td>tenants/{센터}_qa.json answered_on · diet_camp_agent evening_facts</td></tr>
 <tr><td>5</td><td>자동화 즉시 켜기 (평일 · 인스타 → 블로그)</td><td>설문 답 안 기다림 — 계정만 있으면 <b>평일 06:30 인스타 자동 게시</b> → 06:45/07:00 그 내용으로 블로그 <b>직접 발행</b>(사람 안 누름 · 실패 시 임시저장+로그). <b>토·일 정지.</b> 사진은 시설 실사 우선, 부족분만 힉스필드(재시도 없음). 규칙 = 공통 <b>blog_exposure_rules.json</b> + 파트너 <b>blog_style.json</b>(없으면 「미수령」). 인스타 세션 풀리면 1회 재로그인, 2단계면 멈추고 기록(파트너에게 안 물음) · 실패는 자동화현황방 한 줄. 파트너 통 = 저녁 21:00 한 통 · 아침 0통</td><td>partner_instagram_daily(status/partner_instagram/{센터}.json) · partner_blog_daily(runs[].url) · diet_camp_agent --evening · counselbot tenants</td></tr>
 <tr><td>6</td><td>전수체크 (매주 월)</td><td>파트너사 카드 8칸을 <b>실측값</b>으로만 채운다. 「미수령」은 받은 날 즉시 지운다(09-17 실측: 다캠 로고 지연 사례)</td><td>erp/admin/index.html 파트너사 카드</td></tr>
 <tr><td>7</td><td>셋업 완료 판정</td><td>8칸 중 6칸 차고 빈칸 0 → 4주 파일럿 1일째 · 결과 = Before &amp; After 1장(4단계)</td><td>부록 C 로 이어짐</td></tr>
