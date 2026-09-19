@@ -4,6 +4,8 @@
 # 하는 일: 공개 첫 화면(erp/admin/labs_home.html → /labs/index.html · 배 1131 합침 09-16)과 회사 소개서(company_intro.html → intro.html)를 /srv/www/4_labs/ 로 올리고, 그 장이 무는 css 2개를
 # 같은 폴더 사본으로 두며(관리 화면 css 는 로그인 벽 뒤라 그대로 못 쓴다), nginx 공개 location 을 넣고 reload 한다.
 # 원본은 저장소 HEAD 판만 올린다(작업트리 미커밋 금지 · 2026-09-14 배포 사고 규칙). 끝에 https 200 을 확인한다.
+# 2026-09-19 부터: 콘텐츠 6개(html/css/svg)는 scripts/labs_sync.sh 가 서버에서 매분 자동으로도 반영한다
+# (git pull 직후 크론) — 이 스크립트는 nginx 설정(labs.conf) 갱신·최초 셋업·수동 강제 반영에만 쓴다.
 set -euo pipefail
 HOST=ec2-user@15.164.151.105
 KEY="$HOME/.aws/wellperion-sito.pem"
