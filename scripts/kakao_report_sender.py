@@ -1864,7 +1864,9 @@ def shorten_shift_labels(text: str) -> str:
     out = re.sub(rf"\[([남여])/({_SHIFTS_RE})조\]", r"[\2(\1)]", out)
     # 남은 「남성구역 53/56」 머리줄 → 「남 53/56」, 남은 「오전조 25/26」 → 「오전 25/26」
     out = re.sub(r"([남여])성구역", r"\1", out)
-    out = re.sub(rf"({_SHIFTS_RE})조", r"\1", out)
+    # 뒤에 조사가 붙은 「마감조가」·「마감조에게」는 그대로 둔다 — 「조」만 빼면 「마감가」 같은
+    # 비문이 된다(2026-09-19 12:32 방역 안내 실사고).
+    out = re.sub(rf"({_SHIFTS_RE})조(?![가-힣])", r"\1", out)
     # 잔글씨 다듬기 — 읽는 데 걸리는 것만
     out = out.replace("최근 7일 中", "최근 7일 중")
     lines = []
