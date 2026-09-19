@@ -644,15 +644,17 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     issues = support_issues(d)          # 1회성 미점검(빠짐없이)
     rec = recurring_issue_lines(today)  # 반복(원장) — 이미 " " 들여쓰기 리스트
     filled["support_recurring"] = max(0, len(rec) - 1) if rec else 0
-    if issues:
-        lines.append("  ❗ 짚을 점: " + ", ".join(issues) + " — 독려 필요")
-    elif not rec:
-        lines.append("  ✅ 이상 없음 — 전 회차 완료")
-    lines += rec
-
     # 독려 대상(미체크 항목명) — 17·22시 개별 독려에만 있던 정보를 22:30 보고에도 상시 반영.
     # GM 2026-07-23 지시(시토). 미완 회차 없으면 support_nudge_lines가 빈 리스트 반환(생략).
-    lines += support_nudge_lines(d)
+    nudge = support_nudge_lines(d)
+    # 독려 대상 줄이 있으면 '짚을 점'은 같은 조·같은 숫자를 세 번째로 반복할 뿐이라 뺀다
+    # (2026-09-19 시우 검수 — 조별 줄·미제출 줄·독려 대상에 같은 0/22 가 세 번 나감).
+    if issues and not nudge:
+        lines.append("  ❗ 짚을 점: " + ", ".join(issues) + " — 독려 필요")
+    elif not issues and not rec:
+        lines.append("  ✅ 이상 없음 — 전 회차 완료")
+    lines += rec
+    lines += nudge
 
     # 이슈 상세(체크리스트 원문) — 완료율 짚을 점과 별개, allIssues 그대로 노출. GM 2026-07-22 지시3.
     lines += support_issue_detail_lines(d)
