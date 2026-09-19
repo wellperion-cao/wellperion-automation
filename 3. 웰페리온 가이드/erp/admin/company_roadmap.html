@@ -14,7 +14,7 @@ h1{font-family:var(--pf-head);font-size:var(--fs-6);margin:0 0 6px;display:flex;
 table{width:100%;border-collapse:collapse;table-layout:fixed;margin:8px 0;font-size:var(--fs-3)}
 @media(max-width:640px){table.tbl{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;table-layout:auto}table.tbl th,table.tbl td{min-width:140px}}
 .st{display:inline-block;padding:1px 8px;border-radius:10px;font-size:var(--fs-2);font-weight:700;background:var(--pf-tint);color:var(--pf-pri-dk)}.st.done{background:var(--pf-ok-bg);color:var(--pf-ok)}.st.wait{background:var(--pf-panel-2);color:var(--pf-soft)}.st.run{background:var(--pf-acc-tint);color:var(--pf-acc-dk)}
-th,td{border:1px solid var(--pf-line);padding:8px 10px;text-align:left;vertical-align:top}
+th,td{border:1px solid var(--pf-line);padding:8px 10px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
 th{background:var(--pf-tint)}
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:var(--fs-2);background:var(--pf-tint);color:var(--pf-pri-dk)}
 .gm{background:var(--pf-warn-bg);border:1px solid var(--pf-warn);border-radius:8px;padding:12px 16px}
@@ -48,8 +48,8 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><th>무슨 문제</th><td>문의 답장·블로그·규정 안내·보고가 매일 같은 모양으로 돌아오고, 놓치면 회원이 빠진다 — 대표가 하루의 대부분을 여기에 쓴다</td></tr>
 <tr><th>무엇을 파나</th><td>매일 실제로 도는 자동화 4모듈 — 마케팅(블로그 매일·홈페이지·문의 폼) · 상담(센터 페이지+관리자) · 보고(07:00·21:00 카톡 통) · 운영(ERP 3모듈 · 준비 중). 웰페리온에서 검증된 것만</td></tr>
 <tr><th>어떻게 받나</th><td><b>월 구독</b> — 스타트 149,000 / 그로스 249,000 / 운영 449,000(준비 중) + 셋업비 300,000(유료 전환 때 1회) · 곳당 기여 마진 132,234 · 손익분기 11곳(고정비 140만 전액) · 4주 파일럿 무료 · 최소 약정 6개월 · 연 선납 10개월 값 · 상담 답변 1,000건 포함(초과 30원) · <b>결제 = 카드 자동결제(PG 빌링)</b> 카드 한 번 등록하면 매달 자동 청구(GM 09-16) — §5</td></tr>
-<tr><th>어떻게 파나</th><td>광고 없음 — GM 인맥·파트너 소개 → 소개서 한 장(/labs/intro.html) → 설문 한 통 → 4주 파일럿 → Before &amp; After → 유료 전환 · §4 영업 6단계</td></tr>
-<tr><th>무엇을 계속 말하나</th><td><b>「피트니스 AX」 메시지 채널</b>(GM 09-16) — 영업이 아니라 관점: ①왜 피트니스가 AX 를 해야 하나 ②어떻게 하나(자동화되는 부분을 AX 해서 본질에 집중)<br>③언제부터 가능한가 — 매일 1편 · 네이버 블로그·스레드·인스타·카카오톡 채널 · 채널 이름 = 피트니스 AX(사람 이름·회사 이름 앞세우지 않음) · 계정은 전부 「피트니스 AX」 이름으로 새로 — 아이디 <b>axlabs</b> 한 글자로 5곳 동일(지메일 axlabs@gmail.com 이 주인 · 인스타·스레드·네이버·카톡 채널·구글 비즈니스) · 사람 이름·회사명 없음 · 개인 계정 안 씀 · <b>업종이 늘면 이 채널을 넓히지 않고 「○○ AX」 채널을 하나 더</b>(우산 = 웰페리온 AX 랩스 · GM 확정 09-16·09-17) · 재는 숫자 = 소개서 클릭 → 설문 회신 센터</td></tr>
+<tr><th>어떻게 파나</th><td>광고 없음 — GM 인맥·파트너 소개 → 소개서(/labs/intro.html) → 설문 → 4주 파일럿 → Before &amp; After → 유료 전환 · §4 영업 6단계</td></tr>
+<tr><th>무엇을 계속 말하나</th><td><b>「피트니스 AX」 메시지 채널</b>(GM 09-16) — 왜·어떻게·언제부터, 매일 1편 · 네이버 블로그·스레드·인스타·카카오톡 · 채널명 「피트니스 AX」(사람·회사명 앞세우지 않음) · 계정 아이디 <b>axlabs</b> 5곳 동일(지메일 axlabs@gmail.com 이 주인) · 개인 계정 안 씀 · 업종이 늘면 「○○ AX」 채널 추가(우산 = 웰페리온 AX 랩스 · GM 09-16·09-17) · 재는 숫자 = 소개서 클릭 → 설문 회신 센터</td></tr>
 <tr><th>무엇이 드나</th><td>고정비 월 140만(Claude 70만 + AWS 70만 · 전액 랩스) + 곳당 변동비 60,000 + 카드 3.4% + 셋업 담당 5일(1,666,667 · 급여는 값에 안 넣음) · 시보 셋업 시간 1~2주/곳(원가 0 · 약정 6개월이 회수) · 사업부라 고정비 0</td></tr>
 <tr><th>얼마 남나</th><td>곳당 기여 마진 스타트 83,934 · 그로스 180,534 → <b>11곳째부터 월 흑자</b> · 그 전엔 곳이 늘수록 손실이 줌 · 12개월(고정비 포함) 보수 -10,804,044 / 기본 -5,204,790 — §5-1</td></tr>
 <tr><th>무엇으로 재나</th><td>북극성 = 유료 도입 센터 수 · 곳당 유지 개월 · 운영자가 줄인 시간 — §1</td></tr>
@@ -58,7 +58,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 
 </details>
 <details open><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-1. 비즈니스 모델 실측표 — 파트너 목표 → 랩스가 제공하는 것 → 재는 숫자 (GM 09-18 · 배 12762)</summary>
-<p class="note">랩스가 파트너에게 제공하는 것 = 아래 모듈 표(정의 · <code>data-module</code> 행)뿐이다. 파트너별로는 대표의 목표에 이 모듈을 붙이고 숫자로 잰다 — 값은 <code>2. 브랜드_자료/{센터}/partner_profile.json</code>(파트너 프로필 정본 · 받은 값만 · 빈칸 = 미수집)에서 <code>scripts/partner_docs_build.py</code> 가 읽어 운영전략 화면·소개서 빈칸·이 표를 같이 만든다. 판은 같은 이름으로 덮고 이력은 저장소.</p>
+<p class="note">랩스가 제공하는 것 = 아래 모듈 표(<code>data-module</code> 행)뿐. 파트너별 목표에 이 모듈을 붙여 숫자로 잰다 — 정본 <code>2. 브랜드_자료/{센터}/partner_profile.json</code>(받은 값만 · 빈칸=미수집) → <code>scripts/partner_docs_build.py</code> 가 운영전략·소개서·이 표를 생성.</p>
 <table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
 <tr><th>랩스가 제공하는 것(모듈)</th><th>다이어트캠프 · 고척 실측</th><th>상품으로 이름 붙이면</th></tr>
 <tr data-module="setup"><td>정본 셋업</td><td>설문 9문(다캠 09-02) · 확인 목록 18문 + 번호 질문 32문(고척) · 질문은행 118문 · 파트너 프로필 1파일(09-18)</td><td>셋업(1회)</td></tr>
@@ -69,7 +69,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr data-module="ops"><td>운영 자동화(ERP 3모듈)</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
 <tr data-module="lesson"><td>강습 예약 자동화</td><td>정의만 — 강사가 시간을 열면 회원이 페이지에서 예약 · 준비 중(시토 배 12670 · 착수 시점 GM)</td><td>월 이용(운영 시스템 안) · 준비 중</td></tr>
 </table>
-<p class="note">사람 손(시보 시간)이 셋업에 든다 — 다캠 2주 · 고척 1주. 이 시간을 질문은행·발행 스크립트·프로필 자동 생성으로 계속 줄이는 것이 원가 전략이다.</p>
+<p class="note">셋업에 사람 손(시보) — 다캠 2주 · 고척 1주. 질문은행·발행 스크립트·프로필 자동 생성으로 계속 줄이는 것이 원가 전략.</p>
 <table class="tbl"><colgroup><col style="width:16%"><col style="width:22%"><col style="width:20%"><col style="width:26%"><col></colgroup>
 <tr><th>파트너</th><th>대표의 목표</th><th>랩스가 제공하는 것</th><th>재는 숫자</th><th>기준선</th></tr>
 <!-- pb:partners -->
@@ -86,7 +86,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-2. CRM 모듈 검토 — 브로제이 커스터마이징으로 소형 피트니스 셋업 · 입출입 핸드폰 대안 (GM 09-18 · 배 12765)</summary>
-<p class="note">근거 규칙 — 「가능」은 저장소·공식 페이지에서 확인된 것만. 확인 안 된 것은 「확인 안 됨」으로 두고 브로제이에 묻는 줄로 남긴다. 브로제이 저장소 실측 = server/erp_api/sync_brojay.py(REST API · api.broj.co.kr/v1/schedules·members·trainers · 하루 1~3회 → PostgreSQL brojay_records) · api_brojay.py(읽기 API /api/brojay/*) · coo/brojay/브로제이_업무분장.html(계약금 60% 이체 · 안면인식기 운용).</p>
+<p class="note">근거 규칙 — 「가능」은 저장소·공식 페이지 확인분만, 나머진 「확인 안 됨」+ 브로제이에 물을 줄로 남긴다. 실측 = sync_brojay.py(REST · api.broj.co.kr/v1 · 하루 1~3회 → brojay_records) · api_brojay.py(읽기 /api/brojay/*) · 브로제이_업무분장.html(계약금 60% 이체 · 안면인식기 운용).</p>
 <table class="tbl"><colgroup><col style="width:20%"><col style="width:10%"><col style="width:34%"><col style="width:16%"><col></colgroup>
 <tr><th>항목</th><th>판정</th><th>근거</th><th>비용</th><th>다음</th></tr>
 <tr><td>브로제이 회원·매출·출입 데이터를 우리 서버로 가져오기</td><td><span class="st done">확인</span></td><td>REST API 로 가동 중(sync_brojay.py · schedules·members·trainers 실사양) · sales·entries 주소는 서버 api.env 값이라 실가동 여부는 시토 확인</td><td>브로제이 구독료 안(추가 0)</td><td>시토 — api.env 의 sales·entries 실가동 1줄 확인</td></tr>
@@ -99,11 +99,11 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><td>입출입 ④ 키오스크 전화번호 뒷자리</td><td><span class="st">시장에 있음</span></td><td>머슬파트너스 키오스크 — 전화번호 인증 출입 · <a href="https://www.musclepartners.kr/kiosk" target="_blank">musclepartners.kr/kiosk</a> · 브로제이 연동 근거 없음</td><td>확인 안 됨(렌탈 문의)</td><td>기기 없는 소형 센터엔 이 축이 맞다 — 견적</td></tr>
 <tr><td>브로제이 자체 출입 기능</td><td><span class="st done">확인</span></td><td>얼굴인식 출석(자체 개발 · <a href="https://company.broj.co.kr/access_control/face_recognition/" target="_blank">company.broj.co.kr</a>) · BROJ PASS 키오스크(2023-12 · 얼굴인식 주기능 + 터치 출석·QR 부기능 · <a href="https://m.segyebiz.com/newsView/20231226512797" target="_blank">세계비즈</a>) · 전화번호 입장은 확인 안 됨</td><td>웰페리온 턴게이트 견적 A3(09-03) 참조</td><td>브로제이에 「QR 단독 · 전화번호 입장 · 소형 키오스크 값」 같은 한 통</td></tr>
 </table>
-<p class="note">결론(시보) — 소형 피트니스 CRM 은 브로제이 재판매가 아니라 <b>랩스 ERP 3모듈 테넌트</b>가 우리 길이다(§8-1 순서 2 · 저장소 방향과 같다). 브로제이는 웰페리온 원천으로만 쓰고, 파트너 입출입은 「폰 QR 또는 전화번호 키오스크」를 파트너가 고른 뒤 그 기기 API 를 ERP 회원 모듈에 붙이는 순서 — 브로제이에 물을 것 3가지(소형 요금제 · 커스터마이징 범위 · QR/전화번호 입장)는 GM 한 통으로 모은다.</p>
+<p class="note">결론(시보) — 소형 피트니스 CRM = 브로제이 재판매가 아니라 <b>랩스 ERP 3모듈 테넌트</b>(§8-1 순서 2). 브로제이는 웰페리온 원천으로만, 파트너 입출입 = 「폰 QR 또는 전화번호 키오스크」 선택 뒤 ERP 회원 모듈에 API 연결. 브로제이에 물을 것 3가지(소형 요금제·커스터마이징 범위·QR/전화번호 입장) = GM 한 통.</p>
 
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-3. 개발 파이프라인 3루프 — 고도화 → 단순화 → 파트너 피드백 (GM 09-18 · 원장 status/labs_loop.json)</summary>
-<p class="note">GM 09-18 「시보는 랩스 모듈 고도화→단순화→파트너사 피드백 3루프만 · 파트너 마케팅 자동화 결과물도 당분간 랩스에서 보자」. 원장·계산기는 이미 있다 — <code>scripts/labs_loop.py</code> → <code>status/labs_loop.json</code> · 화면 = 웰페리온 AX 랩스 관리 › 파트너사 패널(결과물 7일 · 3루프 원장). 여기는 그 규칙을 적어 둘 뿐 새 원장을 만들지 않는다.</p>
+<p class="note">GM 09-18 「시보는 랩스 모듈 고도화→단순화→파트너사 피드백 3루프만」. 원장 = <code>scripts/labs_loop.py</code> → <code>status/labs_loop.json</code> · 화면 = 파트너사 패널. 새 원장 안 만든다.</p>
 <table><colgroup><col style="width:14%"><col style="width:40%"><col style="width:22%"><col></colgroup>
 <tr><th>루프</th><th>무엇을 하나</th><th>언제</th><th>어디에 남나</th></tr>
 <tr><td>① 고도화</td><td>모듈(마케팅·상담·보고·문서)에 기능 하나를 더한다 — 인스타 자동 게시·블로그 파생·검사기 같은 것</td><td>평일(월~금) — 발행과 같이 돈다</td><td><code>labs_loop.py --log --module 마케팅 --step 고도화 --note "…"</code> → loop[]</td></tr>
@@ -120,7 +120,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-4. AI 비서 — 회의비서 · 상담봇 · 번역기 한 제품 · 3층 · 3루프 (GM 09-19 · 배 12838)</summary>
-<p class="note">GM 09-19 「직원이 쓰고, 파트너 관리자는 자기 회사 내역을 보고, 랩스는 전체를 보며 데이터화·가공해 분석 자료가 계속 나와야 한다 · 3루프로 하나의 완벽한 AI 비서 · 최종 목표는 비즈니스 확장으로 수익 · 제품 목표는 목소리 다양화·고도화 + 캐릭터가 움직이는 모습」. 세 화면을 따로 팔지 않고 <b>「AI 비서」 한 제품</b>으로 묶는다.</p>
+<p class="note">GM 09-19 「직원이 쓰고, 파트너 관리자는 자기 회사 내역, 랩스는 전체를 데이터화해 분석 자료 · 3루프로 완벽한 AI 비서 · 목표는 비즈니스 확장 수익 · 제품 목표는 목소리 다양화·고도화 + 움직이는 캐릭터」. 세 화면을 따로 안 팔고 <b>「AI 비서」 한 제품</b>으로.</p>
 <table><colgroup><col style="width:18%"><col style="width:30%"><col></colgroup>
 <tr><th>층</th><th>누가</th><th>무엇을 보나 · 하나</th></tr>
 <tr><td>① 사용</td><td>ERP 직원(파트너 현장)</td><td>회의비서(meeting_note) · 상담봇(counsel_admin) · 번역기(translator) 를 쓴다 — 사용 기록은 자동으로 남는다(원문 저장 없음 · 길이·언어·종류만)</td></tr>
@@ -137,7 +137,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </table>
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-5. 메뉴·모듈이 내려가는 순서 — 전 메뉴·모듈 공통 정본 (GM 09-19)</summary>
-<p class="note"><b>랩스 승인 → 승인된 파트너 ERP 관리자 → ERP 직원.</b> 어떤 메뉴·모듈도 이 순서를 건너뛰지 않는다. 랩스가 승인하지 않은 것은 파트너 관리자 화면에 안 보이고, 파트너 관리자가 켜지 않은 것은 직원 화면에 안 보인다. 이 규칙 문장은 여기 한 곳에만 둔다 — 다른 문서·화면은 이 절을 가리킨다. 배선(모듈 목록 erp/modules.json 승인 칸 · ERP 홈이 승인된 것만 그림) = 시토 배.</p>
+<p class="note"><b>랩스 승인 → 승인된 파트너 ERP 관리자 → ERP 직원.</b> 어떤 메뉴·모듈도 건너뛰지 않는다 — 랩스 미승인은 파트너 관리자에 안 보이고, 관리자가 안 켠 것은 직원 화면에 안 보인다. 규칙 정본은 이 절 하나(다른 문서는 여기를 가리킨다). 배선(erp/modules.json 승인 칸) = 시토 배.</p>
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">3. 누구에게 파나</summary>
 <table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
@@ -262,7 +262,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 
 </details>
 <details open><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">8-1. 비즈니스 확대 5모델 — 순서 고정 (GM 09-17 · 옛 업무 SSOT #004 를 여기로)</summary>
-<p class="note">GM 09-17 「비즈니스 확대 방향은 전략 로드맵에 들어가야 하는 내용 — 업무 SSOT 에선 벗어나야」. 근거 = <a href="../../reports/260903_비즈니스확대_5모델검토_A3.html" target="_blank" style="display:inline-block;min-height:44px;line-height:44px">5모델 검토 A3(09-03)</a>. 순서는 고정이고, 돈이 나가는 시점마다 GM 결재(9번 표)로 올린다. 현장 2건(2호점·위탁)은 숫자가 잡히기 전엔 착수하지 않는다.</p>
+<p class="note">GM 09-17 「비즈니스 확대 방향은 전략 로드맵으로 — 업무 SSOT 에선 벗어나야」. 근거 = <a href="../../reports/260903_비즈니스확대_5모델검토_A3.html" target="_blank" style="display:inline-block;min-height:44px;line-height:44px">5모델 검토 A3(09-03)</a>. 순서 고정 · 지출은 매번 GM 결재(§9) · 2호점·위탁은 숫자 잡히기 전엔 착수 안 함.</p>
 <table><colgroup><col style="width:6%"><col style="width:16%"><col style="width:40%"><col style="width:24%"><col></colgroup>
 <tr><th>순서</th><th>모델</th><th>지금 걸음</th><th>재는 숫자 · 기한</th><th>상태</th></tr>
 <tr><td>1</td><td>모듈(상담·마케팅·보고 자동화)</td><td>다캠·고척 파일럿 → 4주 Before &amp; After → 유료 전환 제안(부록 C · 금액은 결정 2)</td><td>유료 파일럿 1곳</td><td><span class="st run">진행</span> 파일럿 2곳 · 유료 0</td></tr>
@@ -316,18 +316,18 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 
 </details>
 <details open><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">부록 B. 파트너사 연동 가이드라인 v1.1 — 셋업 절차 정본 (GM 확정 2026-09-17 · 09-18 아침 0통·인스타 우선)</summary>
-<p class="note">GM 원문(2026-09-17): 「차라리 저렇게 파트너사 셋업을 빠르게 정리하는 게 좋고, 다음에는 페이지로 만들어서 초안 작업 시 제공해 달라고 하는 게 훨씬 좋을 듯 — AX 랩스 파트너사 연동 가이드라인으로 박제」. 원칙 한 줄 = <b>초안 페이지를 먼저 만들어 보여 주고, 빈칸을 번호 설문 한 통으로 한 번에 받고, 답이 오면 Before → After 로 되돌려 준다.</b> 파트너 톡 = <b>저녁 21:00 한 통(필요한 것만) · 아침 0통</b>(GM 2026-09-18 「오전 통은 다 삭제하고 정말 필요한 부분만」). 콘텐츠 = <b>인스타 먼저 자동 게시 → 그 내용으로 블로그(임시저장) 파생</b>.</p>
+<p class="note">GM 09-17 「셋업을 페이지로 만들어 초안 작업 시 제공 — 파트너사 연동 가이드라인으로 박제」. 원칙 = <b>초안 페이지 먼저 → 빈칸은 번호 설문 한 통 → 답 오면 Before → After.</b> 파트너 톡 = <b>저녁 21:00 한 통 · 아침 0통</b>(GM 09-18). 콘텐츠 = <b>인스타 자동 게시 먼저 → 블로그(임시저장) 파생</b>.</p>
 <table class="tbl"><thead><tr><th style="width:6%">#</th><th style="width:18%">단계</th><th>무엇을 · 어떻게</th><th style="width:22%">도구 · 관문(코드)</th></tr></thead><tbody>
 <tr><td>0</td><td>시작 조건</td><td>GM 소개 → 파트너 카톡 방 개설 → 계정 자리(웰페리온 AX 랩스 관리 › 파트너사 · 코드 1531 · 값은 서버에만) → 브리프 파일(status/kakao_agent/{센터}_brief.md) · 자료 폴더(2. 브랜드_자료/{번호}_{센터}/)</td><td>partner_secrets · kakao_room 등록</td></tr>
 <tr><td>1</td><td>자료 한 통 (1일차)</td><td>필수 자료 목록 한 통 — 로고 · 사진(간판·공간·수업) · 영상 1편 · 요금표 · 규정(환불·휴회·양도) · 채널 계정 · 대표 프로필. <b>있는 것만 먼저 받는다</b> — 전부 올 때까지 기다리지 않는다</td><td>_받을것.md(센터별 · 상태 칸)</td></tr>
 <tr><td>2</td><td>초안 페이지 3장 먼저 (2일차)</td><td>받은 것만으로 <b>회사소개서 · 브랜드가이드 · 운영전략 v0.1 을 파트너 라인(/{센터}/)에 올린다.</b> 빈칸은 「미수령 · 설문 N번」으로 표시해 파트너가 어디가 비었는지 보게 한다 — GM 09-17 「페이지로 만들어서 초안 작업 시 제공해 달라고」. 다캠 dc.css 구조 복제 · design_audit 경고 0 · 파트너 값 지어내기 0</td><td>erp/admin/{센터}/{intro,brand,strategy}.html · deploy_{센터}.sh · design_audit.py</td></tr>
 <tr><td>3</td><td>번호 설문 한 통 (같은 날)</td><td>페이지 3장 링크 + 질문은행에서 뽑은 <b>빈칸 번호 전부</b>를 카톡 한 통으로. 답 있는 번호는 안 찍고, 같은 뜻은 한 번호로 합친다 — <b>같은 번호를 두 번 묻지 않는다 · 재질문 없음</b>(GM 09-17 「반복 중복 질문 절대 금지」). 설문 뒤 파트너에게 가는 통은 저녁 한 통뿐이고 거기에 「남은 번호 N개」 한 줄만(번호 나열·재질문 금지)</td><td>partner_onboarding_publish --kakao(답 있는 번호 제외 · 페이지 없으면 경고) · diet_camp_agent evening_body(open_n)</td></tr>
 <tr><td>4</td><td>답 → Before/After (답 온 날)</td><td>번호 답이 오면 그날 안에 qa 답(answered_on) → 사실 정본(client.json) → 페이지 3장 → 상담봇 정본 순으로 넣고, <b>저녁 통에 「답 주신 N번 반영 — 화면 링크」</b>가 자동으로 붙는다(「받았습니다」로 끝내지 않는다 · GM 09-17 「답변에 대한 Before&amp;After」)</td><td>tenants/{센터}_qa.json answered_on · diet_camp_agent evening_facts</td></tr>
-<tr><td>5</td><td>자동화 즉시 켜기 (평일 · 인스타 → 블로그)</td><td>설문 답을 기다리지 않는다 — 계정 자리에 계정이 있으면 <b>평일 06:30 인스타 자동 게시(승낙 게이트 없음 · 캡션 마지막 줄 = 상담 페이지 주소)</b> → 06:45/07:00 블로그가 그날 인스타 주제·캡션·사진 3장을 씨앗으로 <b>직접 발행</b>(파트너가 누르지 않는다 · 발행이 안 되면 임시저장으로 남기고 로그) · 24시간 상담 페이지 공개(블로그 글 푸터 자동 첨부). <b>토·일은 생성·게시 없음(주말 정지 · 한 주 되짚기)</b>. 사진은 파트너 시설 실사 우선, 모자라는 장수만 힉스필드 개념 컷(nano_banana 1크레딧 · 비용 상한 · 재시도 없음). 블로그 글 규칙은 두 층 — 공통 <b>ssot/blog_exposure_rules.json</b>(네이버 노출 + 가독성: 태그 5~8 · 제목 30자 · 제목 낱말 첫 300자 · 소제목 2~4(문제→이유→방법→TIP) · 문단 3줄 240자 · 문단 사이 빈 줄 · ▪ 목록 3~5 · 굵게 문단당 1 · 낱말 밀도 4% · 링크 1 · 사진 3 · 출처 = 네이버 검색 공식 블로그 C-Rank·D.I.A.·콘텐츠 작성 가이드·스팸 사례) + 파트너 <b>blog_style.json voice</b>(브랜드가이드에서 어투·쓰는 말·고객층·CTA · 없으면 「미수령」). 검사기가 재고 못 넘으면 한 번 고쳐 쓴다 · 발행 본문은 파트너 폴더 05_콘텐츠_초안/blog/ 에 보관. 인스타 세션이 없거나 풀리면 서버 계정 자리(1531)로 1회 로그인 → 2단계 인증이면 state login_needed 에 남기고 멈춘다(파트너 방에 직접 묻지 않음). 실패는 재시도 없이 자동화현황방 한 줄. 파트너 방 통 = 저녁 21:00 한 통(오늘 인스타 링크 · 블로그 링크 · 답 반영 링크 · 남은 번호 N개) · 아침 0통. 금액은 파트너가 「적어도 된다」고 한 것만</td><td>partner_instagram_daily(status/partner_instagram/{센터}.json · try_login · gen_photo) · partner_blog_daily(ig_seed · mode publish · runs[].url) · diet_camp_agent --evening · counselbot tenants</td></tr>
+<tr><td>5</td><td>자동화 즉시 켜기 (평일 · 인스타 → 블로그)</td><td>설문 답을 안 기다린다 — 계정만 있으면 <b>평일 06:30 인스타 자동 게시</b>(승낙 게이트 없음) → 06:45/07:00 그 주제·캡션·사진으로 블로그 <b>직접 발행</b>(사람이 안 누름 · 실패 시 임시저장+로그) · 상담 페이지 24시간 공개(블로그 푸터 자동). <b>토·일 생성·게시 없음.</b> 사진은 시설 실사 우선, 부족분만 힉스필드(nano_banana 1크레딧 · 재시도 없음). 블로그 규칙 = 공통 <b>ssot/blog_exposure_rules.json</b>(네이버 노출·가독성 규격) + 파트너 <b>blog_style.json voice</b>(없으면 「미수령」) · 검사기 재검사 1회. 인스타 세션 풀리면 서버 자리(1531)로 1회 로그인, 2단계 인증이면 login_needed 남기고 멈춤(파트너에게 안 물음) · 실패는 재시도 없이 자동화현황방 한 줄. 파트너 통 = 저녁 21:00 한 통(인스타·블로그·답 반영 링크 · 남은 번호 N개) · 아침 0통</td><td>partner_instagram_daily(status/partner_instagram/{센터}.json · try_login · gen_photo) · partner_blog_daily(ig_seed · mode publish · runs[].url) · diet_camp_agent --evening · counselbot tenants</td></tr>
 <tr><td>6</td><td>전수체크 (매주 월)</td><td>웰페리온 AX 랩스 관리 › 파트너사 카드 8칸을 <b>실측값(파일·서버·발신 로그)</b>으로만 채운다. 「미수령」은 받은 날 즉시 지운다 — 09-17 실측: 다캠 로고를 9/15 받고도 판이 「미수령」이었다</td><td>erp/admin/index.html 파트너사 카드</td></tr>
 <tr><td>7</td><td>셋업 완료 판정</td><td>8칸 중 6칸(홈·소개서·브랜드·전략·상담·마케팅) 차고 빈칸 0 → 그날이 4주 파일럿 1일째 · 결과는 Before &amp; After 1장(4단계)</td><td>부록 C 로 이어짐</td></tr>
 </tbody></table>
-<p class="note"><b>금지 6</b> — 하루 한 문씩 묻기 · 같은 번호 재질문 · 아침 통(인사·응원·확인 통) · 답만 받고 화면 안 바꾸기 · 화면 없이 원고만 두기 · 파트너 계정값을 PC·카톡·큐에 남기기. <b>재는 숫자</b> — 첫 자료 → 페이지 3장까지 일수(목표 2일) · 설문 발송 → 빈칸 0 까지 일수 · 셋업 총 일수(목표 5일). 실측 2026-09-17: 다캠 15일 · 고척 8일(둘 다 하루 한 문 방식 탓).</p>
+<p class="note"><b>금지 6</b> — 하루 한 문씩 묻기 · 같은 번호 재질문 · 아침 통 · 답만 받고 화면 안 바꾸기 · 화면 없이 원고만 · 파트너 계정값을 PC·카톡·큐에 남기기. <b>재는 숫자</b> — 첫 자료→페이지 3장(목표 2일) · 설문→빈칸 0(일수) · 셋업 총 일수(목표 5일). 실측 09-17: 다캠 15일 · 고척 8일(하루 한 문 방식 탓).</p>
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">부록 C. 유료 전환 제안 골격(4주 뒤)</summary>
 <pre>1. 4주 동안 한 것 — 문서 3종 · 글 N편 임시저장/발행 M편 · 상담 답 K건(자력 답변 비율)
@@ -338,7 +338,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <p class="note">정본 = erp/admin/company_roadmap.html · 짝 문서 = 회사 소개서(company_intro.html) · 갱신은 마일스톤마다 v 올림</p>
 </details>
 <details open><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">부록 E. 채널 계정 개설 준비 — 9/18 GM 손 한 번(GM 09-17 「내일 만들자」)</summary>
-<p class="note">순서 = 지메일(주인)부터 → 인스타 → 스레드(인스타로 가입) → 네이버 → 카카오톡 채널. 값(비밀번호)은 어디에도 적지 않는다 — 가입 즉시 <b>랩스 관리 › 파트너사 › 「피트니스 AX」 자리 넣기(키 ax · 코드 1531)</b>. 회사 이름 = 「웰페리온 AX 랩스 / Wellperion AX Labs」(GM 확정 09-17 · 강남 AX LABS 와 겹쳐 바꿈) · 채널명 「피트니스 AX」·아이디 axlabs 는 그대로, 겹치면 wellperionax 한 번만 더. 아이디 규칙은 가입 화면이 정본 — 막히면 다음 후보로.</p>
+<p class="note">순서 = 지메일(주인) → 인스타 → 스레드(인스타로 가입) → 네이버 → 카카오톡 채널. 값(비밀번호)은 어디에도 안 적는다 — 가입 즉시 <b>랩스 관리 › 파트너사 › 「피트니스 AX」 자리(키 ax · 코드 1531)</b>. 회사명 = 「웰페리온 AX 랩스 / Wellperion AX Labs」(GM 09-17) · 채널명 「피트니스 AX」·아이디 axlabs, 겹치면 wellperionax. 아이디 규칙은 가입 화면이 정본.</p>
 <div style="overflow-x:auto"><table><colgroup><col style="width:13%"><col style="width:24%"><col style="width:20%"><col></colgroup>
 <tr><th>채널</th><th>아이디 규칙(가입 화면 확인)</th><th>아이디(겹치면 다음 후보)</th><th>표시명 · 프로필 · 개설 뒤 첫 걸음</th></tr>
 <tr><td>1 지메일(주인)</td><td>6~30자 · 영문 소문자·숫자·마침표 · 이미 있으면 다음 후보</td><td>axlabs → wellperionax → wellperion.axlabs</td><td>이름 「웰페리온 AX 랩스」 · 복구 전화 = GM · 이 계정이 구글 비즈니스 프로필(시토 2692)·유튜브의 주인</td></tr>
