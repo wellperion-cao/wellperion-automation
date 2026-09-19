@@ -13,7 +13,8 @@
 <!-- 웰페리온 AX 랩스 공개 첫 화면 (시모 · GM 지시 2026-09-19 「wellperion.com 에 연구소 같은 페이지 · 구조화된 정리 · 액티비티하게」 · 배 12845 로 기존 공개 첫 화면(labs_home.html)에 합침).
      본체 = erp/admin/labs_home.html(공개 주소 https://erp.wellperion.com/labs/) · 워드프레스 wellperion.com 페이지는 iframe 으로 부른다.
      숫자·문장 출처 = erp/admin/company_intro.html · ssot/canon_values.json(platform_company_name · platform_one_liner_kr).
-     2판(시모 · GM 지시 2026-09-19 10:5x · 배 12845): 철학 절로 포장·파트너 늘어나는 구조 타임라인·메일 대신 문의 칸(POST https://erp.wellperion.com/api/labs/lead, 서버 문은 아직 없음 — 실패 시 인스타 DM 안내). -->
+     2판(시모 · GM 지시 2026-09-19 10:5x · 배 12845): 철학 절로 포장·파트너 늘어나는 구조 타임라인·메일 대신 문의 칸(POST https://erp.wellperion.com/api/labs/lead, 서버 문은 아직 없음 — 실패 시 인스타 DM 안내).
+     4판(시모 · GM 지시 2026-09-19 17:1x): 메뉴 6→4(무엇이 바뀌나·실제 하루·함께 시험하는 곳·시작하기). 「우리가 붙드는 여섯 가지」 탭 절 삭제(한 줄만 히어로 아래 유지). AI 비서 절을 실제 하루 타임라인 행(회의 요약·외국어 안내·밤 상담 답장)으로 접음. 전·후 칩에 구체적 장면 문구. 스탯 176 삭제, 177·29 는 의미 문구로. 실제 하루에 움직이는 예시 화면 3장(밤 문의 자동응답 · 07:00 요약 알림 · 오후 발행·점검 체크) — 순수 CSS 애니메이션 + 기존 reveal IntersectionObserver, 이미지·외부 라이브러리 없음. 값은 전부 가짜 샘플, 가게 이름은 「○○ 스포츠센터」. -->
 <style>
 :root{
   --bg:#07110F; --bg2:#0B1A17; --panel:#0F221E; --line:#1C3A34; --line2:#27504A;
@@ -52,7 +53,7 @@ h1{font-size:clamp(34px,5.2vw,60px);line-height:1.15;letter-spacing:-.02em;font-
 h1 em{font-style:normal;background:linear-gradient(90deg,var(--glow),var(--mint));-webkit-background-clip:text;background-clip:text;color:transparent}
 .lead{font-size:18px;color:var(--ink2);max-width:34em}
 .hero-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:40px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:40px}
 .stat{border:1px solid var(--line);background:var(--bg2);border-radius:14px;padding:14px}
 .stat b{display:block;font-size:28px;font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums}
 .stat span{font-size:13px;color:var(--ink3)}
@@ -63,8 +64,8 @@ h1 em{font-style:normal;background:linear-gradient(90deg,var(--glow),var(--mint)
 .feed{list-style:none;padding:14px;height:330px;overflow:hidden;display:flex;flex-direction:column;gap:8px}
 .feed li{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(7,17,15,.55);font-size:14px;animation:slide .5s ease both}
 .feed time{font-size:12px;color:var(--ink3)}
-.tag{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(14,148,136,.18);color:var(--mint);white-space:nowrap}
-.tag.h{background:rgba(245,184,75,.16);color:var(--amber)}
+.tag{font-size:11px;padding:3px 8px;border-radius:999px;background:#0C2F2B;color:var(--mint);white-space:nowrap}
+.tag.h{background:#332C12;color:var(--amber)}
 @keyframes slide{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .console-foot{padding:12px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3);display:flex;justify-content:space-between;gap:10px}
 section{padding:72px 0}
@@ -72,25 +73,11 @@ section{padding:72px 0}
 .kicker{font-size:13px;color:var(--glow);letter-spacing:.12em;font-weight:700}
 h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-.01em;line-height:1.25;margin-top:8px}
 .sec-head p{color:var(--ink2);max-width:30em}
-.w6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}
-.w6 button{border:1px solid var(--line);background:var(--bg2);border-radius:14px;padding:14px 8px;text-align:center;min-height:44px;transition:border-color .15s,background .15s}
-.w6 button b{display:block;font-size:22px;font-weight:800}
-.w6 button span{font-size:12px;color:var(--ink3);letter-spacing:.08em}
-.w6 button:hover{border-color:var(--line2)}
-.w6 button[aria-selected="true"]{border-color:var(--teal);background:rgba(14,148,136,.14)}
-.w6 button[aria-selected="true"] b{color:var(--mint)}
-.w6 button[aria-selected="true"] span{color:var(--mint)}
-.panel{border:1px solid var(--line2);border-radius:var(--r);background:var(--panel);padding:32px;min-height:300px;display:grid;grid-template-columns:.9fr 1.1fr;gap:32px;animation:slide .35s ease both}
-.panel h3{font-size:28px;line-height:1.3;letter-spacing:-.01em}
-.panel .q{font-size:13px;color:var(--glow);font-weight:700;letter-spacing:.1em}
-.panel p{color:var(--ink2);margin-top:12px}
 .rows{display:flex;flex-direction:column;gap:8px}
 .row{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}
 .row .n{font-size:12px;color:var(--mint);border:1px solid var(--line2);border-radius:8px;padding:2px 8px;white-space:nowrap}
 .row strong{display:block;font-size:16px}
 .row small{display:block;color:var(--ink3);font-size:14px;margin-top:2px}
-.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),#F08A4B);width:0;transition:width 1s ease}
 .day{border:1px solid var(--line2);border-radius:var(--r);background:var(--panel);padding:28px}
 .track{position:relative;height:6px;background:var(--line);border-radius:99px;margin:36px 8px 18px}
 .track .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--teal),var(--glow));border-radius:99px;width:0}
@@ -104,14 +91,32 @@ h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-.01em;line-height:1.25;margi
 .day-ctl{display:flex;gap:8px}
 .day-ctl button{border:1px solid var(--line2);border-radius:10px;padding:8px 14px;min-height:44px;font-size:14px}
 .day-ctl button:hover{background:var(--bg)}
+.scene{border:1px solid var(--line2);border-radius:var(--r);background:linear-gradient(180deg,var(--panel),var(--bg2));box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden}
+.scene-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3)}
+.scene-body{padding:18px;display:flex;flex-direction:column;gap:10px;min-height:150px}
+.bub{max-width:90%;padding:10px 12px;border-radius:14px;font-size:13px;line-height:1.45;opacity:0;transform:translateY(6px);animation-delay:var(--d,0s)}
+.bub-in{align-self:flex-start;background:var(--bg2);border:1px solid var(--line);color:var(--ink2);border-radius:14px 14px 14px 4px}
+.bub-out{align-self:flex-end;background:#123F38;border:1px solid var(--line2);color:var(--ink);border-radius:14px 14px 4px 14px}
+.scene-note{align-self:flex-start;font-size:12px;color:var(--amber);opacity:0;transform:translateY(6px);animation-delay:var(--d,0s)}
+.scene-card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px}
+.scene-card b{display:block;font-size:14px;color:var(--mint);margin-bottom:8px}
+.lockline{font-size:12px;color:var(--ink3);margin-bottom:2px}
+.sline{color:var(--ink2);font-size:14px;margin-top:4px;opacity:0;transform:translateY(4px);animation-delay:var(--d,0s)}
+.reveal.in .bub,.reveal.in .scene-note,.reveal.in .sline{animation:sceneIn .5s ease both}
+@keyframes sceneIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.checklist{display:flex;flex-direction:column;gap:10px}
+.ck-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:var(--ink2)}
+.ck-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line2);flex:none;animation-delay:var(--d,0s)}
+.reveal.in .ck-dot{animation:ckOn .3s ease both}
+@keyframes ckOn{to{background:var(--teal);border-color:var(--teal)}}
 .vs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .switch{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:4px;background:var(--bg2)}
 .switch button{padding:8px 16px;min-height:44px;border-radius:999px;font-size:14px;color:var(--ink2)}
-.switch button[aria-pressed="true"]{background:var(--teal);color:#fff}
+.switch button[aria-pressed="true"]{background:#08645C;color:#fff}
 .lane{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:22px}
 .lane h4{font-size:15px;color:var(--ink2);margin-bottom:14px;display:flex;justify-content:space-between}
-.chip{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);margin-bottom:8px;font-size:15px;transition:all .45s ease}
-.chip span{color:var(--ink3);font-size:13px;white-space:nowrap}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);margin-bottom:8px;font-size:15px;transition:all .45s ease}
+.chip span{color:var(--ink3);font-size:13px}
 .lane.human .chip.moved{opacity:.3;transform:translateX(12px);text-decoration:line-through}
 .lane.ax .chip{opacity:.3}
 .lane.ax .chip.moved{opacity:1;border-color:var(--teal);background:rgba(14,148,136,.12)}
@@ -130,7 +135,6 @@ h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-.01em;line-height:1.25;margi
 .chan a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);text-decoration:none;font-size:15px;transition:border-color .15s}
 .chan a:hover{border-color:var(--teal)}
 .chan a span{color:var(--ink3);font-size:13px}
-.site svg{width:28px;height:28px;color:var(--glow);margin-bottom:10px;display:block}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px}
 .field input,.field select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg2);color:var(--ink);font:inherit}
@@ -146,14 +150,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
 @media (max-width:900px){
-  .hero,.panel,.cta{grid-template-columns:1fr}
+  .hero,.cta{grid-template-columns:1fr}
   .hero{padding-top:48px;gap:32px}
   .nav ul{display:none}
   .nav .btn{margin-left:auto}
   .brand{font-size:12px}
-  .w6{grid-template-columns:repeat(3,1fr)}
   .map,.vs{grid-template-columns:1fr}
-  .panel,.cta{padding:22px}
+  .cta{padding:22px}
   .feed{height:290px}
   .day-now{grid-template-columns:1fr}
   .stop em{display:none}
@@ -163,6 +166,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   *,*::before,*::after{animation:none!important;transition:none!important}
   html{scroll-behavior:auto}
   .reveal{opacity:1;transform:none}
+  .bub,.scene-note,.sline{opacity:1;transform:none}
+  .ck-dot{background:var(--teal);border-color:var(--teal)}
 }
 </style>
 </head>
@@ -175,11 +180,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       WELLPERION AX LABS
     </a>
     <ul>
-      <li><a href="#six">철학</a></li>
-      <li><a href="#assistants">AI 비서</a></li>
-      <li><a href="#day">하루</a></li>
-      <li><a href="#before">전과 후</a></li>
-      <li><a href="#where">함께하는 곳</a></li>
+      <li><a href="#before">무엇이 바뀌나</a></li>
+      <li><a href="#day">실제 하루</a></li>
+      <li><a href="#where">함께 시험하는 곳</a></li>
     </ul>
     <a class="btn" href="#contact">시작하기</a>
   </div>
@@ -190,15 +193,15 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     <div>
       <span class="eyebrow"><i class="dot" aria-hidden="true"></i>인공지능 전환(AX) 연구소 · 첫 프로젝트 피트니스 AX</span>
       <h1>일하는 방식을<br><em>AI 중심으로</em><br>다시 설계합니다</h1>
-      <p class="lead">웰페리온 AX 랩스는 인공지능을 조직 운영 전반에 통합해 일하는 방식과 비즈니스 구조를 다시 짭니다. 반복은 시스템이 맡고, 사람은 회원 앞에 섭니다.</p>
+      <p class="lead">문의 답장·아침 보고·채널 글쓰기 같은 반복 일은 시스템이 맡고, 사람은 회원 앞에 섭니다. 한남의 스포츠클럽에서 매일 실제로 돌고 있습니다.</p>
+      <p style="color:var(--ink3);font-size:14px;margin-top:10px">기술보다 먼저, 일이 어디로 가야 하는지를 묻습니다.</p>
       <div class="hero-cta">
         <a class="btn" href="#contact">우리 센터도 시작하기</a>
-        <a class="btn ghost" href="#six">철학 보기</a>
+        <a class="btn ghost" href="#day">실제 하루 보기</a>
       </div>
       <div class="stats">
-        <div class="stat"><b data-count="176">176</b><span>매일 쓰는 화면</span></div>
-        <div class="stat"><b data-count="29">29</b><span>돌아가는 자동화</span></div>
-        <div class="stat"><b data-count="177">177</b><span>5채널 발행(6~8월)</span></div>
+        <div class="stat"><b data-count="177">177</b><span>석 달 동안 사람 손 없이 올린 글 177편</span></div>
+        <div class="stat"><b data-count="29">29</b><span>매일 도는 자동화 29개</span></div>
       </div>
     </div>
     <div class="console" aria-label="AX 랩스 자동화가 하루에 하는 일 예시">
@@ -208,43 +211,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     </div>
   </div>
 
-  <section id="six">
+  <section id="before">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div><div class="kicker">WHAT WE HOLD</div><h2>우리가 붙드는 여섯 가지</h2></div>
-        <p>기술보다 먼저, 일이 어디로 가야 하는지를 묻습니다.</p>
+        <div><div class="kicker">BEFORE / AFTER</div><h2>반복은 옮기고, 본질은 남긴다</h2></div>
+        <div class="switch" role="group" aria-label="전과 후 전환"><button id="bBefore" aria-pressed="true">AX 전</button><button id="bAfter" aria-pressed="false">AX 후</button></div>
       </div>
-      <div class="w6 reveal" role="tablist" aria-label="철학">
-        <button role="tab" data-k="person"><b>사람</b><span>01</span></button>
-        <button role="tab" data-k="reason"><b>이유</b><span>02</span></button>
-        <button role="tab" data-k="tool"><b>도구</b><span>03</span></button>
-        <button role="tab" data-k="principle"><b>원칙</b><span>04</span></button>
-        <button role="tab" data-k="time"><b>시간</b><span>05</span></button>
-        <button role="tab" data-k="connect"><b>연결</b><span>06</span></button>
+      <div class="vs reveal">
+        <div class="lane human" id="laneH"><h4>사람 손 <span id="hCount">5개</span></h4></div>
+        <div class="lane ax" id="laneA"><h4>AX 시스템 <span id="aCount">0개</span></h4></div>
       </div>
-      <div id="panel" class="panel" role="tabpanel" aria-live="polite"></div>
-    </div>
-  </section>
-
-  <section id="assistants">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div><div class="kicker">AI ASSISTANTS</div><h2>곁에 두는 세 명의 비서</h2></div>
-      </div>
-      <div class="map reveal">
-        <div class="site">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-          <h3>AI 회의비서</h3><p>말은 흘러가도 결정은 남도록.</p>
-        </div>
-        <div class="site">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 1 1 3.9 2.9c-.9.3-1.5 1.1-1.5 2.1v.3"/><circle cx="12" cy="17" r=".3" fill="currentColor" stroke="none"/></svg>
-          <h3>AI 상담비서</h3><p>밤에도 손님의 물음에 답합니다.</p>
-        </div>
-        <div class="site">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13.7 13.7 0 0 1 0 18M12 3a13.7 13.7 0 0 0 0 18"/></svg>
-          <h3>AI 번역비서</h3><p>말이 달라도 같은 안내를.</p>
-        </div>
-      </div>
+      <div class="focus reveal" id="focus">사람의 시간 = 반복 업무</div>
     </div>
   </section>
 
@@ -262,20 +239,40 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
           <div class="day-ctl"><button id="prev" aria-label="이전 시각">이전</button><button id="play" aria-label="하루 재생">재생</button><button id="next" aria-label="다음 시각">다음</button></div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section id="before">
-    <div class="wrap">
-      <div class="sec-head reveal">
-        <div><div class="kicker">BEFORE / AFTER</div><h2>반복은 옮기고, 본질은 남긴다</h2></div>
-        <div class="switch" role="group" aria-label="전과 후 전환"><button id="bBefore" aria-pressed="true">AX 전</button><button id="bAfter" aria-pressed="false">AX 후</button></div>
+      <div class="map reveal" style="margin-top:24px">
+        <div class="scene" aria-label="예시 화면 — 밤 문의 자동 응답, 실제 값 아님">
+          <div class="scene-top"><span class="mono">카카오톡 · ○○ 스포츠센터</span><span class="tag h">예시 화면</span></div>
+          <div class="scene-body">
+            <div class="bub bub-in" style="--d:0s">이용 시간이 어떻게 되나요?</div>
+            <div class="bub bub-out" style="--d:.6s">평일 06:00~23:00 운영합니다. 체험 문의는 담당자가 곧 답해 드립니다.</div>
+            <div class="scene-note" style="--d:1.2s">담당자 확인 대기 1건 · 23:40</div>
+          </div>
+        </div>
+        <div class="scene" aria-label="예시 화면 — 07:00 아침 요약 알림, 실제 값 아님">
+          <div class="scene-top"><span class="mono">카카오톡 · 대표님</span><span class="tag h">예시 화면</span></div>
+          <div class="scene-body">
+            <div class="lockline">어제 요약 도착 · 07:00</div>
+            <div class="scene-card">
+              <b>어제 요약 · 07:00</b>
+              <p class="sline" style="--d:0s">문의 11건</p>
+              <p class="sline" style="--d:.4s">등록 4건</p>
+              <p class="sline" style="--d:.8s">점검 41/43 완료</p>
+              <p class="sline" style="--d:1.2s">놓친 것 1가지</p>
+            </div>
+          </div>
+        </div>
+        <div class="scene" aria-label="예시 화면 — 오후 발행·점검 확인, 실제 값 아님">
+          <div class="scene-top"><span class="mono">발행 · 점검 현황</span><span class="tag h">예시 화면</span></div>
+          <div class="scene-body">
+            <div class="checklist">
+              <div class="ck-row"><span>블로그 · 오늘의 스트레칭</span><b class="ck-dot" style="--d:0s"></b></div>
+              <div class="ck-row"><span>인스타 · 회원 후기 카드</span><b class="ck-dot" style="--d:.5s"></b></div>
+              <div class="ck-row"><span>탈의실 점검표</span><b class="ck-dot" style="--d:1s"></b></div>
+              <div class="ck-row"><span>운동기구 점검표</span><b class="ck-dot" style="--d:1.5s"></b></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="vs reveal">
-        <div class="lane human" id="laneH"><h4>사람 손 <span id="hCount">5개</span></h4></div>
-        <div class="lane ax" id="laneA"><h4>AX 시스템 <span id="aCount">0개</span></h4></div>
-      </div>
-      <div class="focus reveal" id="focus">사람의 시간 = 반복 업무</div>
     </div>
   </section>
 
@@ -381,40 +378,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   for(var k=0;k<5;k++)push();
   if(!reduce) setInterval(push,2200);
 
-  var W={
-    person:{q:'사람',h:'기술보다 사람이 먼저',p:'우리는 도구를 만드는 사람이기 전에, 누군가의 하루를 덜어 주는 사람이고 싶습니다. 웰페리온이 이 일을 시작했고, 가장 먼저 스스로에게 적용했습니다.',
-      rows:[['1','시작한 곳','한 스포츠클럽의 현장'],['2','일하는 방식','사람과 AI가 한 팀'],['3','첫 여정','피트니스 AX']]},
-    reason:{q:'이유',h:'반복은 사람을 본질에서 멀어지게 한다',p:'매일 같은 모양으로 돌아오는 일은 조용히 사람의 시간을 가져갑니다. 그 시간이 원래 향해야 할 곳은 회원입니다.',
-      rows:[['1','놓치는 답장','문의가 쌓이면 답이 늦어집니다'],['2','멈추는 기록','쓰이지 않는 채널은 조용히 잊혀집니다'],['3','말로만 남는 규정','상담마다 다른 말이 오갑니다']]},
-    tool:{q:'도구',h:'도구는 보이지 않을 때 가장 잘 일한다',p:'좋은 자동화는 드러나지 않습니다. 답은 제때 나가고, 기록은 제자리에 있고, 사람은 그것을 신경 쓰지 않아도 됩니다.',
-      rows:[['1','상담','손님 질문에 정본으로 답합니다'],['2','마케팅','이야기와 사진만 주시면, 채널 셋팅부터 매일 올리는 일까지 AI 가'],['3','보고','아침·저녁 한 통으로 오갑니다'],['4','운영','회원·문의·점검을 한 화면으로 모읍니다'],['5','AI 비서','회의·상담·번역을 곁에서']]},
-    principle:{q:'원칙',h:'지어내지 않고, 마지막은 사람이',p:'네 가지를 지킵니다.',
-      rows:[['1','정본부터','값은 한 곳에서만 가져옵니다'],['2','사람이 마지막','발행은 언제나 사람이 누릅니다'],['3','배운 것은 모든 센터로','질문은 나누고 값은 섞지 않습니다'],['4','매일 실제로 돈다','도는 것만 이야기합니다']]},
-    time:{q:'시간',h:'하루가 아니라 십 년을 설계한다',p:'빨리 늘리는 것보다, 한 곳에서 실제로 도는 것을 먼저 봅니다. 작게 시작해 결과로 확인하고, 확인된 만큼만 넓힙니다.',
-      rows:[['1','작게 시작','한 가지 반복부터'],['2','결과로 확인','전과 후를 나란히 봅니다'],['3','넓히기','믿음이 쌓인 만큼 늘립니다']]},
-    connect:{q:'연결',h:'한 곳에서 배운 것이 모든 곳으로',p:'한 센터가 새로 만난 질문은 모든 센터의 답이 됩니다. 각 센터의 이야기는 섞지 않고, 배움만 나눕니다.',
-      rows:[['1','한 센터의 질문','새로 만난 질문은 정리되어 남습니다'],['2','모든 센터의 답','같은 질문이 오면 이미 준비돼 있습니다']]}
-  };
-  var panel=document.getElementById('panel'), tabs=[].slice.call(document.querySelectorAll('.w6 button'));
-  function show(k){
-    var w=W[k];
-    tabs.forEach(function(b){b.setAttribute('aria-selected',b.dataset.k===k?'true':'false');b.tabIndex=b.dataset.k===k?0:-1;});
-    var r=w.rows.map(function(x){
-      var bar=x[3]?'<div class="bar"><i data-w="'+x[3]+'"></i></div>':'';
-      return '<div class="row"><span class="n">'+x[0]+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small>'+bar+'</div></div>';
-    }).join('');
-    panel.innerHTML='<div><div class="q">'+w.q+'</div><h3>'+w.h+'</h3><p>'+w.p+'</p></div><div class="rows">'+r+'</div>';
-    panel.style.animation='none'; void panel.offsetHeight; panel.style.animation='';
-    setTimeout(function(){panel.querySelectorAll('.bar i').forEach(function(b){b.style.width=b.dataset.w+'%';});},60);
-  }
-  tabs.forEach(function(b,idx){
-    b.addEventListener('click',function(){show(b.dataset.k);});
-    b.addEventListener('keydown',function(e){
-      if(e.key==='ArrowRight'||e.key==='ArrowLeft'){var n=tabs[(idx+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];n.focus();show(n.dataset.k);}
-    });
-  });
-  show('person');
-
   var PARTNERS=[
     {no:'01',since:'2026.06',kind:'스포츠클럽',place:'서울 한남',note:'이 여정이 시작된 곳',test:false},
     {no:'02',since:'2026.09',kind:'PT·재활 센터',place:'서울 은평',note:'정식 고객이 아니라, 9월부터 함께 시험하며 무엇이 되고 안 되는지 재고 있는 곳입니다.',test:true},
@@ -469,11 +432,15 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
   var D=[
     ['06:30','채널마다 맞춰 자동 업로드','사람은 사진·이야기만 · 올리는 방법은 AI 가',0],
-    ['07:00','아침 통','어제 있었던 일 · 오늘 물을 것 한 줄',8],
+    ['07:00','아침 통','어제 있었던 일 · 오늘 물을 것 한 줄',10],
     ['09:30','매출 보고','어제 숫자를 표 한 장으로',20],
-    ['수시','상담 · 접수','손님 질문에 답하고, 문의는 바로 담당에게',50],
-    ['수시','회원 전환','상담이 끝난 손님을 회원 기록으로',72],
-    ['21:00','저녁 통','오늘 한 일 · 놓친 일은 내일 아침에 다시',100]
+    ['수시','상담 · 접수','손님 질문에 답하고, 문의는 바로 담당에게',32],
+    ['수시','회의 요약','말은 흘러가도 결정은 남도록',44],
+    ['수시','외국어 안내','말이 달라도 같은 안내를',56],
+    ['수시','회원 전환','상담이 끝난 손님을 회원 기록으로',68],
+    ['오후','발행·점검 확인','발행됨·제출 표시가 하나씩 켜집니다',80],
+    ['21:00','저녁 통','오늘 한 일 · 놓친 일은 내일 아침에 다시',90],
+    ['23:40','밤 상담 답장','밤에도 손님의 물음에 답합니다',100]
   ];
   var track=document.getElementById('track'), fill=document.getElementById('fill'), di=0, timer=null;
   D.forEach(function(d){var s=document.createElement('span');s.className='stop';s.style.left=d[3]+'%';s.innerHTML='<em class="mono">'+d[0]+'</em>';track.appendChild(s);});
@@ -493,11 +460,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   playBtn.onclick=function(){ if(timer){stop();return;} playBtn.textContent='멈춤'; timer=setInterval(function(){setDay(di+1);},1600); };
   setDay(0);
 
-  var T=[['문의 답장','카톡·전화·DM'],['블로그·인스타 글','매일'],['규정 안내','휴관·환불·연기'],['아침·저녁 보고','대표님께'],['문의 접수·전달','담당에게']];
+  var T=[
+    ['문의 답장','전: 밤 11시, 카톡·전화·DM 문의를 하나씩 답장','후: 인스타 문의가 오면 바로 상담 답장 · 사람은 확인만'],
+    ['글 발행','전: 블로그·인스타 글을 매일 사람이 하나씩 올림','후: 06:30 사진·이야기만 주면 채널마다 자동 업로드'],
+    ['규정 안내','전: 휴관·환불·연기 질문마다 상담마다 다른 답','후: 정본으로 늘 같은 답'],
+    ['보고','전: 매일 아침 숫자를 모아 대표님께 정리','후: 07:00 어제 요약이 대표님께 자동으로'],
+    ['문의 접수·전달','전: 문의가 오면 담당자를 찾아 손으로 전달','후: 09:13 접수되며 바로 담당에게']
+  ];
   var laneH=document.getElementById('laneH'), laneA=document.getElementById('laneA');
   T.forEach(function(t){
     laneH.insertAdjacentHTML('beforeend','<div class="chip">'+t[0]+'<span>'+t[1]+'</span></div>');
-    laneA.insertAdjacentHTML('beforeend','<div class="chip">'+t[0]+'<span>자동</span></div>');
+    laneA.insertAdjacentHTML('beforeend','<div class="chip">'+t[0]+'<span>'+t[2]+'</span></div>');
   });
   var bB=document.getElementById('bBefore'), bA=document.getElementById('bAfter'), focus=document.getElementById('focus');
   function mode(after){
