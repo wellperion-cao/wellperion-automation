@@ -272,7 +272,7 @@ if (!SR) {
       return;
     }
     // 인식이 스스로 끝남(no-speech·network 등) — 아직 누르고 있으면 이어서 듣는다
-    if (pressing) { try { recognition.start(); } catch (e) {} }
+    if (pressing) { try { recognition.start(); recActive = true; } catch (e) {} }
   };
 }
 
@@ -297,7 +297,9 @@ function startPress(source, target, mine, which){
   recognition.lang = SPEECH_LOCALE[source] || source;
   setPressUI(which);
   statusMsg.textContent = '듣는 중… (' + LANG_NAME[source] + ')'; statusMsg.className = 'msg ok';
-  try { recognition.start(); } catch (e) {}
+  // recActive 는 onstart(비동기)가 아니라 여기서 바로 켠다 — onstart 전에 떼도(빠른 탭) endPress 가
+  // stop() 을 부르게 해서 마이크가 켜진 채 방치되지 않게 한다.
+  try { recognition.start(); recActive = true; } catch (e) {}
 }
 function endPress(){
   if (!recognition || !pressing) return;
