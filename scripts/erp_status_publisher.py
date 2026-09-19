@@ -998,6 +998,31 @@ def collect_migration_status():
     return {"name": "GAS→AWS 이관", "state": state, "detail": detail, "note": note}
 
 
+CTO_GOAL_PATH = STATUS_DIR / "cto_goal_score.json"
+CTO_GOAL_SCRIPT = Path(__file__).resolve().parent / "cto_goal_score.py"
+
+
+def collect_cto_goal():
+    """시토 목표 진척 3축(보안·안정·자율) 점수 — status/cto_goal_score.json 이 24시간보다
+    오래됐으면(또는 없으면) 이 자리에서 한 번 재측정한다. 새 예약작업을 만들지 않고
+    이 발행기의 기존 30분 주기에 편승한다(약속 L21). 실패해도 이 발행 자체엔 무영향
+    (fail-safe — None 이면 화면이 줄을 안 그린다)."""
+    try:
+        mins = _minutes_since(CTO_GOAL_PATH)
+        if mins is None or mins > 24 * 60:
+            subprocess.run([sys.executable, str(CTO_GOAL_SCRIPT)], cwd=ROOT, timeout=300)
+        data = json.loads(CTO_GOAL_PATH.read_text(encoding="utf-8"))
+        return {
+            "total": data.get("total"),
+            "security": data.get("security"),
+            "stability": data.get("stability"),
+            "autonomy": data.get("autonomy"),
+            "measured_at": data.get("measured_at"),
+        }
+    except Exception:
+        return None
+
+
 def build():
     # 시스템 현황 = '기계 상태'만(봇·스케줄러·예약작업). 각 AI 업무는 자율현황 🧭 항로가 단일 출처
     # → 여기서 중복 집계/표시하지 않는다(약속 L01 한 곳만, 2026-06-16 GM 지적).
@@ -1028,6 +1053,7 @@ def build():
         "automation_health": automation_health,
         "git_sync": git_sync,
         "archive_summary": collect_archive_summary(),
+        "cto_goal": collect_cto_goal(),
     }
 
 

@@ -1153,6 +1153,23 @@
       }).join('') + '</table>';
   }
 
+  // 🎯 시토 목표 진척 한 줄 — status/cto_goal_score.json(cto_goal_score.py 가 매일 측정,
+  // erp_status_publisher 가 erp_status.json 의 cto_goal 키로 편승 발행)을 시스템 현황 카드에
+  // 붙인다. 새 화면·새 fetch 없음 — erp_status.json 은 이미 받고 있다. 값이 없으면 줄 자체를
+  // 안 그린다(0 위장 금지).
+  function renderCtoGoalLine(erp){
+    var wrap = document.getElementById('erp-systems-rows');
+    var g = erp && erp.cto_goal;
+    if(!wrap || !g || typeof g.total !== 'number') return;
+    var fmt = function(v){ return (v === null || v === undefined) ? '—' : v; };
+    var line = document.createElement('div');
+    line.className = 'sec-note';
+    line.style.cssText = 'margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(34,31,32,0.08);';
+    line.innerHTML = '🎯 시토 목표 진척 <b>' + g.total + '%</b> (보안 ' + fmt(g.security) +
+      ' · 안정 ' + fmt(g.stability) + ' · 자율 ' + fmt(g.autonomy) + ')';
+    wrap.appendChild(line);
+  }
+
   // 🧠 부팅 로드 한 줄 — status/boot_load.json(boot_load_gauge.py 가 날짜별로 쌓음)을 시스템 현황 카드
   // 맨 아래에 붙인다(배1024 · GM 지시 2026-09-05). 읽기 실패·파싱 실패는 줄 자체를 안 그린다
   // (0·빈 값 위장 금지 — 「화면은 소스가 멈추면 거짓말한다」).
@@ -1561,6 +1578,7 @@
       if(esEl) esEl.innerHTML = '<div class="feed-status">시스템 현황 표시 오류.</div>';
     }
     try{ renderBootLoadLine(parseJson(a[9])); }catch(e){ /* 실패시 줄 자체를 안 그린다 */ }
+    try{ renderCtoGoalLine(erpStatus); }catch(e){ /* 실패시 줄 자체를 안 그린다 */ }
     try{ clampLongCells(); }catch(e){ /* 표시용이라 실패해도 본문은 그대로 */ }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
