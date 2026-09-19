@@ -3022,7 +3022,8 @@ def run_daily_digest(early: bool = False) -> None:
                     [sys.executable, str(_kakao_sender), "--message", text, "--only-room", KAKAO_OPS_ROOM,
                      "--sender", "점검접수정리"],
                     cwd=str(REPO_ROOT), capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", env=_kakao_env, timeout=180,
+                    # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+                    encoding="utf-8", errors="replace", env=_kakao_env, timeout=420,
                 )
                 tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
                 logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송: {tail[0]}")
@@ -3178,7 +3179,8 @@ def run_daily_digest(early: bool = False) -> None:
                 [sys.executable, str(sender), "--message", "\n\n".join(parts), "--only-room", _room,
                  "--sender", "문의정리"],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace", env=env, timeout=180,
+                # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+                encoding="utf-8", errors="replace", env=env, timeout=420,
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
             logger.info(f"{label} 카톡 {_room}({_tag}) 발송: {tail[0]}")
@@ -3298,7 +3300,8 @@ def run_mgmt_notice_digest() -> None:
                 [sys.executable, str(sender), "--message", combined_text, "--only-room", _od3.RELAY_ROOM,
                  "--sender", "중간관리자알림합본"],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=180,
+                # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+                encoding="utf-8", errors="replace", timeout=420,
                 env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
@@ -3681,7 +3684,8 @@ def run_weekly_ops_report() -> None:
              "--message", draft, "--only-room", _od.WEEKLY_ROOM,
              "--sender", "주간보고초안"],
             cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=180,
+            # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+            encoding="utf-8", errors="replace", timeout=420,
             env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
         )
         tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
@@ -3778,7 +3782,8 @@ def _diet_camp_send(text: str, label: str) -> bool:
         [sys.executable, str(sender), "--message", text, "--only-room", DIET_CAMP_ROOM,
          "--sender", "다이어트캠프정기발신"],
         cwd=str(REPO_ROOT), capture_output=True, text=True,
-        encoding="utf-8", errors="replace", timeout=180,
+        # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+        encoding="utf-8", errors="replace", timeout=420,
         env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
     )
     tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
@@ -4451,7 +4456,8 @@ def main():
                      "--message", text, "--only-room", KAKAO_OPS_ROOM,
                      "--sender", "점검접수정리"],
                     cwd=str(REPO_ROOT), capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", timeout=180,
+                    # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+                    encoding="utf-8", errors="replace", timeout=420,
                     env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
                 )
                 ktail = (kproc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]

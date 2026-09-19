@@ -627,7 +627,8 @@ def _send_kakao(text: str) -> None:
             [sys.executable, str(_SENDER), "--message", text, "--only-room", KAKAO_ROOM,
              "--sender", "점검접수정리"],
             cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", env=env, timeout=180,
+            # 안쪽 사람 사용중 대기(최대 300초)보다 길어야 함 — 2026-09-19 결재 알림 4회 강제종료.
+            encoding="utf-8", errors="replace", env=env, timeout=420,
         )
     except Exception as e:
         print(f"[stream2] 카카오 예외: {e}", flush=True)

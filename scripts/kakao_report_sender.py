@@ -565,6 +565,12 @@ def user_idle_seconds() -> int:
     return max(0, int(time.time() - last))
 
 
+# 사람 방 발신(--sender 매출보고 등)이 사람 사용중 대기로 실제로 기다리는 최대 시간.
+# 이 값을 부르는 쪽(subprocess.run timeout=)은 항상 이 값+60 이상이어야 한다 —
+# 아니면 안쪽이 기다리는 도중 바깥이 먼저 죽인다(2026-09-19 결재 알림 4회 강제종료).
+USER_IDLE_MAX_WAIT = 300
+
+
 def wait_until_user_idle(min_idle_sec: int = 180, max_wait_sec: int = 1500, tag: str = "") -> bool:
     """True = 진행해도 된다 · False = max_wait_sec 안에 사람이 손을 안 뗌(내보내기는 건너뛰고, 사람 방 발신기는 그래도
     보낸다 — 판정은 호출부). KAKAO_UI_NOW=1(--now) 이면 즉시 True."""
@@ -3078,7 +3084,7 @@ def main() -> int:
     # ★사람이 PC 를 쓰는 중이면 손을 뗄 때까지 최대 5분 기다린 뒤 보낸다 — 사람 방 발신(09:30 매출보고·07:50 통)은
     #   절대 빠지면 안 되므로 형제 스크립트와 달리 **건너뛰지 않는다**(배 12749 후속 · 시토 2026-09-18).
     #   회차당 한 번(첫 방 앞) — 방을 따로 도는 프로세스는 직전 자동화가 놓은 표식(.kakao_ui.last_auto)으로 바로 통과.
-    if not args.dry_run and not wait_until_user_idle(min_idle_sec=180, max_wait_sec=300, tag="sender"):
+    if not args.dry_run and not wait_until_user_idle(min_idle_sec=180, max_wait_sec=USER_IDLE_MAX_WAIT, tag="sender"):
         log("[kakao-idle] 사람 사용 중 5분 대기 뒤 발신 — 사람 방 발신은 건너뛰지 않는다(배 12749)")
     room_names = [r["name"] for r in rooms]
 
