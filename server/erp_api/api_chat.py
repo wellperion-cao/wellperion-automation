@@ -27,6 +27,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -1016,6 +1017,7 @@ BEDROCK_REGION = os.environ.get("ERP_BEDROCK_REGION", "ap-northeast-2")
 BEDROCK_ALERT_FLAG = os.environ.get("ERP_BEDROCK_ALERT_FLAG", "/srv/erp/bedrock_alert.txt")
 DAILY_QUESTION_LIMIT = 300   # 테넌트당 하루 이 수를 넘으면 백업 매칭으로 자동 전환(가드①)
 _DAILY_COUNTS: dict = {}     # (tenant, "YYYY-MM-DD") -> count · 프로세스 메모리(재시작하면 리셋 — ponytail: 하루살이라 문제없음
+_DAILY_COUNTS_LOCK = threading.Lock()   # sync 라우트는 스레드풀에서 동시에 뛴다 — 순회+수정을 한 덩어리로 잠근다
 
 
 def _anthropic_client():
@@ -1064,13 +1066,15 @@ def _tg_alert_bedrock_once(text: str) -> None:
 
 
 def _bump_daily(name: str) -> int:
-    """(name, 오늘) 카운터 +1 — 날이 바뀌면 지난 날 키를 버린다(테넌트·IP 키가 날마다 쌓이지 않게 · 배 12752 #7)."""
+    """(name, 오늘) 카운터 +1 — 날이 바뀌면 지난 날 키를 버린다(테넌트·IP 키가 날마다 쌓이지 않게 · 배 12752 #7).
+    sync 라우트가 스레드풀에서 동시에 뛰므로 순회(오래된 키 정리)+수정을 락 하나로 감싼다(배 12832 시토)."""
     today = _kst_now()[:10]
-    for k in [k for k in _DAILY_COUNTS if k[1] != today]:
-        _DAILY_COUNTS.pop(k, None)
-    key = (name, today)
-    _DAILY_COUNTS[key] = _DAILY_COUNTS.get(key, 0) + 1
-    return _DAILY_COUNTS[key]
+    with _DAILY_COUNTS_LOCK:
+        for k in [k for k in _DAILY_COUNTS if k[1] != today]:
+            _DAILY_COUNTS.pop(k, None)
+        key = (name, today)
+        _DAILY_COUNTS[key] = _DAILY_COUNTS.get(key, 0) + 1
+        return _DAILY_COUNTS[key]
 
 
 def _over_daily_limit(tenant: str) -> bool:

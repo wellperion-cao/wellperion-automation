@@ -43,6 +43,7 @@
   .kind{font-size:var(--fs-1); font-weight:600; padding:1px 8px; border-radius:999px;}
   .kind.summary{background:var(--accent-bg); color:var(--accent-hover);}
   .kind.translate{background:var(--pf-acc-tint,#E0E7FF); color:var(--pf-acc-dk,#3730A3);}
+  .kind.stt{background:#FEF3C7; color:#92400E;}
 </style>
 </head>
 <body>
@@ -78,7 +79,7 @@
 'use strict';
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
-var TENANTS = [ { id:'wellperion', name:'웰페리온' }, { id:'dc', name:'다이어트캠프' }, { id:'jo', name:'고척' } ];
+var TENANTS = [ { id:'1_wellperion', name:'웰페리온' }, { id:'2_dietcamp', name:'다이어트캠프' }, { id:'3_gocheokgolf', name:'고척' } ];
 var tabsEl = document.getElementById('tabs');
 var utblBody = document.getElementById('utbl').tBodies[0];
 
@@ -90,7 +91,10 @@ function renderTabs(list, curId){
   }).join('');
 }
 
-function todayStr(){ var d = new Date(); return d.toISOString().slice(0,10); }
+function todayStr(){
+  var d = new Date();   // 로컬(브라우저) 날짜 — UTC 로 자르면 자정 근처 기록이 하루 어긋난다
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function monthStr(){ return todayStr().slice(0,7); }
 
 function rowContent(it){
@@ -98,15 +102,21 @@ function rowContent(it){
     var first = (it.out && it.out.summary && it.out.summary[0]) || '';
     return esc(it.title || '(제목 없음)') + (first ? ' · ' + esc(first) : '');
   }
-  var text = typeof it.out === 'string' ? it.out : '';
-  return esc(it.source || '') + '→' + esc(it.target || '') + ' · ' + esc(text.slice(0, 40)) + (text.length > 40 ? '…' : '');
+  if (it.kind === 'stt') {
+    return '음성 인식 ' + esc(it.in_chars != null ? it.in_chars : '') + '초' + (it.lang ? ' · ' + esc(it.lang) : '');
+  }
+  var len = it.out_len != null ? it.out_len : (typeof it.out === 'string' ? it.out.length : '');
+  return esc(it.source || '') + '→' + esc(it.target || '') + ' · 번역문 ' + esc(len) + '자';
 }
+
+var KIND_LABEL = { translate: '번역', stt: '음성' };
 
 function renderRows(items){
   if (!items.length) { utblBody.innerHTML = '<tr><td colspan="4" class="empty">아직 쓰임 기록이 없습니다.</td></tr>'; return; }
   utblBody.innerHTML = items.map(function(it){
+    var kindClass = KIND_LABEL[it.kind] ? it.kind : 'summary';
     return '<tr><td>' + esc((it.ts || '').replace('T',' ').slice(0,16)) + '</td><td>' + esc(it.email) + '</td>' +
-      '<td><span class="kind ' + (it.kind === 'translate' ? 'translate' : 'summary') + '">' + (it.kind === 'translate' ? '번역' : '요약') + '</span></td>' +
+      '<td><span class="kind ' + kindClass + '">' + (KIND_LABEL[it.kind] || '요약') + '</span></td>' +
       '<td>' + rowContent(it) + '</td></tr>';
   }).join('');
 }

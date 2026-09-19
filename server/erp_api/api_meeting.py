@@ -95,32 +95,46 @@ def _parse_summary_json(text: str, today: date = None) -> dict:
     return {"summary": [(text or "").strip()[:500]], "tasks": []}
 
 
+MAX_TITLE_CHARS = 200
+
+
+def _mark_truncated(result: dict, input_truncated: bool, output_truncated: bool) -> dict:
+    """녹취록이 상한(MAX_TRANSCRIPT_CHARS)으로 잘렸거나 모델 응답이 토큰 상한(stop_reason=max_tokens)
+    으로 끊겼으면 truncated:true 를 얹는다 — 화면이 「일부만 요약됐다」를 알 수 있게."""
+    if input_truncated or output_truncated:
+        result["truncated"] = True
+    return result
+
+
 @router.post("/summarize")
 def summarize(request: Request, body: dict):
-    title = str((body or {}).get("title") or "").strip()
+    title = str((body or {}).get("title") or "").strip()[:MAX_TITLE_CHARS]
     transcript = str((body or {}).get("transcript") or "").strip()
     if not transcript:
         return {"error": "받아쓴 글이 비어 있습니다."}
+    input_truncated = len(transcript) > MAX_TRANSCRIPT_CHARS
     transcript = transcript[:MAX_TRANSCRIPT_CHARS]
 
     client = api_chat._anthropic_client()
     if not client:
         return {"error": "요약 엔진에 지금 닿지 않습니다 — 잠시 후 다시 시도해 주세요."}
+    client = client.with_options(timeout=60, max_retries=1)
 
     today = _today_kst()
     user_text = "제목: %s\n\n녹취록:\n%s" % (title or "(제목 없음)", transcript)
     try:
         resp = client.messages.create(
             model=api_chat.COUNSEL_MODEL_FALLBACK,
-            max_tokens=2000,
+            max_tokens=4000,
             system=_system_prompt(today),
             messages=[{"role": "user", "content": user_text}],
         )
         text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        output_truncated = getattr(resp, "stop_reason", "") == "max_tokens"
     except Exception as e:
         return {"error": "요약 실패: %s" % type(e).__name__}
 
-    result = _parse_summary_json(text, today)
+    result = _mark_truncated(_parse_summary_json(text, today), input_truncated, output_truncated)
     api_assistant.log_usage(request, "summary", len(transcript), title=title, out=result)
     return result
 
@@ -144,6 +158,13 @@ def _selftest():
     assert due["tasks"][0]["due"] == "", due
     assert due["tasks"][1]["due"] == "2026-10-07", due
     assert _fix_due("자유텍스트", today) == "자유텍스트"  # 날짜 모양 아니면 손대지 않는다
+
+    r1 = _mark_truncated({"summary": ["a"], "tasks": []}, True, False)
+    assert r1.get("truncated") is True, r1
+    r2 = _mark_truncated({"summary": ["a"], "tasks": []}, False, True)
+    assert r2.get("truncated") is True, r2
+    r3 = _mark_truncated({"summary": ["a"], "tasks": []}, False, False)
+    assert "truncated" not in r3, r3
 
     print("api_meeting selftest OK")
 

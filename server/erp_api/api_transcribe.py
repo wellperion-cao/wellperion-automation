@@ -21,6 +21,7 @@ import asyncio
 import sys
 
 from fastapi import APIRouter, Request
+from starlette.concurrency import run_in_threadpool
 
 import api_assistant
 
@@ -83,6 +84,9 @@ async def _transcribe(pcm: bytes, langs: list) -> dict:
     return {"text": " ".join(texts).strip(), "lang": detected[0]}
 
 
+STREAM_TIMEOUT_S = 30
+
+
 @router.post("")
 async def transcribe(request: Request, langs: str = ""):
     body = await request.body()
@@ -90,14 +94,19 @@ async def transcribe(request: Request, langs: str = ""):
         return {"error": "음성 데이터가 비어 있습니다."}
     pcm = _cap(body)
     lang_opts = _langs(langs)
+    if len(lang_opts) < 2:
+        return {"error": "언어 자동판별은 후보 언어가 2개 이상 필요합니다."}
 
     try:
-        result = await _transcribe(pcm, lang_opts)
+        result = await asyncio.wait_for(_transcribe(pcm, lang_opts), timeout=STREAM_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        return {"error": "음성 인식 시간 초과"}
     except Exception as e:
         return {"error": "음성 인식 실패: %s" % type(e).__name__}
 
     seconds = round(len(pcm) / BYTES_PER_SEC, 1)
-    api_assistant.log_usage(request, "stt", seconds, lang=result.get("lang", ""))  # 원문 텍스트는 안 남긴다
+    # 원문 텍스트는 안 남긴다 — 파일 쓰기(동기 I/O)라 스레드풀로 넘겨 이벤트 루프를 막지 않는다.
+    await run_in_threadpool(api_assistant.log_usage, request, "stt", seconds, lang=result.get("lang", ""))
     return result
 
 

@@ -37,7 +37,8 @@ DEFAULT_TENANT = "wellperion"
 TENANT_RE = re.compile(r"^[a-z0-9_-]+$")
 # 응답에 실어도 되는 계약 필드만(위 머리말) — log_usage 가 이 목록 밖 키(transcript·text 등)를 받아도 버린다.
 # lang = 음성 인식(stt, 배 12832)이 자동판별한 언어 — 원문 텍스트는 안 싣는다.
-_USAGE_FIELDS = ("title", "source", "target", "out", "lang")
+# out_len = 번역문 글자 수만(원문·번역문 텍스트는 저장하지 않는다 · GM 09-19 · out 은 요약(summary)에서만 쓴다).
+_USAGE_FIELDS = ("title", "source", "target", "out", "out_len", "lang")
 
 
 def _admins():
@@ -55,9 +56,14 @@ def safe_tenant(raw) -> str:
     return t if t and TENANT_RE.match(t) else DEFAULT_TENANT
 
 
-def _own_tenant(email: str) -> str:
+def _own_tenant(email: str):
     """이 계정의 perms.tenant — DB 를 직접 본다(X-Erp-Role 은 아직 못 믿는다 · api_guide.py 머리말 참고).
-    조회 실패·미가입·tenant 없음은 전부 기본 tenant(wellperion)로 본다."""
+    반환값 셋 중 하나:
+      - tenant 문자열: 정상 조회(행이 없거나 perms 에 tenant 칸이 비어 있는 웰페리온 직원 케이스는
+        지금까지처럼 기본 tenant(wellperion)로 본다 — 이건 바꾸지 않는다).
+      - None: DB 접속·조회 자체가 실패(예외) — 소속을 확인할 길이 없으므로 wellperion 으로 눌러앉지
+        않는다(GM 09-18 「DB 예외일 때만 wellperion 으로 떨어지지 말고 조회를 막는다」). 호출부가
+        None 을 보면 조회는 빈 목록/403, 기록은 그 건을 건너뛴다."""
     if not email:
         return DEFAULT_TENANT
     conn = None
@@ -66,7 +72,7 @@ def _own_tenant(email: str) -> str:
         row = conn.execute("SELECT perms FROM users WHERE tenant_id=%s AND email=%s",
                             (db.TENANT, email)).fetchone()
     except Exception:
-        return DEFAULT_TENANT
+        return None
     finally:
         if conn is not None:
             conn.close()
@@ -91,6 +97,8 @@ def log_usage(request: Request, kind: str, in_chars: int, **fields) -> None:
     try:
         email = _user_email(request)
         tenant = _own_tenant(email)
+        if tenant is None:
+            return   # DB 예외로 소속을 확인할 수 없다 — wellperion 으로 잘못 남기지 말고 이 건은 건너뛴다
         line = {"ts": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"), "tenant": tenant, "email": email,
                 "kind": kind, "in_chars": int(in_chars)}
         for k in _USAGE_FIELDS:
@@ -129,6 +137,8 @@ def usage(request: Request, tenant: str = "", limit: int = 100):
     email = _user_email(request)
     is_admin = bool(email) and email in _admins()
     t = safe_tenant(tenant) if (is_admin and tenant) else _own_tenant(email)
+    if t is None:
+        return JSONResponse({"items": []}, status_code=403)   # DB 예외로 소속 확인 불가 — 조회를 막는다
     lim = max(1, min(int(limit or 100), 500))
     return JSONResponse({"items": _read_usage(t, lim)})
 
@@ -152,13 +162,40 @@ def _selftest():
     real_dir = ASSISTANT_DIR
     ASSISTANT_DIR = tempfile.mkdtemp()
     try:
-        log_usage(_Req(), "summary", 1234, title="회의", transcript="원문이 새면 안 된다", out={"summary": ["a"]})
-        items = _read_usage(DEFAULT_TENANT, 10)   # DB 없는 환경 — _own_tenant 조회 실패 시 기본 tenant 로 떨어진다
+        # 행은 있지만 perms.tenant 칸이 비어 있는 웰페리온 직원 케이스 — 지금처럼 wellperion 유지.
+        class _FakeCur:
+            def fetchone(self):
+                return {"perms": json.dumps({"dept": "총무팀"})}   # tenant 칸 없음
+
+        class _FakeConn:
+            def execute(self, sql, args=()):
+                return _FakeCur()
+
+            def close(self):
+                pass
+
+        orig_connect = db.connect
+        db.connect = lambda **kw: _FakeConn()
+        try:
+            assert _own_tenant("tester@x") == DEFAULT_TENANT, "행이 있고 tenant 칸이 비면 wellperion 을 유지해야 한다"
+            log_usage(_Req(), "summary", 1234, title="회의", transcript="원문이 새면 안 된다", out={"summary": ["a"]})
+        finally:
+            db.connect = orig_connect
+        items = _read_usage(DEFAULT_TENANT, 10)
         assert len(items) == 1, items
         row = items[0]
         assert row["in_chars"] == 1234 and row.get("title") == "회의"
         assert "transcript" not in row and "text" not in row, row
-        assert set(row) <= {"ts", "tenant", "email", "kind", "in_chars", "title", "source", "target", "out", "lang"}, row
+        assert set(row) <= {"ts", "tenant", "email", "kind", "in_chars", "title", "source", "target", "out", "out_len", "lang"}, row
+
+        # DB 접속 자체가 실패(이 개발 환경엔 진짜 DB 가 없다) — wellperion 으로 떨어지지 않고 조회를 막는다.
+        assert _own_tenant("tester@x") is None, "DB 예외면 None 이어야 한다(호출부가 막는다)"
+        before = len(_read_usage(DEFAULT_TENANT, 10))
+        log_usage(_Req(), "translate", 10, source="ko", target="en", out_len=5)
+        after = len(_read_usage(DEFAULT_TENANT, 10))
+        assert after == before, "DB 예외면 그 건은 기록을 건너뛰어야 한다"
+        resp = usage(_Req())
+        assert resp.status_code == 403, resp.status_code
     finally:
         ASSISTANT_DIR = real_dir
 
