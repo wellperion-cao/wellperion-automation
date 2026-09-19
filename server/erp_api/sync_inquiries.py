@@ -57,10 +57,16 @@ def channel_code_of(raw_channel, timestamp):
 ENV_FILE = os.environ.get("ERP_API_ENV", "/srv/erp/api.env")
 
 # (type, GAS action, 추가 파라미터) — 화면들이 쓰는 액션 그대로.
+# 강습 두 종은 scope=all(전체기간)도 별도 type("…|all")로 함께 떠온다 — 배2859 후속.
+#   GAS lesson_inquiry_list 는 scope 미지정=올해만이라, 같은 type 에 합치면 매 5분 replace_type 이
+#   과거 연도 행을 "이번 배치에 없다"며 지워버린다(연도 스코프와 전체 스코프는 서로 다른 행 집합).
+#   그래서 type 자체를 다르게 둔다 — /api/inquiries?type=성인강습&scope=all 가 이 type 을 조회한다(app.py).
 SOURCES = [
     ("멤버십", "member_inquiry_list", None),
     ("성인강습", "lesson_inquiry_list", {"type": "성인강습"}),
     ("유소년강습", "lesson_inquiry_list", {"type": "유소년강습"}),
+    ("성인강습|all", "lesson_inquiry_list", {"type": "성인강습", "scope": "all"}),
+    ("유소년강습|all", "lesson_inquiry_list", {"type": "유소년강습", "scope": "all"}),
 ]
 
 def load_env():

@@ -60,17 +60,27 @@ def health():
     }
 
 
+LESSON_TYPES = ("성인강습", "유소년강습")   # scope=all 별도 미러가 있는 type 만(배2859 — sync_inquiries.py SOURCES)
+
+
+def _inquiry_eff_type(type_, scope):
+    """scope=all + 강습 type → 전체기간 별도 미러("성인강습|all") type 값. 그 외(멤버십 등)는 손대지 않는다."""
+    return (type_ + "|all") if (type_ in LESSON_TYPES and scope == "all") else type_
+
+
 @app.get("/api/inquiries")
 def inquiries(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     since: Optional[str] = None,   # timestamp 하한 (예 2026-08-01) — 문자열 비교(ISO 라 순서 보존)
     type: Optional[str] = None,    # 멤버십 · 성인강습 · 유소년강습
+    scope: Optional[str] = None,   # scope=all + 강습 type → 전체기간 별도 미러("성인강습|all") 조회 · 그 외 무시
 ):
     where, args = ["tenant_id = %s"], [db.TENANT]
-    if type:
+    eff_type = _inquiry_eff_type(type, scope)
+    if eff_type:
         where.append("type = %s")
-        args.append(type)
+        args.append(eff_type)
     if since:
         where.append("timestamp >= %s")
         args.append(since)
@@ -314,3 +324,11 @@ for _f in sorted(_glob.glob(_os.path.join(_os.path.dirname(_os.path.abspath(__fi
         FAILED_MODULES[_name] = "%s: %s" % (type(_e).__name__, str(_e)[:200])
         print("[app] 모듈 %s 붙이기 실패 — 그 라우트만 빠집니다: %s" % (_name, _e), flush=True)
         print(_tb.format_exc(), flush=True)
+
+
+if __name__ == "__main__" and "--selftest" in sys.argv:
+    assert _inquiry_eff_type("성인강습", "all") == "성인강습|all", "강습+scope=all → 별도 미러 type"
+    assert _inquiry_eff_type("성인강습", None) == "성인강습", "scope 없으면 그대로"
+    assert _inquiry_eff_type("멤버십", "all") == "멤버십", "강습이 아니면 scope=all 무시(별도 미러 없음)"
+    assert _inquiry_eff_type(None, "all") is None, "type 없으면 그대로 None"
+    print("selftest ok")
