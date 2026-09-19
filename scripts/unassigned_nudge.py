@@ -429,8 +429,12 @@ def _hours_since_ts(ts: str, now_dt: datetime) -> float:
 
 def _is_assigned_owner(row: dict) -> bool:
     """담당자 배정 여부(연락 유무와 무관) — R._is_unassigned_active 와 같은 오너 판정
-    (owner 비었거나 자동접수값이면 미배정)이지만 등록/이탈 여부는 섞지 않는다."""
+    (owner 비었거나 자동접수값이면 미배정)이지만 등록/이탈 여부는 섞지 않는다.
+    실무진이 손으로 적은 「담당자 X」 류도 미배정으로 센다(2026-09-19 · 박소원 님 건이
+    부서장방 알림에 「배정완료」로 떴다). 읽기·보고 전용 판정이라 자동배정 쓰기 경로는 안 바뀐다."""
     owner = str(row.get("owner", "") or "").strip()
+    if owner.replace(" ", "").upper() in ("X", "담당자X", "담당X", "없음", "미정"):
+        return False
     return bool(owner) and owner not in R._AUTO_OWNER_VALUES
 
 
