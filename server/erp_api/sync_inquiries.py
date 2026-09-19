@@ -28,6 +28,12 @@ CHANNEL_CUTOVER = "2026-09-05"
 # ponytail: 폼이 아직 UTM만 캡처하고 계정 구분·post_id 는 안 보내 unknown 처리. 폼 개편(정의서 §5, 시모 소유) +
 # GAS 가 raw UTM(source/content/campaign)을 member_inquiry_list·lesson_inquiry_list 에 실어 보내면 그때 세분화.
 _CHANNEL_CODE_PATTERNS = [
+    # 배2852(시모 요청) — google_blog 는 문자열에 "blog" 를 포함하므로 naver_blog 패턴보다 먼저 와야
+    # "구글 블로그"가 네이버 블로그로 잘못 잡히지 않는다. 나머지 신규 3종도 같은 이유로 맨 앞에 둔다.
+    (re.compile(r"인스타|instagram", re.I), "instagram"),
+    (re.compile(r"스레드|threads", re.I), "threads"),
+    (re.compile(r"google_business|구글\s*비즈니스", re.I), "google_business"),
+    (re.compile(r"google_blog|구글\s*블로그", re.I), "google_blog"),
     (re.compile(r"블로그|blog", re.I), "naver_blog"),
     (re.compile(r"카카오|카톡|kakao", re.I), "kakao"),
     (re.compile(r"당근|danggn|daangn", re.I), "danggn"),
@@ -253,6 +259,12 @@ def selftest():
     assert channel_code_of("카카오톡 채널", "2026-09-04") == "unknown", "반영일 이전은 소급 없이 unknown"
     assert channel_code_of("아무말", "2026-09-05") == "unknown", "매핑 불가는 unknown"
     assert channel_code_of("카카오톡", None) == "unknown", "타임스탬프 없으면 unknown"
+    # 배2852(시모 요청) — 인스타·스레드·구글 4종
+    assert channel_code_of("인스타그램 DM", "2026-09-10") == "instagram"
+    assert channel_code_of("스레드에서 봤어요", "2026-09-10") == "threads"
+    assert channel_code_of("구글 비즈니스 프로필", "2026-09-10") == "google_business"
+    assert channel_code_of("구글비즈니스", "2026-09-10") == "google_business"
+    assert channel_code_of("구글 블로그", "2026-09-10") == "google_blog", "'blog' 를 포함해도 naver_blog 로 안 새야 한다"
 
     _gas_fetch_selftest()
     _gas_get_key_selftest()

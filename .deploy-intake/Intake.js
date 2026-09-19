@@ -107,10 +107,15 @@ function _canonicalChannel_(raw) {
   if (!s) return '기타·미상';
   // 과거 '온라인 (...)' 묶음 = 다채널 합산 → 단일 귀속 불가
   if (/^온라인\s*[\(（]/.test(s)) return '기타·미상';
+  // 배2852(시모 요청) — google_blog 는 "blog" 를 포함하므로 아래 블로그 판정보다 먼저 와야 한다.
+  //   naver_cafe(utm 폴백 슬러그)도 "naver" 를 포함해 네이버 판정에 먼저 걸리므로 카페 판정에 합류.
+  if (/threads|스레드/i.test(s)) return '스레드';
+  if (/google_business|구글\s*비즈니스/i.test(s)) return '구글 비즈니스';
+  if (/google_blog|구글\s*블로그/i.test(s)) return '구글 블로그';
   if (/인스타|instagram|insta/i.test(s)) return '인스타그램';
   if (/카카오|카톡|챗톡|쳇톡|챗봇|쳇봇|kakao/i.test(s)) return '카카오톡';
   if (/당근|daangn|danggn/i.test(s)) return '당근마켓';
-  if (/동부이촌동|동커|동\.커|이촌동|카페/.test(s)) return '동부이촌동 커뮤니티';
+  if (/naver_cafe|동부이촌동|동커|동\.커|이촌동|카페/i.test(s)) return '동부이촌동 커뮤니티';
   // ★ 2026-07-28 시모 — 여기서 '네이버' 하나로 뭉개던 것을 둘로 가른다(위 CANONICAL_CHANNELS 주석 참조).
   //   순서 주의: 블로그를 먼저 본다. 폼 원문이 '네이버 블로그' 라 두 정규식에 모두 걸리기 때문.
   //   ※ 정직 표기: 수식어 없이 '네이버' 라고만 적힌 옛 자유텍스트는 '네이버 검색·플레이스' 로 간다.

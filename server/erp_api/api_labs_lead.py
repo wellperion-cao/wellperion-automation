@@ -19,6 +19,7 @@ POST /api/labs/lead — 무인증(공개 홈페이지 폼, /labs/ 안 iframe). �
 """
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -40,6 +41,7 @@ CORS = {"Access-Control-Allow-Origin": CORS_ORIGIN, "Access-Control-Allow-Method
         "Access-Control-Allow-Headers": "Content-Type"}
 
 _LIMITS = {"center": 60, "kind": 20, "phone": 30, "pain": 300}
+_UTM_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_content", "ref")  # 배2852(시모 요청) — 선택 수신
 RATE_PER_MIN = 3
 RATE_PER_DAY = 20
 
@@ -88,7 +90,12 @@ def _append_lead(data: dict) -> None:
     os.chmod(LEADS_PATH, 0o600)   # 기존 파일이 다른 권한으로 있었더라도 강제
 
 
-def _notify_gm(center: str, kind: str, phone: str, pain: str) -> bool:
+def _clean_utm(v) -> str:
+    """제어문자 제거 + 80자 자르기(사람 입력이 아닌 값이라 저장 전에 한 번 더 거른다)."""
+    return re.sub(r"[\x00-\x1f\x7f]", "", str(v or "")).strip()[:80]
+
+
+def _notify_gm(center: str, kind: str, phone: str, pain: str, utm: dict) -> bool:
     """텔레그램 즉시 알림 — 서버가 이미 쓰는 발신 방식(api_reception.notify 와 같은 패턴) 그대로,
     새 발신기를 만들지 않는다. 실패해도 접수는 이미 저장됐으므로 응답에 영향 없다."""
     token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
@@ -96,6 +103,9 @@ def _notify_gm(center: str, kind: str, phone: str, pain: str) -> bool:
         return False
     text = ("🆕 AX 랩스 문의\n센터: %s\n업종: %s\n연락처: %s\n%s"
             % (center, kind or "-", phone, pain[:100] if pain else "-"))
+    if utm.get("utm_source") or utm.get("utm_medium") or utm.get("utm_campaign"):
+        text += ("\n출처: %s/%s/%s"
+                 % (utm.get("utm_source") or "-", utm.get("utm_medium") or "-", utm.get("utm_campaign") or "-"))
     try:
         req = urllib.request.Request(
             "https://api.telegram.org/bot%s/sendMessage" % token,
@@ -132,9 +142,14 @@ def _process(body: bytes, ip: str):
         if len(fields[k]) > limit:
             return {"ok": False, "error": "입력값이 너무 깁니다: %s" % k}, 400
 
+    utm = {}
+    for k in _UTM_KEYS:
+        v = _clean_utm(payload.get(k))
+        if v:
+            utm[k] = v
     now = _kst_now()
-    _append_lead({"ts": now, "ip": ip, **fields})
-    _notify_gm(fields["center"], fields["kind"], fields["phone"], fields["pain"])
+    _append_lead({"ts": now, "ip": ip, **fields, **utm})
+    _notify_gm(fields["center"], fields["kind"], fields["phone"], fields["pain"], utm)
     return {"ok": True}, 200
 
 
@@ -174,6 +189,21 @@ def _selftest():
         with open(LEADS_PATH, encoding="utf-8") as f:
             lines = [json.loads(ln) for ln in f if ln.strip()]
         assert len(lines) == 1 and lines[0]["center"] == "테스트센터" and lines[0]["phone"] == "010-0000-0000"
+        assert "utm_source" not in lines[0], "utm 값 없으면 칸 자체를 안 실어야 한다"
+
+        # utm 선택 수신 — 값 있는 것만 저장, 80자 자르기·제어문자 제거(배2852)
+        with_utm = json.dumps({"center": "테스트2", "phone": "010-1111-1111", "agree": True,
+                                "utm_source": "instagram\x07", "utm_medium": "cpc" * 30,
+                                "ref": "https://x"}).encode("utf-8")
+        data, code = _process(with_utm, "9.9.9.9")
+        assert data == {"ok": True} and code == 200
+        with open(LEADS_PATH, encoding="utf-8") as f:
+            lines2 = [json.loads(ln) for ln in f if ln.strip()]
+        row = lines2[-1]
+        assert row["utm_source"] == "instagram", "제어문자 제거"
+        assert row["utm_medium"] == ("cpc" * 30)[:80], "80자 자르기"
+        assert row["ref"] == "https://x"
+        assert "utm_campaign" not in row and "utm_content" not in row, "값 없는 utm 칸은 저장 안 함"
 
         # agree 누락/거짓
         bad_agree = json.dumps({"center": "c", "phone": "010", "agree": False}).encode("utf-8")
