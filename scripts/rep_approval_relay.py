@@ -29,8 +29,10 @@ GM업무 반영 — 서명 행 자체는 이미 GM업무.html 🤵 대표님 표
 ★2026-09-03 확장(GM 승인 "추천 진행" · 중간관리자 4단계 업무 모듈 보완) — 같은 파일에 세 축 추가:
   ① GM 서명(GM싸인 칸) 도 같은 회차에 — 대표님·GM 둘 다 있으면 한 통에 두 절(🤵 대표님 / 👤 GM).
      지문 notified_gm{id:날짜}. 발신 이름은 "대표결재전달" 그대로(같은 성격).
-  ③ 업무 SSOT 신규 행(생성일=오늘 KST · 생성자≠AI) → 「📝 오늘 올라온 업무 N건」 12:00·17:05.
+  ③ 업무 SSOT 신규 행(생성일=오늘 KST · 생성자≠AI) → 「📝 오늘 올라온 업무 N건」.
      지문 notified_new{id:날짜}. 발신 이름 "업무등록묶음".
+     ▸2026-09-19 GM 지시("즉시 반영") — 12:00·17:05 두 묶음 잡을 걷고 daily_scheduler 의
+       10분 주기 잡(rep_approval_relay_immediate · 08~22시 · 조용 시간대 건너뜀)으로 합쳤다.
      ▸2026-09-10 GM: "직원들이 업무 SSOT 올리면 알림 띄울 수 있어? 운영부방에?" — 이 축만 ★운영부 방에도
        같은 통을 보낸다(ROOM_OPS). 순서는 ★중간관리자 먼저이고, 커서는 그쪽이 성공했을 때만 닫는다 —
        ★운영부 발신이 실패해도 같은 건이 중간관리자 방으로 두 번 가지 않는다. ①②④ 축은 종전대로 중간관리자 방만.
@@ -629,10 +631,12 @@ def run_reject(send: bool = False, dry_run: bool = False) -> int:
 #   중계를 건너뛰고 담당자 본인이 있는 방에 바로 꽂으라는 것 — ①/⑥ 을 대체하지 않고 더한다.
 # 트리거는 새로 만들지 않는다 — 실측(2026-09-18): 결재상태='결재완료' 58건이 전부 이미 대표싸인·
 #   GM싸인 둘 중 하나가 서명돼 있다(같은 조건). 따로 재면 이중 트리거만 늘 뿐이라 is_signed 를 그대로 쓴다.
-# 방 갈래 — 나우열M=텔레그램 AtoA(GM 계정 발신) · 운영부 6인(임정은M 제외)=★운영부 직접 ·
-#   임정은M·그 밖(실장·소장 자신 포함)=★중간관리자. 임정은M 을 ★운영부로 바로 못 보내는 이유는
-#   kakao_report_sender.via_manager_violation 실장경유가드(그 방에 그분이 계셔 실장을 건너뛴다 —
-#   GM 지시 2026-08-16) — 새 규칙이 아니라 있던 가드를 그대로 지킨다.
+# 방 갈래(2026-09-19 GM 지시 개정 — "결재완료된 건들은 모두 운영부방으로, 현재 운영부만 쓰고
+#   있기 때문에") — 나우열M=텔레그램 AtoA(GM 계정 발신) 외 전부 ★운영부 직접. 임정은M 만 예외로
+#   ★중간관리자에 남는다 — kakao_report_sender.via_manager_violation 실장경유가드(그 방에 그분이
+#   계셔 실장을 건너뛴다 — GM 지시 2026-08-16)가 ★운영부 직송을 막기 때문(있던 가드를 그대로 지킨다).
+#   ▸2026-09-15 도입판은 운영부 6인만 ★운영부·그 밖은 ★중간관리자였다 — 이번 개정으로 기본값이
+#     뒤집혔다(그 밖=★운영부, 예외만 ★중간관리자).
 NOTIFY_TELEGRAM = "텔레그램(AtoA)"
 APPROVAL_URL = "https://erp.wellperion.com/coo/todo/" + quote("결재 현황 SSOT.html")
 # 조용 시간대 — 이 30분 예약은 daily_scheduler 를 안 거치고 Windows 작업 스케줄러가
@@ -652,14 +656,14 @@ def _in_quiet_window(now: datetime | None = None) -> bool:
 
 
 def route_direct(owner: str) -> tuple[str, str]:
-    """(보낼 방, 문구 접두). NOTIFY_TELEGRAM 이면 카톡 관문이 아니라 텔레그램으로 보낸다."""
+    """(보낼 방, 문구 접두). NOTIFY_TELEGRAM 이면 카톡 관문이 아니라 텔레그램으로 보낸다.
+    2026-09-19 GM 지시로 기본값이 ★운영부로 바뀌었다 — 나우열M(텔레그램 유지)·임정은M(실장경유
+    가드) 두 예외만 빼고 전부 ★운영부."""
     if "나우열" in owner:
         return (NOTIFY_TELEGRAM, "")
     if "임정은" in owner:
         return (ROOM, "이경연 실장님, ")   # 실장경유가드 대상 — ★운영부로 못 보낸다
-    if owner in OPS_DEPT_STAFF:
-        return (ROOM_OPS, "")
-    return (ROOM, "")
+    return (ROOM_OPS, "")
 
 
 def pick_approval_done(rows: list[dict], notified: dict[str, str]) -> list[dict]:
@@ -924,7 +928,8 @@ def _selfcheck() -> None:
     assert route_direct("나우열M") == (NOTIFY_TELEGRAM, "")
     assert route_direct("임정은M") == (ROOM, "이경연 실장님, ")
     assert route_direct("최준용M") == (ROOM_OPS, "")
-    assert route_direct("이정헌 소장") == (ROOM, "")
+    assert route_direct("이정헌 소장") == (ROOM_OPS, "")   # 2026-09-19 개정 — 나우열M·임정은M 외 전부 ★운영부
+    assert route_direct("김남욱GM") == (ROOM_OPS, "")
     ad = [
         {"id": "AD1", "업무명": "짐벌 카메라", "담당자": "최준용M", "대표싸인": "https://x/1", "수정일": "2026-09-18T01:00:00.000Z"},
         {"id": "AD2", "업무명": "이미 안내", "담당자": "이경연 실장", "대표싸인": "https://x/2", "수정일": "2026-09-17T00:00:00.000Z"},

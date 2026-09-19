@@ -2853,12 +2853,14 @@ def run_daily_digest(early: bool = False) -> None:
     #   reception_elapsed_days 가 10:02 에 추가됐는데 22:31 종합접수방 발송이 캐시된 옛 모듈을
     #   보고 ImportError 로 통째 실패했다(그날 발송 0건). 이 파이프라인이 쓰는 모듈만 다시 읽는다.
     #   collectors 를 먼저 읽어야 그걸 import 하는 report_stream_* 이 새 심볼을 본다.
+    #   support_check_summary 도 report_stream_* 이 import 하므로 collectors 다음·report_stream_
+    #   전에 읽는다(2026-09-19 — 09:26 수리분이 재기동 전까지 22:30 통에 안 먹던 것과 같은 원인).
     #   실패해도 정리는 계속된다(fail-soft — 재읽기 때문에 발송이 멈추면 안 된다).
     import importlib as _importlib
     for _mod_name in sorted(
         (m for m in list(sys.modules)
-         if m.startswith("collectors.") or m.startswith("report_stream_")),
-        key=lambda m: (not m.startswith("collectors."), m),
+         if m.startswith("collectors.") or m.startswith("report_stream_") or m == "support_check_summary"),
+        key=lambda m: (0 if m.startswith("collectors.") else (1 if m == "support_check_summary" else 2), m),
     ):
         try:
             _importlib.reload(sys.modules[_mod_name])
@@ -3200,17 +3202,26 @@ def run_daily_digest(early: bool = False) -> None:
 
 
 def _run_rep_approval_relay() -> None:
-    """대표님 결재 촬영본이 올라오면 ★중간관리자 방으로 즉시 전달 (GM 지시 2026-09-03).
+    """대표님 결재 촬영본 즉시 전달(GM 2026-09-03) + 오늘 올라온 업무 즉시 전달(GM 2026-09-19
+    "업무 SSOT 올라오면 즉시 반영" — 12:00·17:05 묶음 폐지, 결재완료와 같은 10분 주기로 통일).
 
-    10분마다 결재 원장을 보고 새로 서명된 건만 보낸다 — 이미 보낸 건은 지문이 막는다.
-    사람 방이라 밤(22~08시)에는 보내지 않고, 아침 첫 회차에 밀린 건이 한 통으로 나간다.
+    10분마다 결재 원장을 보고 새로 서명된 건·새로 올라온 업무를 본다 — 이미 보낸 건은 지문이
+    막는다. 사람 방이라 밤(22~08시)에는 보내지 않는다. 신규 업무 축은 카톡 UI 가 다른 예약통과
+    부딪히는 조용 시간대(rep_approval_relay._QUIET_WINDOWS)도 건너뛴다 — 지문이 그대로라
+    다음 10분 회차에 다시 후보가 되므로 유실은 없다.
+    상주 프로세스라 rep_approval_relay 모듈이 기동 시점 소스에 캐시된다(run_daily_digest 의
+    모듈 재읽기와 같은 이유) — 10분마다 다시 읽어 재기동 없이 그날 코드 수정이 반영되게 한다.
     """
     hour = datetime.now().hour
     if hour >= 22 or hour < 8:
         return
     try:
+        import importlib as _importlib
         import rep_approval_relay as _rar
+        _importlib.reload(_rar)
         _rar.run(send=True)
+        if not _rar._in_quiet_window():
+            _rar.run_new_rows(send=True)
     except Exception as e:
         logger.error(f"[대표결재 즉시전달] 예외: {e}")
 
@@ -3251,15 +3262,12 @@ def run_mgmt_notice_digest() -> None:
     if _mgmt_notice_sent_today(today):
         logger.info(f"{label} 오늘 이미 발신됨(중복 가드) — 스킵")
         return
-    # 대표 결재 전달은 여기서 하지 않는다 — GM 지시 2026-09-03 "즉시 전달" 로 10분 주기
-    # 잡(rep_approval_relay_immediate)이 맡았다. 여기 남겨 두면 같은 건이 두 번 나갈 자리가 된다.
-    # ③ 오늘 올라온 업무(12:00 과 같은 함수 · 지문으로 중복 없음 · 게이트 "업무등록묶음" OFF 면 미리보기만)
+    # 대표 결재 전달·③ 오늘 올라온 업무 둘 다 여기서 하지 않는다 — 10분 주기 잡
+    # (rep_approval_relay_immediate)이 맡는다(GM 지시 2026-09-03 "즉시 전달" · 2026-09-19
+    # "즉시 반영" — 여기 있던 12:00·17:05 두 묶음 호출을 걷고 10분 주기로 합쳤다). 여기 남겨
+    # 두면 같은 건이 두 번 나갈 자리가 된다.
     try:
         import rep_approval_relay as _rar
-        _rar.run_new_rows(send=True)
-    except Exception as e:
-        logger.error(f"{label} 오늘 올라온 업무 예외: {e}")
-    try:
         import mgmt_notice_queue as _mnq
         import send_ops_digest as _od3
         notice_items = _mnq.pop_today(today)
@@ -3309,14 +3317,8 @@ def run_mgmt_notice_digest() -> None:
         logger.error(f"{label} 예외: {e}")
 
 
-def run_work_intake_noon() -> None:
-    """③ 오늘 올라온 업무 — 12:00 ★중간관리자(GM 승인 2026-09-03). 0건이면 발신 없음."""
-    try:
-        import rep_approval_relay as _rar
-        _rar.run_new_rows(send=True)
-    except Exception as e:
-        logger.error(f"[오늘 올라온 업무 12:00] 예외: {e}")
-
+# (③ 오늘 올라온 업무 12:00 단독 잡 폐지 2026-09-19 GM 지시 "즉시 반영" — rep_approval_relay_immediate
+#   10분 주기로 합류. run_work_intake_noon 삭제, work_intake_1200 잡 등록도 같이 걷었다.)
 
 # (완료 즉시 알림 10분 주기 삭제 2026-08-18 GM 결정 · 배670 재설계안) ──────────────
 #   ★운영부가 매일 4통(아침정리+매출이미지+채움보드+완료알림)을 받던 것을 줄이는 재편의
@@ -4167,11 +4169,13 @@ def main():
     # 사유: 진행중→진행예정→진행중(자동복원) 무의미한 사이클 + GM 의도 덮어쓰기 위험.
     # 동시에 "진행예정" select 옵션 자체 폐기, 휴면 상태는 "보류" 단일로 통합.
 
-    # ── 대표님 결재 촬영본 → ★중간관리자 즉시 전달 (10분 주기) ─────────────
+    # ── 대표님 결재 촬영본 → ★중간관리자 즉시 전달 + 오늘 올라온 업무 즉시 전달 (10분 주기) ──
     # GM 상시 지시 2026-09-03: "이제 항상 결재건은 중간관리자방에 자동 전달해줘 즉시 전달".
     # 종전에는 17:05 합본 슬롯에서 하루 한 번만 돌아 오전에 결재된 건이 저녁까지 묵었다.
     # 새로 서명된 건이 없으면 아무것도 안 나간다(지문 status/heartbeats/rep-approval-relay.json).
     # 22~08시는 사람 방이라 보내지 않는다 — 아침에 밀린 건이 한 통으로 나간다.
+    # 2026-09-19 GM 지시 "즉시 반영" — 오늘 올라온 업무(③)도 12:00·17:05 두 묶음 대신 같은
+    # 10분 주기에 얹었다(_run_rep_approval_relay 참조).
     scheduler.add_job(
         _run_rep_approval_relay,
         trigger=IntervalTrigger(minutes=10),
@@ -4868,20 +4872,8 @@ def main():
         #   게이트로 하루 한 번만 실행) 끝에서 run_mgmt_notice_digest 를 직접 부른다 — 다른
         #   방과 같은 저녁 흐름(GM 지시 2026-09-18 「시간 일관성」 · 배12812). 종전 17:05
         #   단독 잡(2026-08-10 낮 분리 결정)은 폐지.
-        # ③ 오늘 올라온 업무 12:00 — 12시 슬롯이 없어 예외적으로 잡 하나 추가(GM 승인 2026-09-03).
-        #   저녁 합본(위 run_mgmt_notice_digest)이 같은 함수를 다시 부른다. 게이트(AUTO_PIPELINE_SENDERS
-        #   "업무등록묶음")가 꺼져 있으면 미리보기 로그만 남는다.
-        try:
-            scheduler.add_job(
-                run_work_intake_noon,
-                trigger=CronTrigger(hour=12, minute=0, timezone="Asia/Seoul"),
-                id="work_intake_1200",
-                misfire_grace_time=600,
-                coalesce=True,
-            )
-            logger.info("work_intake_1200 등록 완료 — 매일 12:00 ★중간관리자 오늘 올라온 업무")
-        except Exception as e:
-            logger.warning(f"work_intake_1200 등록 실패: {e}")
+        # ③ 오늘 올라온 업무 12:00 단독 잡 폐지(2026-09-19 GM 지시 "즉시 반영") — 종전 work_intake_1200
+        #   과 저녁 합본 호출을 걷고 rep_approval_relay_immediate(10분 주기, 위에서 등록)로 합쳤다.
 
     # ── git 죽은 잠금 청소 (배9889 · 2026-07-23 시토) ──────────────────────
     #   `git commit -- <경로>` 가 쓰는 임시 인덱스(next-index-<PID>.lock)는 그 프로세스가
