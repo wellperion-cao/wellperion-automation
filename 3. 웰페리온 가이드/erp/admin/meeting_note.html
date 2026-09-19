@@ -138,6 +138,29 @@ var ta = document.getElementById('transcript');
 var recognizing = false;
 var recognition = null;
 var interim = '';
+var recLastFinal = '';
+var recLastFinalStart = -1;
+
+// 확정 조각 합치기 — 모바일 크롬은 isFinal 결과가 누적 문장으로 오거나 resultIndex 가 되돌아가
+// 같은 말이 반복 붙는다. prev(직전 확정 조각)·seg(새 조각)를 trim 후 비교해 셋 중 하나로 판정한다.
+function mergeFinal(prev, seg){
+  var p = (prev || '').trim();
+  var s = (seg || '').trim();
+  if (!s) return { mode: 'skip', text: s };
+  if (!p) return { mode: 'append', text: s };
+  if (s === p) return { mode: 'skip', text: s };
+  if (s.indexOf(p) === 0) return { mode: 'replace', text: s }; // 누적형: 새 것이 이어짐 → 직전 것을 새 것으로
+  if (p.indexOf(s) === 0) return { mode: 'skip', text: s };    // 새 것이 직전의 부분집합 → 버림
+  return { mode: 'append', text: s };
+}
+(function selfcheckMergeFinal(){
+  var r;
+  r = mergeFinal('안녕', '안녕 하세요'); console.assert(r.mode === 'replace', 'mergeFinal 누적형 실패', r);
+  r = mergeFinal('안녕 하세요', '안녕 하세요'); console.assert(r.mode === 'skip', 'mergeFinal 중복형 실패', r);
+  r = mergeFinal('안녕 하세요', '반갑습니다'); console.assert(r.mode === 'append', 'mergeFinal 정상조각형 실패', r);
+  r = mergeFinal('안녕', ''); console.assert(r.mode === 'skip', 'mergeFinal 빈조각 실패', r);
+  r = mergeFinal(' 안녕 ', '안녕 하세요 '); console.assert(r.mode === 'replace', 'mergeFinal 공백트림 실패', r);
+})();
 
 if (!SR) {
   recBtn.disabled = true;
@@ -150,15 +173,24 @@ if (!SR) {
   recognition.interimResults = true;
 
   recognition.onresult = function(e){
-    var finalText = '';
     interim = '';
     for (var i = e.resultIndex; i < e.results.length; i++) {
       var t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finalText += t;
-      else interim += t;
-    }
-    if (finalText) {
-      ta.value = (ta.value ? ta.value.replace(/\s*$/, '\n') : '') + finalText.trim();
+      if (e.results[i].isFinal) {
+        var m = mergeFinal(recLastFinal, t);
+        if (m.mode === 'append') {
+          recLastFinalStart = ta.value.length;
+          ta.value = (ta.value ? ta.value.replace(/\s*$/, '\n') : '') + m.text;
+          recLastFinal = m.text;
+        } else if (m.mode === 'replace') {
+          var head = recLastFinalStart >= 0 ? ta.value.slice(0, recLastFinalStart) : '';
+          ta.value = (head ? head.replace(/\s*$/, '\n') : '') + m.text;
+          recLastFinal = m.text;
+        }
+        // skip: 중복 확정 조각 — 아무것도 안 함
+      } else {
+        interim += t;
+      }
     }
   };
   recognition.onerror = function(e){
@@ -189,6 +221,8 @@ if (recognition) {
       try {
         recognition.start();
         recognizing = true;
+        recLastFinal = '';
+        recLastFinalStart = -1;
         setRecUI();
       } catch (e) {
         recMsg.textContent = '녹음을 시작하지 못했습니다: ' + e.message;

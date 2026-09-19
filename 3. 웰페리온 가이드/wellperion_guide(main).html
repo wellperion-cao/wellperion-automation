@@ -4316,14 +4316,43 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           if(!SR){ var span=document.createElement('span'); span.style.cssText='font-size:var(--fs-2);color:var(--dim);'; span.textContent='이 브라우저는 받아쓰기를 지원하지 않습니다 — 직접 입력해 주세요'; micBtn.replaceWith(span); return; }
           var rec=new SR(); rec.lang='ko-KR'; rec.continuous=true; rec.interimResults=true;
           var listening=false, body=document.getElementById('gmNoteBody'), st=document.getElementById('gmNoteSaveState');
+          var recLastFinal='', recLastFinalStart=-1;
+          // 확정 조각 합치기 — 모바일 크롬은 isFinal 결과가 누적 문장으로 오거나 resultIndex 가 되돌아가
+          // 같은 말이 반복 붙는다. prev(직전 확정 조각)·seg(새 조각)를 trim 후 비교해 셋 중 하나로 판정한다.
+          function mergeFinal(prev, seg){
+            var p=(prev||'').trim(), s=(seg||'').trim();
+            if(!s) return {mode:'skip', text:s};
+            if(!p) return {mode:'append', text:s};
+            if(s===p) return {mode:'skip', text:s};
+            if(s.indexOf(p)===0) return {mode:'replace', text:s};
+            if(p.indexOf(s)===0) return {mode:'skip', text:s};
+            return {mode:'append', text:s};
+          }
+          (function selfcheckMergeFinal(){
+            var r;
+            r=mergeFinal('안녕','안녕 하세요'); console.assert(r.mode==='replace','mergeFinal 누적형 실패',r);
+            r=mergeFinal('안녕 하세요','안녕 하세요'); console.assert(r.mode==='skip','mergeFinal 중복형 실패',r);
+            r=mergeFinal('안녕 하세요','반갑습니다'); console.assert(r.mode==='append','mergeFinal 정상조각형 실패',r);
+            r=mergeFinal('안녕',''); console.assert(r.mode==='skip','mergeFinal 빈조각 실패',r);
+            r=mergeFinal(' 안녕 ','안녕 하세요 '); console.assert(r.mode==='replace','mergeFinal 공백트림 실패',r);
+          })();
           rec.onresult=function(e){
             var body=document.getElementById('gmNoteBody');
-            for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal){ var t=e.results[i][0].transcript.trim(); if(t&&body){ body.value=(body.value?body.value.replace(/\s+$/,'')+' ':'')+t+' '; } } }
+            for(var i=e.resultIndex;i<e.results.length;i++){
+              if(e.results[i].isFinal){
+                var t=e.results[i][0].transcript.trim();
+                if(t&&body){
+                  var m=mergeFinal(recLastFinal,t);
+                  if(m.mode==='append'){ recLastFinalStart=body.value.length; body.value=(body.value?body.value.replace(/\s+$/,'')+' ':'')+m.text+' '; recLastFinal=m.text; }
+                  else if(m.mode==='replace'){ var head=recLastFinalStart>=0?body.value.slice(0,recLastFinalStart):''; body.value=(head?head.replace(/\s+$/,'')+' ':'')+m.text+' '; recLastFinal=m.text; }
+                }
+              }
+            }
           };
           rec.onerror=function(e){ if(st){ st.style.color='var(--warm)'; st.textContent='받아쓰기 오류: '+(e.error||'알 수 없음'); } listening=false; micBtn.textContent='🎙️ 받아쓰기 시작'; };
           rec.onend=function(){ if(listening){ try{ rec.start(); }catch(e){ listening=false; micBtn.textContent='🎙️ 받아쓰기 시작'; } } };
           micBtn.addEventListener('click',function(){
-            if(!listening){ try{ rec.start(); listening=true; micBtn.textContent='⏹ 멈춤'; if(st){ st.style.color='var(--dim)'; st.textContent='듣는 중…'; } }catch(e){ if(st){ st.style.color='var(--warm)'; st.textContent='마이크 시작 실패: '+e.message; } } }
+            if(!listening){ try{ rec.start(); listening=true; recLastFinal=''; recLastFinalStart=-1; micBtn.textContent='⏹ 멈춤'; if(st){ st.style.color='var(--dim)'; st.textContent='듣는 중…'; } }catch(e){ if(st){ st.style.color='var(--warm)'; st.textContent='마이크 시작 실패: '+e.message; } } }
             else{ listening=false; rec.stop(); micBtn.textContent='🎙️ 받아쓰기 시작'; if(st){ st.textContent=''; } }
           });
         }
