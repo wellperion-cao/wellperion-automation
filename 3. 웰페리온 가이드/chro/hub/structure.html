@@ -319,10 +319,10 @@
     <h1>웰페리온 CHRO 기능 구조도</h1>
     <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
     <div class="header-meta">
-      <span class="pill">갱신일 <b>2026-08-04</b></span>
+      <span class="pill">갱신일 <b>2026-09-19</b></span>
       <span class="pill">전담 에이전트 <b>12종</b> (A-1 ~ A-12)</span>
-      <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그·업무평가·자기평가·리더십평가 탭</span>
-      <span class="pill">쓰기 액션 <b>48종</b></span>
+      <span class="pill">읽기 DB <b>16탭</b> — db: 7종 + 휴무·연차원장·보드명단·공휴일·자동화로그·업무평가·자기평가·리더십평가·개인일정</span>
+      <span class="pill">쓰기 액션 <b>55종</b>(@88 기준, 시트 쓰기 집계 — presence-set/get 2종은 캐시 전용·시트 미접촉이라 이 집계 밖, 로컬 준비 중·미배포)</span>
     </div>
   </div>
 </header>
@@ -409,12 +409,19 @@
   function mergePresence(sessions){
     var map = {};
     (sessions || []).forEach(function(s){
+      var sessionTs = String((s && s.ts) || "");
       (s && s.agents || []).forEach(function(a){
         if(!a || !a.code) return;
         var cur = map[a.code];
-        // 같은 코드로 여러 세션이 동시에 보고하면 since(ISO 문자열)가 더 최근인 쪽을 채택.
-        if(!cur || String(a.since || "") > String(cur.since || "")){
-          map[a.code] = { text: a.text || "", pct: (typeof a.pct === "number" ? a.pct : parseInt(a.pct, 10) || 0), since: a.since || "", session: s.session || "" };
+        var since = String(a.since || "");
+        var curSince = cur ? String(cur.since || "") : "";
+        var take;
+        if(!cur) take = true;
+        else if(since !== curSince) take = since > curSince;         // 1차: agent별 since(ISO 문자열)
+        else take = sessionTs > String(cur.sessionTs || "");          // [추가 2026-09-19 2차, A-6 사전감사 권고①]
+        // since가 같거나(또는 둘 다 비어있어) 1차로 못 가리면 세션 자체의 ts를 2차 기준으로 최신 세션 우선.
+        if(take){
+          map[a.code] = { text: a.text || "", pct: (typeof a.pct === "number" ? a.pct : parseInt(a.pct, 10) || 0), since: since, session: s.session || "", sessionTs: sessionTs };
         }
       });
     });
@@ -770,7 +777,7 @@
     </div>
 
     <div class="foundation">
-      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@88, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@88, /exec)<span class="sep">|</span><b>구글시트 16탭</b>(데이터 7 + 휴무·연차원장·보드명단·공휴일·자동화로그·업무평가·자기평가·리더십평가·개인일정)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
     </div>
 
     <div class="legend">
@@ -1297,11 +1304,11 @@
 <!-- ═══════════ G. 데이터 기반 ═══════════ -->
 <section id="sec-g">
   <div class="sec-head">
-    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 10탭 + 백엔드)</h2>
+    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 16탭 + 백엔드)</h2>
     <span class="sec-note">모든 기능이 딛고 서는 데이터 층</span>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 7종 + 운영 탭 2종 + 관리자 전용 탭 3종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 16탭 <span style="font-weight:400">(db: 7종 + 휴무·연차원장·보드명단·공휴일·자동화로그·업무평가·자기평가·리더십평가·개인일정 9탭)</span> <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>DB 코드</th><th>시트 탭</th><th>담긴 것</th><th>주 사용처</th></tr></thead>
@@ -1326,7 +1333,7 @@
     </table>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 55종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 + 전사등재 5필드 지원 확장(신규 액션 없음, personalcal 13→18열)·배포완료 @86 · 2026-09-16 schedreq-list 응답 필드 10→12칸(createdAt · updatedAt 추가)·배포완료 @88)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 55종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 + 전사등재 5필드 지원 확장(신규 액션 없음, personalcal 13→18열)·배포완료 @86 · 2026-09-16 schedreq-list 응답 필드 10→12칸(createdAt · updatedAt 추가)·배포완료 @88 · 2026-09-19 presence-set/presence-get 2종은 시트를 건드리지 않는 CacheService 전용 공개 액션이라 이 55종 집계 밖 — 로컬 준비 완료·clasp 미배포)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
@@ -1502,7 +1509,7 @@
 
 <footer>
   <div class="brand">WELLPERION</div>
-  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-08-04</div>
+  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-09-19</div>
 </footer>
 
 
