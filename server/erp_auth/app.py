@@ -816,6 +816,9 @@ API_MODULES = {
                         "ceo-wellperion-guide-main", "gm-월간운영계획"},
     "/api/reception-ops": {"coo-리셉션-업무-index", "coo-리셉션-업무-라커관리-index"},
     "/api/brojay/": {"coo-report-매출회원현황보고"},
+    # 회원 카드의 브로제이 회원권·수강권 기간 표(배 2755 · 시포 요청 2026-09-19) — 전화별 기간·상태·담당 강사만(이름·주소 없음).
+    # 직접실행: 권한표 한 줄 추가
+    "/api/brojay/member_tickets": {"member", "coo-report-매출회원현황보고"},
     "/api/visitors": {"coo-report-매출회원현황보고"},
     "/api/chat/": set(),            # 상담봇 관리 API(log·unanswered·faq·stats) = 관리자만(빈 집합 = 아무 카드도 안 연다)
                                      # · 예외 = 아래 _CHAT_TENANT_RE(파트너는 자기 tenant 만 · 배 12768 §12⑤)
