@@ -261,31 +261,32 @@
 
   /* ── 실시간 관제판 v1 (읽기 전용 · 자동화로그 실측, 2026-09-18 신설) ── */
   .cpv1{background:var(--ink);color:#EDEBE2;padding:26px 0 30px;border-bottom:3px solid var(--brass)}
+  .cpv1 .wrap{max-width:2400px} /* 2026-09-19 매니저 지시 — 관제판만 폭 확장(다른 섹션 .wrap은 1120px 그대로) */
   .cpv1-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .cpv1-title{font-family:'Nanum Myeongjo','Batang',Georgia,serif;font-size:17px;font-weight:800;letter-spacing:.01em}
+  .cpv1-title{font-family:'Nanum Myeongjo','Batang',Georgia,serif;font-size:19px;font-weight:800;letter-spacing:.01em}
   .cpv1-badge-v{background:var(--brass);color:var(--ink);font-size:10px;font-weight:800;padding:1px 7px;border-radius:2px;margin-left:6px;vertical-align:middle}
   .cpv1-note{margin-left:auto;font-size:11px;color:#B9C0B6}
   .cpv1-counters{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
   .cpv1-ct{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.16);border-radius:4px;padding:13px 14px;text-align:center}
-  .cpv1-ct .n{font-size:26px;font-weight:800;color:var(--brass);font-family:'Nanum Myeongjo','Batang',Georgia,serif;line-height:1.1}
-  .cpv1-ct .l{font-size:10.5px;color:#B9C0B6;margin-top:4px;letter-spacing:.03em}
+  .cpv1-ct .n{font-size:30px;font-weight:800;color:var(--brass);font-family:'Nanum Myeongjo','Batang',Georgia,serif;line-height:1.1}
+  .cpv1-ct .l{font-size:12px;color:#B9C0B6;margin-top:4px;letter-spacing:.03em}
   .cpv1-sub{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:#8B9389;margin:20px 0 9px;font-weight:700}
-  .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+  .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
   .cpv1-agents>*{min-width:0}
-  .cpv1-ac{min-width:0;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:7px 7px 6px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
+  .cpv1-ac{min-width:0;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:8px 9px 7px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
   .cpv1-ac.on{border-color:rgba(78,158,122,.45)}
   .cpv1-ac.ip{border-color:#B88A44;box-shadow:0 0 0 1px rgba(184,138,68,.3)}
-  .cpv1-ac-hd{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-  .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:9.5px;padding:1.5px 6px;border-radius:2px;letter-spacing:.04em}
-  .cpv1-ac .nm{font-size:9.5px;font-weight:700;color:#EDEBE2;line-height:1.2}
+  .cpv1-ac-hd{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:10.5px;padding:2px 6px;border-radius:2px;letter-spacing:.04em}
+  .cpv1-ac .nm{font-size:11.5px;font-weight:700;color:#EDEBE2;line-height:1.25}
   .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap}
   @keyframes cpv1pulse{0%,100%{opacity:1}50%{opacity:.32}}
-  .cpv1-ac-meta{min-width:0;display:flex;justify-content:space-between;gap:4px;overflow:hidden;font-size:8.5px;color:#8B9389;margin-top:4px}
+  .cpv1-ac-meta{min-width:0;display:flex;justify-content:space-between;gap:4px;overflow:hidden;font-size:10px;color:#8B9389;margin-top:5px}
   .cpv1-ac-meta .cnt{font-weight:700;color:#B9C0B6}
-  .cpv1-ac-feed{min-width:0;margin-top:4px;border-top:1px solid rgba(233,226,204,.1);padding-top:3px;min-height:98px;max-height:98px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
-  .cpv1-ac-feed .row{min-width:0;max-width:100%;font-size:9px;line-height:1.4;color:#D9D4C2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cpv1-ac-feed .row .t{color:#8B9389;margin-right:3px;font-family:Consolas,'Courier New',monospace;font-size:8.5px}
-  .cpv1-ac-feed .empty{font-size:9px;color:#5C665F;padding:3px 0}
+  .cpv1-ac-feed{min-width:0;margin-top:5px;border-top:1px solid rgba(233,226,204,.1);padding-top:4px;min-height:108px;max-height:108px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+  .cpv1-ac-feed .row{min-width:0;max-width:100%;font-size:10.5px;line-height:1.4;color:#D9D4C2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cpv1-ac-feed .row .t{color:#8B9389;margin-right:4px;font-family:Consolas,'Courier New',monospace;font-size:9.5px}
+  .cpv1-ac-feed .empty{font-size:10px;color:#5C665F;padding:3px 0}
   .cpv1-routines{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:2px}
   .cpv1-rc{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:3px;padding:5px 10px;font-size:10.5px;cursor:default}
   .cpv1-rc .rn{color:#DCD8C8}
@@ -301,8 +302,11 @@
   .cpv1-feed td:nth-child(3){white-space:normal;min-width:200px}
   .cpv1-feed tr:nth-child(even){background:rgba(255,255,255,.02)}
   .cpv1-empty{padding:14px;text-align:center;color:#8B9389;font-size:11px}
-  @media (max-width:960px){ .cpv1-agents{grid-template-columns:repeat(4,1fr)} }
-  @media (max-width:640px){ .cpv1-agents{grid-template-columns:repeat(2,1fr)} .cpv1-counters{grid-template-columns:1fr 1fr 1fr;gap:6px} .cpv1-ct{padding:10px 6px} .cpv1-ct .n{font-size:21px} }
+  /* 2026-09-19 매니저 지시 — 관제판 카드 그리드 반응형 재설계(≥1440 6열 / 1024~1439 4열 / 768~1023 3열 / ~767 2열 / ~480 1열) */
+  @media (max-width:1439px){ .cpv1-agents{grid-template-columns:repeat(4,1fr)} }
+  @media (max-width:1023px){ .cpv1-agents{grid-template-columns:repeat(3,1fr)} }
+  @media (max-width:767px){ .cpv1-agents{grid-template-columns:repeat(2,1fr)} .cpv1-counters{grid-template-columns:1fr 1fr 1fr;gap:6px} .cpv1-ct{padding:10px 6px} .cpv1-ct .n{font-size:24px} }
+  @media (max-width:480px){ .cpv1-agents{grid-template-columns:repeat(1,1fr)} }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <script src="../../_assets/erp_write.js"></script>
