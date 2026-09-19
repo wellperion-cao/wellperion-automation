@@ -10,9 +10,10 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Crect width='256' height='256' rx='58' fill='%230E9488'/%3E%3Cpath d='M40 200 L108 62 L176 200' fill='none' stroke='%23fff' stroke-width='26' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M176 62 L108 200' fill='none' stroke='%23CFF5EE' stroke-width='26' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<!-- 웰페리온 AX 랩스 공개 첫 화면 (시모 · GM 지시 2026-09-19 「wellperion.com 에 연구소 같은 페이지 · 육하원칙 · 액티비티하게」 · 배 12845 로 기존 공개 첫 화면(labs_home.html)에 합침).
+<!-- 웰페리온 AX 랩스 공개 첫 화면 (시모 · GM 지시 2026-09-19 「wellperion.com 에 연구소 같은 페이지 · 구조화된 정리 · 액티비티하게」 · 배 12845 로 기존 공개 첫 화면(labs_home.html)에 합침).
      본체 = erp/admin/labs_home.html(공개 주소 https://erp.wellperion.com/labs/) · 워드프레스 wellperion.com 페이지는 iframe 으로 부른다.
-     숫자·문장 출처 = erp/admin/company_intro.html · ssot/canon_values.json(platform_company_name · platform_one_liner_kr). -->
+     숫자·문장 출처 = erp/admin/company_intro.html · ssot/canon_values.json(platform_company_name · platform_one_liner_kr).
+     2판(시모 · GM 지시 2026-09-19 10:5x · 배 12845): 철학 절로 포장·파트너 늘어나는 구조 타임라인·메일 대신 문의 칸(POST https://erp.wellperion.com/api/labs/lead, 서버 문은 아직 없음 — 실패 시 인스타 DM 안내). -->
 <style>
 :root{
   --bg:#07110F; --bg2:#0B1A17; --panel:#0F221E; --line:#1C3A34; --line2:#27504A;
@@ -129,6 +130,17 @@ h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-.01em;line-height:1.25;margi
 .chan a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);text-decoration:none;font-size:15px;transition:border-color .15s}
 .chan a:hover{border-color:var(--teal)}
 .chan a span{color:var(--ink3);font-size:13px}
+.site svg{width:28px;height:28px;color:var(--glow);margin-bottom:10px;display:block}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px}
+.field input,.field select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--bg2);color:var(--ink);font:inherit}
+.field input:focus,.field select:focus{outline:2px solid var(--glow);outline-offset:1px}
+.agree{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);margin:14px 0}
+.agree input{width:18px;height:18px;flex:none;margin-top:2px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.form-msg{padding:14px;border-radius:12px;border:1px solid var(--line2);background:var(--bg2);color:var(--mint)}
+.form-msg.err{color:var(--amber);border-color:var(--amber)}
+#leadForm button[disabled]{opacity:.6;cursor:default}
 footer{padding:36px 0 48px;color:var(--ink3);font-size:13px;border-top:1px solid var(--line);margin-top:40px}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
@@ -163,7 +175,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       WELLPERION AX LABS
     </a>
     <ul>
-      <li><a href="#six">육하원칙</a></li>
+      <li><a href="#six">철학</a></li>
+      <li><a href="#assistants">AI 비서</a></li>
       <li><a href="#day">하루</a></li>
       <li><a href="#before">전과 후</a></li>
       <li><a href="#where">함께하는 곳</a></li>
@@ -180,7 +193,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       <p class="lead">웰페리온 AX 랩스는 인공지능을 조직 운영 전반에 통합해 일하는 방식과 비즈니스 구조를 다시 짭니다. 반복은 시스템이 맡고, 사람은 회원 앞에 섭니다.</p>
       <div class="hero-cta">
         <a class="btn" href="#contact">우리 센터도 시작하기</a>
-        <a class="btn ghost" href="#six">육하원칙으로 보기</a>
+        <a class="btn ghost" href="#six">철학 보기</a>
       </div>
       <div class="stats">
         <div class="stat"><b data-count="176">176</b><span>매일 쓰는 화면</span></div>
@@ -198,18 +211,40 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   <section id="six">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div><div class="kicker">SIX QUESTIONS</div><h2>육하원칙으로 보는 AX 랩스</h2></div>
-        <p>누가·왜·무엇을·어떻게·언제·어디서. 눌러서 하나씩 보세요.</p>
+        <div><div class="kicker">WHAT WE HOLD</div><h2>우리가 붙드는 여섯 가지</h2></div>
+        <p>기술보다 먼저, 일이 어디로 가야 하는지를 묻습니다.</p>
       </div>
-      <div class="w6 reveal" role="tablist" aria-label="육하원칙">
-        <button role="tab" data-k="who"><b>누가</b><span>WHO</span></button>
-        <button role="tab" data-k="why"><b>왜</b><span>WHY</span></button>
-        <button role="tab" data-k="what"><b>무엇을</b><span>WHAT</span></button>
-        <button role="tab" data-k="how"><b>어떻게</b><span>HOW</span></button>
-        <button role="tab" data-k="when"><b>언제</b><span>WHEN</span></button>
-        <button role="tab" data-k="where"><b>어디서</b><span>WHERE</span></button>
+      <div class="w6 reveal" role="tablist" aria-label="철학">
+        <button role="tab" data-k="person"><b>사람</b><span>01</span></button>
+        <button role="tab" data-k="reason"><b>이유</b><span>02</span></button>
+        <button role="tab" data-k="tool"><b>도구</b><span>03</span></button>
+        <button role="tab" data-k="principle"><b>원칙</b><span>04</span></button>
+        <button role="tab" data-k="time"><b>시간</b><span>05</span></button>
+        <button role="tab" data-k="connect"><b>연결</b><span>06</span></button>
       </div>
       <div id="panel" class="panel" role="tabpanel" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="assistants">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div><div class="kicker">AI ASSISTANTS</div><h2>곁에 두는 세 명의 비서</h2></div>
+      </div>
+      <div class="map reveal">
+        <div class="site">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <h3>AI 회의비서</h3><p>말은 흘러가도 결정은 남도록.</p>
+        </div>
+        <div class="site">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 1 1 3.9 2.9c-.9.3-1.5 1.1-1.5 2.1v.3"/><circle cx="12" cy="17" r=".3" fill="currentColor" stroke="none"/></svg>
+          <h3>AI 상담비서</h3><p>밤에도 손님의 물음에 답합니다.</p>
+        </div>
+        <div class="site">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13.7 13.7 0 0 1 0 18M12 3a13.7 13.7 0 0 0 0 18"/></svg>
+          <h3>AI 번역비서</h3><p>말이 달라도 같은 안내를.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -247,14 +282,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   <section id="where">
     <div class="wrap">
       <div class="sec-head reveal">
-        <div><div class="kicker">WHERE IT RUNS</div><h2>매일 실제로 도는 곳</h2></div>
-        <p>안 도는 것은 적지 않습니다. 한 센터에서 배운 질문은 모든 센터의 상담이 같이 좋아지는 층에 남습니다.</p>
+        <div><div class="kicker">WHERE IT RUNS</div><h2>함께 걷는 센터들</h2>
+          <div class="mono" style="color:var(--mint);font-size:22px;font-weight:800;margin-top:10px">함께하는 센터 <span id="siteCount">0</span>곳 <span style="color:var(--ink3);font-size:14px;font-weight:400">· 2026.06 시작</span></div>
+        </div>
+        <p>한 곳씩, 실제로 도는 것을 확인하며 늘어갑니다.</p>
       </div>
-      <div class="map reveal">
-        <div class="site"><div class="no">1호 파트너</div><h3>웰페리온 · 한남동</h3><p>약 3,000평 정원제 스포츠클럽. 이 플랫폼이 태어난 곳. 8월 문의 87건 중 19건 등록.</p></div>
-        <div class="site"><div class="no">2026-09 시작</div><h3>파트너 센터 2곳</h3><p>은평 PT·재활 센터 · 구로 골프 아카데미. 블로그 매일 임시저장 · 상담 페이지 · 아침·저녁 보고.</p></div>
-        <div class="site next"><div class="no">다음</div><h3>당신의 센터</h3><p>4주 파일럿은 무료입니다. 4주 뒤 결과 한 장을 보고 계속할지 정하시면 됩니다.</p></div>
-      </div>
+      <div class="map reveal" id="siteMap"></div>
     </div>
   </section>
 
@@ -263,9 +296,39 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       <div class="cta reveal">
         <div>
           <div class="kicker">START</div>
-          <h2>메일 한 통이면 시작합니다</h2>
-          <p>「센터 이름 · 업종 · 지금 제일 시간이 드는 일 하나」를 보내 주세요. 다음 날 아침, 질문 한 통으로 시작합니다.</p>
-          <div class="hero-cta"><a class="btn" href="mailto:info@wellperion.com?subject=%5BAX%20%EB%9E%A9%EC%8A%A4%5D%20%EC%8B%9C%EC%9E%91%ED%95%98%EA%B8%B0">info@wellperion.com</a></div>
+          <h2>한 줄이면 시작합니다</h2>
+          <p>지금 가장 시간이 많이 드는 일 하나만 알려 주세요. 다음 날 연락드립니다.</p>
+          <div id="leadWrap">
+            <form id="leadForm" novalidate>
+              <div class="field">
+                <label for="fCenter">센터 이름 <span aria-hidden="true">*</span></label>
+                <input type="text" id="fCenter" name="center" required maxlength="60" autocomplete="organization">
+              </div>
+              <div class="field">
+                <label for="fKind">업종</label>
+                <select id="fKind" name="kind">
+                  <option value="">선택 안 함</option>
+                  <option value="스포츠클럽">스포츠클럽</option>
+                  <option value="PT·재활">PT·재활</option>
+                  <option value="골프">골프</option>
+                  <option value="필라테스·요가">필라테스·요가</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="fPhone">연락처 <span aria-hidden="true">*</span></label>
+                <input type="tel" id="fPhone" name="phone" required maxlength="20" autocomplete="tel" placeholder="010-0000-0000">
+              </div>
+              <div class="field">
+                <label for="fPain">가장 시간이 드는 일 <span aria-hidden="true">*</span></label>
+                <input type="text" id="fPain" name="pain" required maxlength="300" placeholder="예: 문의 답장이 자꾸 늦어집니다">
+              </div>
+              <label class="agree"><input type="checkbox" id="fAgree" name="agree" required>문의 응대를 위해 센터 이름·연락처를 받고, 응대가 끝나면 1년 안에 지웁니다</label>
+              <div class="hp" aria-hidden="true"><label for="fHp">비워두세요</label><input type="text" id="fHp" name="hp" tabindex="-1" autocomplete="off"></div>
+              <button class="btn" type="submit" id="leadSubmit">보내기</button>
+            </form>
+            <div id="leadMsg" role="status" aria-live="polite"></div>
+          </div>
         </div>
         <div class="chan">
           <a href="https://erp.wellperion.com/labs/intro.html" target="_blank" rel="noopener">회사소개서 <span>4주 온보딩 · 묶음</span></a>
@@ -296,7 +359,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   });
 
   var events=[
-    ['06:30','블로그 글 한 편 임시저장','마케팅',0],
+    ['06:30','채널마다 맞춰 자동 업로드','마케팅',0],
     ['07:00','대표님께 아침 통 — 어제 요약','보고',0],
     ['09:12','인스타 문의 도착 → 상담 답변','상담',0],
     ['09:13','문의 자동 접수 · 담당 알림','접수',0],
@@ -319,18 +382,18 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   if(!reduce) setInterval(push,2200);
 
   var W={
-    who:{q:'누가',h:'웰페리온이 만든<br>인공지능 전환 연구소',p:'웰페리온이 직접 만들었고, 웰페리온이 1호 파트너입니다. 사람 운영진 옆에서 AI 팀이 기획·마케팅·운영·시설을 나눠 맡아 매일 일합니다.',
-      rows:[['만든 곳','웰페리온','한남동 정원제 스포츠클럽 운영사'],['일하는 팀','사람 운영진 + AI 팀','AI가 초안을 만들고 사람이 확인합니다'],['첫 프로젝트','피트니스 AX','회원제 운동 센터의 운영을 다시 설계']]},
-    why:{q:'왜',h:'반복이<br>회원을 놓치게 한다',p:'문의 답장, 예약 확인, 글쓰기, 규정 안내, 보고. 매일 같은 모양으로 돌아오는 일에 사람이 붙들리면 회원 앞에 설 시간이 사라집니다.',
-      rows:[['실측','이탈 문의 중 무응답 37%','웰페리온 이탈 문의 158건 기준 (2026-04)',37],['멈춤','글 쓸 사람이 없다','멈춘 채널은 검색·AI 답변에서 사라집니다'],['분쟁','규정이 글로 없다','상담마다 다르게 말해집니다']]},
-    what:{q:'무엇을',h:'자동화 모듈 다섯',p:'센터가 날마다 손으로 하던 일을 모듈 하나씩 시스템으로 옮깁니다.',
-      rows:[['됨','상담 자동화','센터 정본으로 손님 질문에 답 · 못 답한 건 아침에 한 문항'],['됨','마케팅 자동화','홈페이지 → 문의 폼 → 자동 접수 → 회원 전환 · 블로그 매일 임시저장'],['됨','보고 자동화','아침·저녁 카카오톡 한 통'],['준비 중','운영 자동화','회원·문의·점검을 한 화면에서'],['준비 중','강습 예약 자동화','강사가 시간을 열고 회원이 예약']]},
-    how:{q:'어떻게',h:'네 가지 원칙',p:'지어내지 않고, 사람이 마지막에 누르고, 실제로 도는 것만 말합니다.',
-      rows:[['1','정본부터','주소·시간·요금·규정·말투를 먼저 한 곳에. 모든 글·답·화면이 이 값만 씁니다'],['2','사람이 마지막','글은 임시저장까지, 발행 버튼은 운영자가. 신뢰만큼 자동을 넓힙니다'],['3','배운 것은 전 센터로','새 질문 유형은 공통층에 · 센터의 값은 절대 섞이지 않습니다'],['4','매일 실제로 돈다','웰페리온에서 매일 도는 것만 드립니다']]},
-    when:{q:'언제',h:'4주면<br>전과 후가 보인다',p:'4주 파일럿은 무료입니다. 마지막 주에 받는 결과 한 장을 보고 계속할지 정하시면 됩니다.',
-      rows:[['1주','질문 한 통으로 센터의 값 받기','사진·로고·계정까지 정본 1벌'],['2주','브랜드가이드·회사소개서·운영전략','문서 3종 초안 → 대표님 확인'],['3주','블로그 매일 임시저장 · 상담 페이지 개통','손님 공개는 대표님 확인 뒤'],['4주','기준 숫자와 4주 결과','Before & After 한 장']]},
-    where:{q:'어디서',h:'한남동에서 시작해<br>센터 수만큼',p:'웰페리온에서 태어나, 2026년 9월부터 파트너 센터 두 곳에서 매일 돌고 있습니다.',
-      rows:[['1호','웰페리온 · 한남동','화면 176 · 자동화 29 · 8월 문의 87건 → 등록 19건'],['2026-09','파트너 센터 2곳','은평 PT·재활 · 구로 골프 아카데미'],['다음','당신의 센터','메일 한 통으로 시작']]}
+    person:{q:'사람',h:'기술보다 사람이 먼저',p:'우리는 도구를 만드는 사람이기 전에, 누군가의 하루를 덜어 주는 사람이고 싶습니다. 웰페리온이 이 일을 시작했고, 가장 먼저 스스로에게 적용했습니다.',
+      rows:[['1','시작한 곳','한 스포츠클럽의 현장'],['2','일하는 방식','사람과 AI가 한 팀'],['3','첫 여정','피트니스 AX']]},
+    reason:{q:'이유',h:'반복은 사람을 본질에서 멀어지게 한다',p:'매일 같은 모양으로 돌아오는 일은 조용히 사람의 시간을 가져갑니다. 그 시간이 원래 향해야 할 곳은 회원입니다.',
+      rows:[['1','놓치는 답장','문의가 쌓이면 답이 늦어집니다'],['2','멈추는 기록','쓰이지 않는 채널은 조용히 잊혀집니다'],['3','말로만 남는 규정','상담마다 다른 말이 오갑니다']]},
+    tool:{q:'도구',h:'도구는 보이지 않을 때 가장 잘 일한다',p:'좋은 자동화는 드러나지 않습니다. 답은 제때 나가고, 기록은 제자리에 있고, 사람은 그것을 신경 쓰지 않아도 됩니다.',
+      rows:[['1','상담','손님 질문에 정본으로 답합니다'],['2','마케팅','이야기와 사진만 주시면, 채널 셋팅부터 매일 올리는 일까지 AI 가'],['3','보고','아침·저녁 한 통으로 오갑니다'],['4','운영','회원·문의·점검을 한 화면으로 모읍니다'],['5','AI 비서','회의·상담·번역을 곁에서']]},
+    principle:{q:'원칙',h:'지어내지 않고, 마지막은 사람이',p:'네 가지를 지킵니다.',
+      rows:[['1','정본부터','값은 한 곳에서만 가져옵니다'],['2','사람이 마지막','발행은 언제나 사람이 누릅니다'],['3','배운 것은 모든 센터로','질문은 나누고 값은 섞지 않습니다'],['4','매일 실제로 돈다','도는 것만 이야기합니다']]},
+    time:{q:'시간',h:'하루가 아니라 십 년을 설계한다',p:'빨리 늘리는 것보다, 한 곳에서 실제로 도는 것을 먼저 봅니다. 작게 시작해 결과로 확인하고, 확인된 만큼만 넓힙니다.',
+      rows:[['1','작게 시작','한 가지 반복부터'],['2','결과로 확인','전과 후를 나란히 봅니다'],['3','넓히기','믿음이 쌓인 만큼 늘립니다']]},
+    connect:{q:'연결',h:'한 곳에서 배운 것이 모든 곳으로',p:'한 센터가 새로 만난 질문은 모든 센터의 답이 됩니다. 각 센터의 이야기는 섞지 않고, 배움만 나눕니다.',
+      rows:[['1','한 센터의 질문','새로 만난 질문은 정리되어 남습니다'],['2','모든 센터의 답','같은 질문이 오면 이미 준비돼 있습니다']]}
   };
   var panel=document.getElementById('panel'), tabs=[].slice.call(document.querySelectorAll('.w6 button'));
   function show(k){
@@ -350,10 +413,53 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       if(e.key==='ArrowRight'||e.key==='ArrowLeft'){var n=tabs[(idx+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];n.focus();show(n.dataset.k);}
     });
   });
-  show('who');
+  show('person');
+
+  var PARTNERS=[
+    {no:'01',since:'2026.06',kind:'스포츠클럽',place:'서울 한남',note:'이 여정이 시작된 곳'},
+    {no:'02',since:'2026.09',kind:'PT·재활 센터',place:'서울 은평',note:'첫 번째 동행'},
+    {no:'03',since:'2026.09',kind:'골프 아카데미',place:'서울 구로',note:'두 번째 동행'}
+  ];
+  var siteMap=document.getElementById('siteMap');
+  PARTNERS.forEach(function(p){
+    siteMap.insertAdjacentHTML('beforeend','<div class="site"><div class="no">'+p.since+' · '+p.no+'호</div><h3>'+p.kind+'</h3><p>'+p.place+' · '+p.note+'</p></div>');
+  });
+  for(var pi=0;pi<3;pi++){
+    var last=pi===2;
+    var h3=last?'<a href="#contact" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;min-height:44px">당신의 센터 →</a>':'다음 자리';
+    var note=last?'<p>4주 파일럿, 문의 한 줄로 시작합니다.</p>':'<p>&nbsp;</p>';
+    siteMap.insertAdjacentHTML('beforeend','<div class="site next"><div class="no">다음</div><h3>'+h3+'</h3>'+note+'</div>');
+  }
+  document.getElementById('siteCount').textContent=PARTNERS.length;
+
+  var leadForm=document.getElementById('leadForm');
+  if(leadForm){
+    var leadMsg=document.getElementById('leadMsg'), leadBtn=document.getElementById('leadSubmit');
+    leadForm.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!leadForm.checkValidity()){ leadForm.reportValidity(); return; }
+      var hp=document.getElementById('fHp').value;
+      var payload={
+        center:document.getElementById('fCenter').value.trim(),
+        kind:document.getElementById('fKind').value,
+        phone:document.getElementById('fPhone').value.trim(),
+        pain:document.getElementById('fPain').value.trim(),
+        agree:true,
+        hp:hp
+      };
+      leadMsg.innerHTML=''; leadBtn.disabled=true; leadBtn.textContent='보내는 중…';
+      function done(){ leadForm.hidden=true; leadMsg.innerHTML='<div class="form-msg">받았습니다. 다음 날 연락드리겠습니다.</div>'; }
+      function fail(){ leadBtn.disabled=false; leadBtn.textContent='보내기'; leadMsg.innerHTML='<div class="form-msg err">지금은 접수가 어렵습니다 — <a href="https://www.instagram.com/wellperionaxlabs/" target="_blank" rel="noopener">인스타그램 DM(@wellperionaxlabs)</a>으로 한 줄 남겨 주세요</div>'; }
+      if(hp){ done(); return; }
+      fetch('https://erp.wellperion.com/api/labs/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(d){ if(d&&d.ok) done(); else fail(); })
+        .catch(fail);
+    });
+  }
 
   var D=[
-    ['06:30','블로그 글 임시저장','센터 말투로 한 편 · 발행은 운영자가 누릅니다',0],
+    ['06:30','채널마다 맞춰 자동 업로드','사람은 사진·이야기만 · 올리는 방법은 AI 가',0],
     ['07:00','아침 통','어제 있었던 일 · 오늘 물을 것 한 줄',8],
     ['09:30','매출 보고','어제 숫자를 표 한 장으로',20],
     ['수시','상담 · 접수','손님 질문에 답하고, 문의는 바로 담당에게',50],
