@@ -1057,7 +1057,8 @@ def _selfcheck_ops_carryover_section() -> None:
 
 
 def _selfcheck_mgr_evening_carryover() -> None:
-    """#번호 · N일째 · 오래된 순 · n 상한 · resolved 제외 · 빈 원장은 절 없음. 임시 원장
+    """#번호 · N일째 · 오래된 순 · n 상한 · resolved 제외 · 빈 원장은 절 없음 · 기한(due)
+    없이 CARRYOVER_STALE_DAYS 넘긴 건 제외(기한 있으면 아무리 오래돼도 남음). 임시 원장
     파일로 돌며 실제 _digest_ledger.json 은 건드리지 않는다(위 register_manager_reply
     selfcheck 와 같은 패턴)."""
     import tempfile
@@ -1080,13 +1081,18 @@ def _selfcheck_mgr_evening_carryover() -> None:
                                               "status": "open", "no": 30, "kind": "reply"}]},
                 {"date": _iso(9), "issues": [{"issue": "오래된 건", "owner": "이정헌 소장",
                                               "status": "open", "kind": "reply", "no": 21}]},
+                {"date": _iso(20), "issues": [{"issue": "기한 없이 오래됨 — 안 보여야 함", "owner": "이경연 실장",
+                                              "status": "open", "kind": "reply", "no": 40}]},
+                {"date": _iso(18), "issues": [{"issue": "기한 있어 오래돼도 남아야 함", "owner": "이경연 실장",
+                                              "status": "open", "kind": "reply", "no": 41, "due": "2026-09-01"}]},
             ], ensure_ascii=False), encoding="utf-8")
             out = build_mgr_evening_carryover()
             lines = out.splitlines()
             assert lines[0] == "🔁 안 닫힌 이월 항목", lines
-            assert lines[1] == "▪ #21 오래된 건 — 9일째", lines   # 오래된 순(나이 큰 것 먼저)
-            assert lines[2] == "▪ #20 최근 건 — 3일째", lines
-            assert len(lines) == 3, lines   # resolved 는 안 실림
+            assert lines[1] == "▪ #41 기한 있어 오래돼도 남아야 함 — 18일째", lines  # 기한 있으면 나이 상한 없음
+            assert lines[2] == "▪ #21 오래된 건 — 9일째", lines   # 오래된 순(나이 큰 것 먼저)
+            assert lines[3] == "▪ #20 최근 건 — 3일째", lines
+            assert len(lines) == 4, lines   # resolved(no=10)·기한없이 14일 초과(no=40) 는 안 실림
             assert build_mgr_evening_carryover(n=1) == "\n".join(lines[:2]), "n 상한이 안 먹음"
 
             MGR_LEDGER = Path(td) / "없는_원장.json"   # 파일 자체가 없는 경우
