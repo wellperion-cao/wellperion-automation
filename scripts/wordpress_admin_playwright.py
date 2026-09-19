@@ -1535,7 +1535,6 @@ LF_GALLERY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "recepti
 
 # 2026-09-03 GM 지시 — 시설 둘러보기 1단계 시험 페이지(/ko/test). 본체는 Pages, 여기서는 iframe 블록만 주입.
 TOUR_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "home" / "wp_tour_block.html"
-LABS_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "home" / "wp_labs_block.html"
 
 # 2026-09-05 — 자주 묻는 질문 페이지. iframe 아닌 본문 텍스트 블록(문답 = home/index.html #faq 원문).
 FAQ_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "home" / "wp_faq_block.html"
@@ -1551,7 +1550,6 @@ _NEW_PAGE_SPECS = {
     "reception-en":    (RECEPTION_BLOCK_FILE_EN,    "Submit a Request",     "reception"),
     "lf-gallery-en":   (LF_GALLERY_BLOCK_FILE_EN,   "Lost & Found",         "lost-found"),
     "tour":            (TOUR_BLOCK_FILE,            "시설 둘러보기",         "test"),
-    "labs":            (LABS_BLOCK_FILE,            "웰페리온 AX 랩스",     "labs"),
     "faq":             (FAQ_BLOCK_FILE,             "자주 묻는 질문",       "faq"),
 }
 
@@ -2073,7 +2071,7 @@ def main() -> int:
     ap.add_argument("--name", dest="meta_name", default=None, help="head-meta: meta name 속성값(예: naver-site-verification)")
     ap.add_argument("--content", dest="meta_content", default=None, help="head-meta: meta content 속성값")
     ap.add_argument("--page", dest="page", default=None,
-                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour", "faq", "labs"],
+                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour", "faq"],
                     help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
