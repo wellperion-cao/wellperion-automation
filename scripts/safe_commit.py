@@ -1572,6 +1572,19 @@ def safe_commit(
         except Exception as exc:  # push 실패는 커밋을 되돌리지 않는다(fail-open)
             print(f"[WARN] 배포 실패(저장은 그대로 — 다음 워처가 올림): {type(exc).__name__}: {exc}")
         _reply_to_feedback_in_message(message)
+        # 배포 직후 화면 자동 검수 관문(배 2851 · 시토) — 이 커밋이 화면(html)을 바꿨을 때만,
+        # 창 없는 분리 프로세스로 띄우고 결과를 기다리지 않는다(검수는 90초+ 걸려 저장을 막으면 안 된다).
+        if os.environ.get("POST_DEPLOY_CHECK") != "0" and any(
+                c.startswith("3. 웰페리온 가이드/") and c.endswith(".html") for c in result["changed"]):
+            try:
+                subprocess.Popen(
+                    [sys.executable, str(_SCRIPTS_DIR / "post_deploy_check.py"), result["sha"]],
+                    cwd=str(root), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    **({"creationflags": subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS}
+                       if os.name == "nt" else {}),
+                )
+            except Exception as exc:  # 검수 실행 실패가 저장·배포를 막으면 안 된다(fail-open)
+                print(f"[WARN] 배포 직후 검수 건너뜀: {type(exc).__name__}: {exc}")
     return result
 
 

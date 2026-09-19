@@ -1336,6 +1336,70 @@
       "reversible": false,
       "honesty_default": "measured",
       "serves": "partner"
+    },
+    {
+      "id": "cto-post-deploy-check",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "배포 직후 화면 자동 검수 관문(배 2851 · 웰리 요청) — safe_commit 이 「3. 웰페리온 가이드/**.html」을 커밋·push 한 직후 scripts/post_deploy_check.py 를 분리 프로세스로 띄운다. 로그인 세션으로 헤드리스 열어 문서 상태코드·같은 도메인 css/js 4xx·빈 화면(본문 글자수<20)·명암비 4.5 미달을 잰다. 걸리면 커밋 제목으로 요청 역할을 읽어 queue_dispatch.py 로 그 C-Level 에게 배를 되돌린다(GM 방 금지) — 같은 파일·같은 항목은 6시간에 1번만.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/post_deploy_check.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "safe_commit 이 push 성공 직후 무인으로 띄운다 — 사람 세션 없이도 매 배포마다 가동",
+      "feedback": {
+        "enabled": false,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true
+    },
+    {
+      "id": "cto-goal-score",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "시토 목표 진척 점수표 — 보안·안정·자율 3축 매일 자동 측정(scripts/cto_goal_score.py). erp_status_publisher.py 의 기존 30분 주기에 편승해 24시간 경과 시 재측정, 자율현황.html 시스템 현황 카드에 한 줄로 노출(GM 지시 2026-09-19).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/cto_goal_score.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "AI관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "erp-systems-panel"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "예약작업(erp_status_publisher 편승)이 사람 세션 없이 상시 측정·발행",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "serves": "ours"
     }
   ],
   "_removed": [
