@@ -13,10 +13,19 @@ GM 확정 규칙: 휴관일 = 신정(1/1) · 설날 · 추석 · 매월 2·4째 
 from __future__ import annotations
 
 import json
+import os
 from datetime import date, timedelta
 from pathlib import Path
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "status" / "close_days.json"
+# 배포 환경마다 이 파일 위치가 다르다 — /srv/erp/api/close_days.py 처럼 평면 배포되면
+# parent.parent 가 /srv/erp 를 가리켜 status/close_days.json 을 못 찾고, 수동 등록분
+# (설·추석·임시휴관)이 통째로 빠진 채 예외 없이 "2·4째 일요일" 규칙만 적용된다(9/27 오답 원인
+# · 2026-09-19 확인). api_chat.py CLOSE_DAYS_PATH 와 같은 순서로 저장소 전체 사본을 먼저 본다.
+_REPO_COPY = "/srv/erp/repo/status/close_days.json"
+CONFIG_PATH = Path(os.environ.get(
+    "ERP_CLOSE_DAYS",
+    _REPO_COPY if os.path.exists(_REPO_COPY) else
+    str(Path(__file__).resolve().parent.parent / "status" / "close_days.json")))
 
 
 def _manual_close_dates() -> set[str]:
