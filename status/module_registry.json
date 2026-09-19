@@ -1034,6 +1034,40 @@
       "serves": "partner"
     },
     {
+      "id": "cto-pc-crash-guard",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GM PC 강제 재부팅 재발 방지(GM 지시 2026-09-19 「근본적으로 해결」) — 2회 블루스크린(09-09 0x133 안랩 Safe Transaction · 09-19 0x3B INCA nProtect/Tachyon) 원인인 은행 보안 커널 드라이버(TK*·MeDCoreD·MeDVpDrv)를 매시간+로그온 시 레지스트리에서 스캔해 NDIS 필터 제거 뒤 Start=4 로 차단, 페이지 풀(정상 <1GB) 3GB 초과 경보, 크래시 뒤 남는 전부-NUL 파일(status/_queue.json 등)을 HEAD 판으로 자동 복구한다. 발견·변경 있을 때만 자동화현황방에 경보.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/pc_crash_guard.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "AI관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "예약작업(시간마다+로그온 시, run_py_hidden.vbs 경유, 관리자 권한)이 사람 세션 없이 상시 가동",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "entrypoint": "scripts/pc_crash_guard.py",
+      "created": "2026-09-19",
+      "serves": "ours"
+    },
+    {
       "id": "ceo-3line-weekly",
       "sellable": "internal",
       "owner_role": "ceo",
