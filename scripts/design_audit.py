@@ -60,9 +60,16 @@ JS = r"""
   const lum = c => { const m = c.match(/\d+(\.\d+)?/g); if (!m) return null; const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(+m[0]) + .7152 * f(+m[1]) + .0722 * f(+m[2]); };
   // 글자 뒤 배경색 — 조상 중 사진(img/video)이 글자 상자를 덮고 있으면 잴 수 없다(null)
   const covers = (a, b) => a.left <= b.left + 1 && a.top <= b.top + 1 && a.right >= b.right - 1 && a.bottom >= b.bottom - 1;
-  const bgOf = (el, rc) => { while (el) { const cs = getComputedStyle(el); const c = cs.backgroundColor;
+  // 반투명 배경(rgba … 0.1 칩·배지)은 아래 층과 섞어 실제 보이는 색으로 잰다 — 불투명으로 재면 과대 판정
+  const rgba = c => { const m = c.match(/[\d.]+/g); return m ? [+m[0], +m[1], +m[2], m[3] == null ? 1 : +m[3]] : null; };
+  const bgOf = (el, rc) => { const layers = []; while (el) { const cs = getComputedStyle(el); const c = cs.backgroundColor;
     if ([...el.querySelectorAll('img,video,iframe')].some(i => covers(i.getBoundingClientRect(), rc))) return null;
-    if (c && !/rgba\(\d+, \d+, \d+, 0\)/.test(c) && c !== 'transparent') return c; if (cs.backgroundImage !== 'none') return null; el = el.parentElement; } return 'rgb(255,255,255)'; };
+    const p = c && c !== 'transparent' ? rgba(c) : null;
+    if (p && p[3] > 0) { layers.push(p); if (p[3] >= 1) break; }
+    if (cs.backgroundImage !== 'none') return null; el = el.parentElement; }
+    let b = layers.length && layers[layers.length - 1][3] >= 1 ? layers.pop() : [255, 255, 255, 1];
+    for (let i = layers.length - 1; i >= 0; i--) { const [r, g, bl, a] = layers[i]; b = [r * a + b[0] * (1 - a), g * a + b[1] * (1 - a), bl * a + b[2] * (1 - a), 1]; }
+    return 'rgb(' + b.slice(0, 3).map(Math.round).join(',') + ')'; };
   const low = new Map();
   document.querySelectorAll('p,a,span,li,h1,h2,h3,h4,figcaption,div,td,th,label,button').forEach(e => {
     if (!vis(e)) return;
