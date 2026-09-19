@@ -30,7 +30,7 @@ import sys
 import threading
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -1221,6 +1221,35 @@ def _upcoming_closed_days_line(tenant: str, today=None, days: int = 45) -> str:
             % ("·".join(_fmt_day(d) for d in closed), "·".join(_fmt_day(d) for d in reopen)))
 
 
+# "9월 27일(일)" · "9/27(일)" 꼴 — 괄호 속 요일을 코드로 다시 계산해 끼운다.
+_DATE_WEEKDAY_RE = re.compile(
+    r"(\d{1,2})월\s*(\d{1,2})일\(([%s])\)|(\d{1,2})/(\d{1,2})\(([%s])\)" % (_WEEKDAY_NAMES, _WEEKDAY_NAMES))
+
+
+def _fix_weekday_labels(text: str, year: int = None) -> str:
+    """모델 답 속 "N월 N일(요일)"·"M/D(요일)" 의 요일을 실제 달력으로 고쳐 끼운다(웰리 재지시 —
+    문맥에 정확한 요일이 박혀 있어도 모델이 스스로 다시 계산하다 틀리는 사례 실측: "9월 26일(금)"
+    "9월 27일(토)" — 실제는 토·일). 모델 재호출 없이 코드로만 고친다. 연도는 "올해"(KST) 고정 —
+    질문·답 모두 연도를 안 쓰는 상담 특성상 가정해도 되는 값(§3-1 스타일과 동일 전제). 날짜가
+    달력에 없으면(2/30 등) 원문 그대로 둔다 — 잘못 지어낸 날짜까지 요일을 "고쳐서" 진짜처럼 보이게
+    만들지 않는다."""
+    if not text:
+        return text
+    year = year or datetime.now(timezone(timedelta(hours=9))).year
+
+    def _repl(m):
+        if m.group(1):
+            mo, d, fmt = int(m.group(1)), int(m.group(2)), "%d월 %d일(%s)"
+        else:
+            mo, d, fmt = int(m.group(4)), int(m.group(5)), "%d/%d(%s)"
+        try:
+            wd = _WEEKDAY_NAMES[date(year, mo, d).weekday()]
+        except ValueError:
+            return m.group(0)   # 달력에 없는 날짜 — 손대지 않는다
+        return fmt % (mo, d, wd)
+    return _DATE_WEEKDAY_RE.sub(_repl, text)
+
+
 def _is_hours_question(q: str) -> bool:
     """오늘 운영 여부를 묻는 질문인가(배1036 GM⑥) — 백업(모델 없음) 경로에서 코드로 바로 답할 때 쓴다."""
     q = q or ""
@@ -1470,6 +1499,7 @@ def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None,
         print("[concierge] guard=ko_greeting_strip tenant=%s" % tenant, flush=True)
         if meta is not None:
             meta["guard"] = "ko_greeting_strip"
+    text = _fix_weekday_labels(text)   # 모델이 스스로 다시 계산해 틀린 요일을 코드로 고쳐 끼운다(웰리 재지시)
     price_blocked, allowed_price = _price_check(text, prof.get("allowed_prices"))
     # 근거 문자열에 질문(q)도 더한다 — 손님이 직접 적은 날짜("9월 27일")를 답이 그대로 옮기면 그건
     # 지어낸 숫자가 아니라 되짚은 것이다. [오늘] 문맥은 "휴관일"만 나열하므로(배 웰리요청 9/27 수리)
@@ -1810,6 +1840,12 @@ def _selfcheck() -> None:
     assert "9/26" in closed_part and "9/27" not in closed_part and "9/24" in closed_part and "9/25" in closed_part, up
     assert "9/27(일)" in up, "추석 연휴(9/24~26) 다음 첫 영업일은 9/27(일) — 모델이 스스로 계산 안 하게 근거에 박아 둔다"
     assert _upcoming_closed_days_line("3_gocheokgolf", _date(2026, 9, 19)) == "", "규칙 없으면 빈 문자열"
+    # 웰리 재지시 — 모델이 요일을 스스로 다시 계산해 틀리는 것(실측 "9월 26일(금)" · 실제 토요일)을
+    # 코드로 고쳐 끼운다. 2026-09-26 = 토요일.
+    assert (_fix_weekday_labels("9월 26일(금)은 휴관이에요", year=2026) == "9월 26일(토)은 휴관이에요")
+    assert _fix_weekday_labels("9/26(금)은 휴관", year=2026) == "9/26(토)은 휴관"
+    assert _fix_weekday_labels("2월 30일(월)은 없는 날짜", year=2026) == "2월 30일(월)은 없는 날짜", "달력에 없는 날짜는 그대로 둔다"
+    assert _fix_weekday_labels("") == ""
     # #8 FAQ 원자 저장 · 깨진 파일은 폴백 없이 오류.
     saved_faq_dir, FAQ_DIR = FAQ_DIR, _tf.mkdtemp()
     it8 = _edit_faq_locked("1_wellperion", {"q": "새 질문", "a": "새 답"})
