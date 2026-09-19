@@ -123,6 +123,12 @@
   .pwait.pbad{color:var(--pf-bad);}
   .pdiv{font-size:var(--fs-1); font-weight:700; color:var(--pf-soft); letter-spacing:.06em; margin:10px 0 6px; padding-top:8px; border-top:1px dashed var(--pf-line);}
   .ppre{font-size:var(--fs-2); color:var(--pf-soft); margin:0 0 12px; line-height:1.55;}
+  /* #brand 패널 전용 — 카드 3장 행 정렬(GM 지시 2026-09-19 「그리드 기준으로 정리」).
+     원인: 카드마다 항목(.pi) 텍스트 줄 수가 달라 auto 높이로 쌓이면 카드 간 행이 어긋난다.
+     세 카드 모두 같은 순서(ph 1 + pi 8 + pdiv 1 + pi 6 + pwait 1 = 17행)라 subgrid 로 부모 grid 행에 맞춘다. */
+  section[data-panel="brand"] .pgrid{grid-template-rows:repeat(17,auto);}
+  section[data-panel="brand"] .pcard{display:grid; grid-template-rows:subgrid; grid-row:span 17; row-gap:0;}
+  @media(max-width:1100px){ section[data-panel="brand"] .pgrid{grid-template-columns:1fr;} }
   span.pi{cursor:default;}
   .pi span a{color:var(--pf-pri-dk); text-decoration:underline;}
   /* 계정 자리 — 비밀번호는 담지 않는다. 이 주소는 공개라 적어 두면 누구나 본다. 아이디만 가렸다 보인다. */
