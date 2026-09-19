@@ -30,22 +30,28 @@ def append_cta_card(image_paths):
 #   플레이스 유입을 링크 레벨에서 구분할 수단이 현재 0. 이 코드를 플레이스 관리자 링크에 1회 심으면
 #   그 이후 유입부터 '플레이스 경유'가 자동 UTM 칸에 남는다(소급 불가).
 CHANNEL_UTM = {
-    "naver_blog":  "naver_blog",
-    "naver_cafe":  "naver_cafe",
-    "naver_place": "naver_place",
-    "danggn":      "danggn",
-    "kakao":       "kakao",
-    "instagram":   "instagram",
+    "naver_blog":     "naver_blog",
+    "naver_cafe":     "naver_cafe",
+    "naver_place":    "naver_place",
+    "danggn":         "danggn",
+    "kakao":          "kakao",
+    "instagram":      "instagram",
+    "threads":        "threads",
+    "google_business": "google_business",
+    "google_blog":    "google_blog",
 }
 
 # 채널 키 → utm_medium 코드
 CHANNEL_MEDIUM = {
-    "naver_blog":  "blog",
-    "naver_cafe":  "cafe",
-    "naver_place": "place",
-    "danggn":      "community",
-    "kakao":       "messaging",
-    "instagram":   "social",
+    "naver_blog":     "blog",
+    "naver_cafe":     "cafe",
+    "naver_place":    "place",
+    "danggn":         "community",
+    "kakao":          "messaging",
+    "instagram":      "social",
+    "threads":        "social",       # 인스타그램과 같은 소셜 계열
+    "google_business": "place",        # 네이버플레이스와 같은 업체 정보 계열
+    "google_blog":    "blog",         # 네이버블로그와 같은 블로그 계열
 }
 
 # wellperion.com/ko/inquiry (http(s):// 선택, 끝 슬래시 선택) — 뒤에 쿼리/추가경로 없을 때만
@@ -85,8 +91,9 @@ IG_BIO_CTA_TEXT = "프로필 링크로 편하게 문의해 주세요."
 # IG 계정명(profiles/instagram/{account} 와 동일 키) → utm_content 코드(계정 식별자).
 # 채널(utm_source)은 두 계정 모두 'instagram' — 집계는 '인스타그램' 한 버킷, 계정 구분은 utm_content.
 IG_ACCOUNT_CONTENT = {
-    "wellperion":       "official",   # @wellperion (공식)
-    "namuk.wellperion": "namuk",      # @namuk.wellperion (개인)
+    "wellperion":         "official",  # @wellperion (공식)
+    "namuk.wellperion":   "namuk",     # @namuk.wellperion (개인)
+    "wellperionaxlabs":   "axlabs",    # @wellperionaxlabs (웰페리온 AX 랩스)
 }
 
 

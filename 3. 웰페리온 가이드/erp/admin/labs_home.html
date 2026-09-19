@@ -439,13 +439,22 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       e.preventDefault();
       if(!leadForm.checkValidity()){ leadForm.reportValidity(); return; }
       var hp=document.getElementById('fHp').value;
+      // 관문③ 채널별 문의 세기 — 페이지 URL 의 utm_* 를 그대로 실어 보낸다.
+      // ⚠ 한계: WP iframe(/ko/labs/) 안에서 열리면 이 페이지 자신의 URL 에는 utm 이 안 실려
+      // 부모(iframe 바깥) 주소의 utm 을 못 읽는다 — 부모 전달은 이번엔 하지 않는다.
+      var qs=new URLSearchParams(window.location.search);
       var payload={
         center:document.getElementById('fCenter').value.trim(),
         kind:document.getElementById('fKind').value,
         phone:document.getElementById('fPhone').value.trim(),
         pain:document.getElementById('fPain').value.trim(),
         agree:true,
-        hp:hp
+        hp:hp,
+        utm_source:qs.get('utm_source')||'',
+        utm_medium:qs.get('utm_medium')||'',
+        utm_campaign:qs.get('utm_campaign')||'',
+        utm_content:qs.get('utm_content')||'',
+        ref:qs.get('utm_source')?'':(function(){try{return document.referrer?new URL(document.referrer).host:'';}catch(e){return '';}})()
       };
       leadMsg.innerHTML=''; leadBtn.disabled=true; leadBtn.textContent='보내는 중…';
       function done(){ leadForm.hidden=true; leadMsg.innerHTML='<div class="form-msg">받았습니다. 다음 날 연락드리겠습니다.</div>'; }
