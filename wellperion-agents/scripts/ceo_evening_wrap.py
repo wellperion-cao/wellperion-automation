@@ -36,6 +36,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -269,11 +270,11 @@ def save_marker(commits: list[str], done_q: list[dict],
     out = today_marker()
     text = json.dumps(marker, ensure_ascii=False, indent=2)
     if dry_run:
-        print(f"[DRY-RUN] 마감 마커 저장 예정 → {out} ({len(text)} bytes, 기록 안 함)")
+        print(f"[DRY-RUN] 마감 마커 저장 예정 → {out} ({len(text)} bytes, 기록 안 함)", flush=True)
     else:
         WRAP_DIR.mkdir(parents=True, exist_ok=True)
         out.write_text(text, encoding="utf-8")
-        print(f"[OK] 마감 마커 저장 → {out}")
+        print(f"[OK] 마감 마커 저장 → {out}", flush=True)
     return out
 
 
@@ -292,8 +293,14 @@ def absorbed_2100_blocks() -> str:
         sys.path.insert(0, str(REPO / "telegram_bot"))
         import daily_scheduler as ds  # noqa: PLC0415
         today = datetime.now().strftime("%Y-%m-%d")
+        print("▶ 업무시트 완료조회 시작", flush=True)
+        t0 = time.time()
         done_sheet = ds._fetch_yesterday_done_todos(day=today)
+        print(f"✔ 업무시트 완료조회 끝 ({time.time()-t0:.1f}초)", flush=True)
+        print("▶ 업무시트 미완조회 시작", flush=True)
+        t0 = time.time()
         open_cards = ds._fetch_open_todo_cards_for_tomorrow()
+        print(f"✔ 업무시트 미완조회 끝 ({time.time()-t0:.1f}초)", flush=True)
         lines: list[str] = []
         if done_sheet:
             lines.append("🗓 일정·회의 (업무 시트)")
@@ -314,33 +321,39 @@ def absorbed_2100_blocks() -> str:
         if lines:
             parts.append("\n".join(lines))
     except Exception as exc:
-        print(f"[WARN] 21시 흡수 블록 실패({exc}) — 생략", file=sys.stderr)
+        print(f"[WARN] 21시 흡수 블록 실패({exc}) — 생략", file=sys.stderr, flush=True)
     try:
         sys.path.insert(0, str(REPO / "scripts"))
         from weekly_marketing_feedback import build_daily_card_text  # noqa: PLC0415
+        print("▶ 마케팅카드 생성 시작", flush=True)
+        t0 = time.time()
         card = (build_daily_card_text() or "").strip()
+        print(f"✔ 마케팅카드 생성 끝 ({time.time()-t0:.1f}초)", flush=True)
         if card:
             parts.append(card)
     except Exception as exc:
-        print(f"[WARN] 마케팅 카드 흡수 실패({exc}) — 생략", file=sys.stderr)
+        print(f"[WARN] 마케팅 카드 흡수 실패({exc}) — 생략", file=sys.stderr, flush=True)
     return "\n\n".join(parts)
 
 
 def send_report(report: str, dry_run: bool) -> bool:
     if dry_run:
-        print("\n========== [DRY-RUN] 텔레그램 마감 보고 (발송 안 함) ==========")
-        print(report)
-        print("========== [DRY-RUN] 끝 ==========\n")
+        print("\n========== [DRY-RUN] 텔레그램 마감 보고 (발송 안 함) ==========", flush=True)
+        print(report, flush=True)
+        print("========== [DRY-RUN] 끝 ==========\n", flush=True)
         return True
     try:
+        print("▶ 텔레그램 발송 시작", flush=True)
+        t0 = time.time()
         from telegram_notifier import TelegramNotifier
         tg = TelegramNotifier()
         r = tg.send(report)
         ok = bool(r.get("ok")) if isinstance(r, dict) else False
-        print(f"[OK] 텔레그램 마감 보고 발송 — ok={ok}")
+        print(f"✔ 텔레그램 발송 끝 ({time.time()-t0:.1f}초) — ok={ok}", flush=True)
+        print(f"[OK] 텔레그램 마감 보고 발송 — ok={ok}", flush=True)
         return ok
     except Exception as exc:
-        print(f"[FAIL] 텔레그램 발송 실패: {exc}", file=sys.stderr)
+        print(f"[FAIL] 텔레그램 발송 실패: {exc}", file=sys.stderr, flush=True)
         return False
 
 
@@ -350,41 +363,53 @@ def run_wrap(dry_run: bool, once_per_day: bool = False) -> int:
     # 하루 1회 가드: 오늘 이미 마감했으면 즉시 스킵. dry-run 은 마커를 안 만들어 가드 미소모.
     if once_per_day and not dry_run and already_ran_today():
         print(f"[SKIP] 오늘({datetime.now().strftime('%Y-%m-%d')}) 마감 루틴 이미 실행됨 "
-              f"→ {today_marker()} (스킵)")
+              f"→ {today_marker()} (스킵)", flush=True)
         return 0
 
-    print(f"=== CEO 하루 마감 루틴 시작 (dry_run={dry_run}, once_per_day={once_per_day}) ===")
+    print(f"=== CEO 하루 마감 루틴 시작 (dry_run={dry_run}, once_per_day={once_per_day}) ===", flush=True)
 
     # ②③ 남은 할일 — 아침 파이프라인 수집·분류(3분류 SSOT + G1 SSOT) 재사용
+    print("▶ 단계1(수집·분류) 시작", flush=True)
+    t0 = time.time()
     s1 = stage1_collect_classify()
+    print(f"✔ 단계1(수집·분류) 끝 ({time.time()-t0:.1f}초)", flush=True)
     gm_decision = s1["gm_decision"]
     autonomous = s1["autonomous"]
     deep_interview = s1["deep_interview"]
     remaining_total = len(gm_decision) + len(autonomous) + len(deep_interview)
-    print(f"[STAGE 1] 데이터 소스: {s1.get('_source','?')}")
+    print(f"[STAGE 1] 데이터 소스: {s1.get('_source','?')}", flush=True)
     print(f"[② 남은 할일] {remaining_total}건 → GM결정 {len(gm_decision)} "
-          f"/ 자율 {len(autonomous)} / 명확화대기 {len(deep_interview)}")
+          f"/ 자율 {len(autonomous)} / 명확화대기 {len(deep_interview)}", flush=True)
 
     # ① 오늘 한 일 — G1 SSOT 완료 우선, fallback 시 커밋+큐
+    print("▶ 오늘 커밋 조회 시작", flush=True)
+    t0 = time.time()
     commits = today_commits()
+    print(f"✔ 오늘 커밋 조회 끝 ({time.time()-t0:.1f}초)", flush=True)
     g1_done_today = today_done_g1(s1)
     if g1_done_today:
         done_q = g1_done_today
-        print(f"[① 오늘 한 일] G1 완료 {len(done_q)}건 + 커밋 {len(commits)}건")
+        print(f"[① 오늘 한 일] G1 완료 {len(done_q)}건 + 커밋 {len(commits)}건", flush=True)
     else:
         done_q = today_done_queue()
-        print(f"[① 오늘 한 일] 커밋 {len(commits)}건 + 완료 큐 {len(done_q)}건")
+        print(f"[① 오늘 한 일] 커밋 {len(commits)}건 + 완료 큐 {len(done_q)}건", flush=True)
 
     # 보고 빌드 + 발송 + 마커
     report = build_evening_report(commits, done_q, gm_decision, autonomous, deep_interview)
+    print("▶ 21시 흡수 블록 시작", flush=True)
+    t0 = time.time()
     extra = absorbed_2100_blocks()   # 21시 마감·21:02 마케팅 흡수(2026-08-29 GM 승인)
+    print(f"✔ 21시 흡수 블록 끝 ({time.time()-t0:.1f}초)", flush=True)
     if extra:
         report = f"{report}\n\n{extra}"
     sent = send_report(report, dry_run)
+    print("▶ 마감 마커 저장 시작", flush=True)
+    t0 = time.time()
     save_marker(commits, done_q, gm_decision, autonomous, deep_interview, dry_run)
-    print(f"[보고] {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}")
+    print(f"✔ 마감 마커 저장 끝 ({time.time()-t0:.1f}초)", flush=True)
+    print(f"[보고] {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}", flush=True)
 
-    print(f"=== 마감 루틴 종료 — {'성공' if sent else '실패'} ===")
+    print(f"=== 마감 루틴 종료 — {'성공' if sent else '실패'} ===", flush=True)
     return 0 if sent else 1
 
 
