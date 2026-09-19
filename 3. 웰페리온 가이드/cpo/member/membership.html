@@ -4887,9 +4887,9 @@ function closeLessonDash(){
   if (ov) ov.classList.remove('open');
 }
 function _lessonFetchRegistry(lsType, from, to, cb){
-  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  var gas = function(){ return fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(lsType) + '&from=' + from + '&to=' + to + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  (ERP_API_ON ? _apiLessonRegistry(lsType, from, to).catch(function(){ return gas(); }) : gas())
+  // ★2026-09-19 시토 — GAS 폴백 제거, 서버 미러(/api/lesson/registry)만. 비-ERP(공개 사본)는 조회하지 않는다.
+  if (!ERP_API_ON) { cb(null); return; }
+  _apiLessonRegistry(lsType, from, to)
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -6703,12 +6703,11 @@ function lessonRegistryLoad(t) {
   var st = _lessonState[t];
   st.regLoaded = true;
   var b = document.getElementById('lessonRegBody_' + t);
-  if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 오늘 등록 회원이 표시됩니다.'); return; }
+  if (!ERP_API_ON) { if (b) b.innerHTML = _lessonRegRow('미연동', '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'); return; }
   if (b) b.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  // ★2026-09-09 배1050 — 강습 미러 우선. 서버 registry 는 인자가 없으면 오늘 하루로 자른다(GAS 무인자와 같은 범위).
-  var _lgGas = function(){ return fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/lesson/registry?type=' + encodeURIComponent(st.type)).catch(function(){ return _lgGas(); }) : _lgGas())
+  // ★2026-09-19 시토 — GAS 폴백 제거. 서버 registry 는 인자가 없으면 오늘 하루로 자른다(GAS 무인자와 같은 범위).
+  _apiJson('/api/lesson/registry?type=' + encodeURIComponent(st.type))
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
       st.registry = d.data || [];
