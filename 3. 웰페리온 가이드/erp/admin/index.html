@@ -1431,11 +1431,27 @@
   <div class="meta" id="aws-line">불러오는 중…</div>
   <div class="tbl-wrap"><table class="reg"><thead><tr><th>서비스</th><th>이번 달 사용액</th></tr></thead>
     <tbody id="aws-rows"><tr><td colspan="2" class="note">불러오는 중…</td></tr></tbody></table></div>
+
+  <!-- 딜라이브 문자 + 구글 워크스페이스 (배 12874 · 2026-09-19 시토 · GM 주간 지시). 문자 건수 원천 = /api/admin/sms/counts(month_sent · sent 만 · dry/hold 제외).
+       단가·구글 계정 값은 아직 없다 — 상수 null. 값이 들어오면 아래 SMS_UNIT_KRW / GWS_ACCOUNTS / GWS_PRICE_KRW 만 채우면 자동 반영. -->
+  <h3 style="margin:22px 0 6px;">딜라이브 문자(SMS/LMS) 비용</h3>
+  <div class="meta" id="sms-cost-line">불러오는 중…</div>
+  <h3 style="margin:22px 0 6px;">구글 워크스페이스 계정</h3>
+  <div class="meta" id="gws-cost-line">불러오는 중…</div>
   <p class="tip" id="cost-note"></p>
   <script>
   (function(){
     function won(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
-    fetch('/status/cost_status.json?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+    var SMS_UNIT_KRW = null;       // 딜라이브 건당 단가 — 업체 회신 오면 이 숫자만 채운다(원)
+    var SMS_PREPAID_KRW = 300000;  // 선불 충전(딜라이브)
+    var GWS_ACCOUNTS = null;       // 구글 워크스페이스 계정 수
+    var GWS_PRICE_KRW = null;      // 계정당 월 요금(원)
+    var smsMonthSent = null;
+    fetch('/api/admin/sms/counts?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+      smsMonthSent = d.month_sent;
+    }).catch(function(){ /* 권한 없음·오류 — 아래서 미확정으로 표시 */ }).then(function(){
+      return fetch('/status/cost_status.json?_=' + Date.now(), {cache:'no-store'});
+    }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
       var h = d.higgsfield, a = d.aws, when = (d.generated_at || '').slice(0, 16).replace('T', ' ');
       if (h) {
         document.getElementById('hf-line').innerHTML = '플랜 <b>' + (h.plan || '—') + '</b> · 남은 크레딧 <b>' + h.credits_left + '</b> · ' + h.month + ' 사용 <b>' + h.month_spent + '</b>' + (h.last ? ' · 마지막 ' + h.last.at + ' ' + h.last.model : '');
@@ -1448,15 +1464,32 @@
         var rs = Object.keys(a.by_service || {}).filter(function(k){ return a.by_service[k] > 0; }).map(function(k){ return '<tr><td>' + k + '</td><td>$' + a.by_service[k].toFixed(2) + '</td></tr>'; });
         document.getElementById('aws-rows').innerHTML = rs.length ? rs.join('') : '<tr><td colspan="2" class="note">이번 달 사용 없음</td></tr>';
       } else { document.getElementById('aws-line').textContent = 'AWS 못 읽음 — ' + ((d.errors || {}).aws || ''); }
+      var smsLine = document.getElementById('sms-cost-line');
+      if (smsMonthSent == null) {
+        smsLine.textContent = '문자 발송 건수를 못 읽었습니다';
+      } else if (SMS_UNIT_KRW == null) {
+        smsLine.innerHTML = '이번 달 <b>' + smsMonthSent + '건</b> 발송(dry·시험 제외) · 건당 단가 <b>미확정</b>(업체 회신 대기) · 선불 충전 ' + won(SMS_PREPAID_KRW);
+      } else {
+        smsLine.innerHTML = '이번 달 <b>' + smsMonthSent + '건</b> × ' + won(SMS_UNIT_KRW) + ' = <b>' + won(smsMonthSent * SMS_UNIT_KRW) + '</b> · 선불 충전 ' + won(SMS_PREPAID_KRW);
+      }
+      document.getElementById('gws-cost-line').innerHTML = (GWS_ACCOUNTS == null || GWS_PRICE_KRW == null)
+        ? '계정 수·요금 미입력'
+        : GWS_ACCOUNTS + '개 × ' + won(GWS_PRICE_KRW) + ' = 월 ' + won(GWS_ACCOUNTS * GWS_PRICE_KRW);
       document.getElementById('cost-note').textContent = '실측 ' + when + ' · 매일 00:20 자동 실측(힉스필드는 그 시각 기준 · AWS 는 전날분까지 잡힘) · ' + ((a && a.note) || '') + ' · 환율 1,400원 고정';
       var sm = d.summary;
       if (sm) {
         var mm = String(sm.month || '').slice(5).replace(/^0/, '');
-        document.getElementById('cost-total').innerHTML = mm + '월 실제 나가는 돈 <b>' + won(sm.total_paid_krw) + '</b>'
+        var smsCost = (SMS_UNIT_KRW != null && smsMonthSent != null) ? SMS_UNIT_KRW * smsMonthSent : 0;
+        var gwsCost = (GWS_ACCOUNTS != null && GWS_PRICE_KRW != null) ? GWS_ACCOUNTS * GWS_PRICE_KRW : 0;
+        var extra = smsCost + gwsCost;
+        var unpriced = (SMS_UNIT_KRW == null || GWS_PRICE_KRW == null);
+        document.getElementById('cost-total').innerHTML = mm + '월 실제 나가는 돈 <b>' + won(sm.total_paid_krw + extra) + '</b>'
           + ' = 클로드 정액 ' + won(sm.claude_fixed_krw) + ' + 힉스필드 ' + won(sm.higgsfield_month_krw) + '(연 선결제 ÷12) + AWS 실청구 ' + won(sm.aws_net_krw || 0)
-          + (sm.aws_usage_krw ? ' <span style="color:var(--dim)">(AWS 사용액 ' + won(sm.aws_usage_krw) + '은 크레딧이 대신 냄 · 크레딧 끝나면 합계 ' + won(sm.total_if_no_credit_krw) + ')</span>' : '');
+          + (extra ? ' + 문자·구글 ' + won(extra) : '')
+          + (sm.aws_usage_krw ? ' <span style="color:var(--dim)">(AWS 사용액 ' + won(sm.aws_usage_krw) + '은 크레딧이 대신 냄 · 크레딧 끝나면 합계 ' + won(sm.total_if_no_credit_krw) + ')</span>' : '')
+          + (unpriced ? ' <span style="color:var(--dim)">(문자·구글 미포함)</span>' : '');
       } else { document.getElementById('cost-total').textContent = '이번 달 합계 — 실측 파일에 아직 없음'; }
-    }).catch(function(){ document.getElementById('hf-line').textContent = '비용 실측 파일이 아직 없습니다'; document.getElementById('aws-line').textContent = ''; });
+    }).catch(function(){ document.getElementById('hf-line').textContent = '비용 실측 파일이 아직 없습니다'; document.getElementById('aws-line').textContent = ''; document.getElementById('sms-cost-line').textContent = ''; document.getElementById('gws-cost-line').textContent = ''; });
   })();
   </script>
 </section>
