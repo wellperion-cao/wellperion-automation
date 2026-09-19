@@ -79,7 +79,7 @@
 'use strict';
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
-var TENANTS = [ { id:'1_wellperion', name:'웰페리온' }, { id:'2_dietcamp', name:'다이어트캠프' }, { id:'3_gocheokgolf', name:'고척' } ];
+var TENANTS = [ { id:'wellperion', name:'웰페리온' }, { id:'2_dietcamp', name:'다이어트캠프' }, { id:'3_gocheokgolf', name:'고척' } ];
 var tabsEl = document.getElementById('tabs');
 var utblBody = document.getElementById('utbl').tBodies[0];
 

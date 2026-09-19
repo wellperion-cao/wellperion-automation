@@ -21,6 +21,7 @@ import asyncio
 import sys
 
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 import api_assistant
@@ -95,7 +96,7 @@ async def transcribe(request: Request, langs: str = ""):
     pcm = _cap(body)
     lang_opts = _langs(langs)
     if len(lang_opts) < 2:
-        return {"error": "언어 자동판별은 후보 언어가 2개 이상 필요합니다."}
+        return JSONResponse({"error": "언어 자동판별은 후보 언어가 2개 이상 필요합니다."}, status_code=400)
 
     try:
         result = await asyncio.wait_for(_transcribe(pcm, lang_opts), timeout=STREAM_TIMEOUT_S)

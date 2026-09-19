@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 import api_assistant
 import api_chat
@@ -65,7 +66,7 @@ def _system_prompt(source: str, target: str) -> str:
 def translate(request: Request, body: dict):
     text, source, target, err = _validate(body)
     if err:
-        return {"error": err}
+        return JSONResponse({"error": err}, status_code=400)
 
     client = api_chat._anthropic_client()
     if not client:
