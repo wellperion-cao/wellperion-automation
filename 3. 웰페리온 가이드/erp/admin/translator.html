@@ -90,6 +90,10 @@
       <button type="button" class="pressbtn" id="btnKo">🇰🇷 한국어로 말하기</button>
       <button type="button" class="pressbtn" id="btnOther">언어로 말하기</button>
     </div>
+    <!-- 자동 통역 — 언어를 안 고르고 눌러 말하면 서버가 ko/en 을 스스로 판별한다(배 12831 · GM 09-18) -->
+    <div class="pressgrid">
+      <button type="button" class="pressbtn" id="btnAuto">🎤 자동 통역</button>
+    </div>
     <div class="typerow">
       <input type="text" id="typeText" placeholder="또는 한국어로 입력">
       <button type="button" class="btn p" id="btnType">번역</button>
@@ -321,6 +325,116 @@ function speak(text, lang, done){
     u.onend = done; u.onerror = done;
     speechSynthesis.speak(u);
   } catch (e) { done(); }
+}
+
+/* ── 자동 통역(배 12831) — 눌러 녹음, 다시 누르거나 15초 도달하면 멈추고 서버가 ko/en 을 스스로 판별한다.
+   서버(/api/transcribe)는 ko-KR·en-US 만 다뤄 이 버튼은 그 둘 사이만 오간다(GM 09-18 요청 범위) ── */
+LANG_NAME.en = LANG_NAME.en || '영어';
+SPEECH_LOCALE.en = SPEECH_LOCALE.en || 'en-US';
+
+var AUTO_SAMPLE_RATE = 16000;
+var AUTO_MAX_MS = 15000;
+
+function floatToInt16(float32Arr){
+  var out = new Int16Array(float32Arr.length);
+  for (var i = 0; i < float32Arr.length; i++) {
+    var s = Math.max(-1, Math.min(1, float32Arr[i]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return out;
+}
+function downsampleTo16k(float32Arr, inputRate){
+  if (inputRate === AUTO_SAMPLE_RATE) return floatToInt16(float32Arr);
+  var ratio = inputRate / AUTO_SAMPLE_RATE;
+  var newLen = Math.round(float32Arr.length / ratio);
+  var result = new Float32Array(newLen);
+  var offsetResult = 0, offsetBuffer = 0;
+  while (offsetResult < newLen) {
+    var nextOffsetBuffer = Math.round((offsetResult + 1) * ratio);
+    var accum = 0, count = 0;
+    for (var i = offsetBuffer; i < nextOffsetBuffer && i < float32Arr.length; i++) { accum += float32Arr[i]; count++; }
+    result[offsetResult] = count ? accum / count : 0;
+    offsetResult++;
+    offsetBuffer = nextOffsetBuffer;
+  }
+  return floatToInt16(result);
+}
+
+var btnAuto = document.getElementById('btnAuto');
+var AutoAC = window.AudioContext || window.webkitAudioContext;
+var autoRecording = false, autoCtx = null, autoStream = null, autoSource = null, autoProcessor = null, autoTimer = null;
+var autoChunks = [];
+
+if (!btnAuto) {
+  /* 없음 — 방어. 정상 화면에선 항상 존재 */
+} else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AutoAC) {
+  btnAuto.classList.add('hide');
+} else {
+  btnAuto.addEventListener('click', function(){
+    if (autoRecording) stopAutoRecording(); else startAutoRecording();
+  });
+}
+
+function startAutoRecording(){
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+    autoStream = stream;
+    autoCtx = new AutoAC();
+    autoSource = autoCtx.createMediaStreamSource(stream);
+    autoProcessor = autoCtx.createScriptProcessor(4096, 1, 1);
+    autoChunks = [];
+    autoProcessor.onaudioprocess = function(e){
+      autoChunks.push(downsampleTo16k(e.inputBuffer.getChannelData(0), autoCtx.sampleRate));
+    };
+    autoSource.connect(autoProcessor);
+    autoProcessor.connect(autoCtx.destination);
+    autoRecording = true;
+    btnAuto.classList.add('active');
+    btnAuto.textContent = '⏹ 듣는 중… (다시 누르면 멈춤)';
+    statusMsg.textContent = '자동 통역 듣는 중…'; statusMsg.className = 'msg ok';
+    autoTimer = setTimeout(stopAutoRecording, AUTO_MAX_MS);
+  }).catch(function(){
+    statusMsg.textContent = '마이크 권한이 없습니다 — 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
+    statusMsg.className = 'msg bad';
+  });
+}
+function stopAutoRecording(){
+  if (!autoRecording) return;
+  autoRecording = false;
+  clearTimeout(autoTimer); autoTimer = null;
+  btnAuto.classList.remove('active');
+  btnAuto.textContent = '🎤 자동 통역';
+  if (autoProcessor) { autoProcessor.disconnect(); autoProcessor.onaudioprocess = null; autoProcessor = null; }
+  if (autoSource) { autoSource.disconnect(); autoSource = null; }
+  if (autoStream) { autoStream.getTracks().forEach(function(t){ t.stop(); }); autoStream = null; }
+  if (autoCtx) { autoCtx.close(); autoCtx = null; }
+  sendAutoPcm();
+}
+function sendAutoPcm(){
+  var total = 0;
+  autoChunks.forEach(function(c){ total += c.length; });
+  var chunks = autoChunks; autoChunks = [];
+  if (!total) return;
+  var merged = new Int16Array(total);
+  var off = 0;
+  chunks.forEach(function(c){ merged.set(c, off); off += c.length; });
+  statusMsg.textContent = '인식 중…'; statusMsg.className = 'msg';
+  fetch('/api/transcribe?langs=ko-KR,en-US', {
+    method: 'POST', cache: 'no-store',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: merged.buffer
+  }).then(function(r){
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  }).then(function(d){
+    if (d.error) { statusMsg.textContent = '자동 통역 준비 중입니다.'; statusMsg.className = 'msg bad'; return; }
+    var text = (d.text || '').trim();
+    if (!text) { statusMsg.textContent = '다시 말씀해 주세요.'; statusMsg.className = 'msg'; return; }
+    statusMsg.textContent = ''; statusMsg.className = 'msg';
+    if ((d.lang || '').indexOf('ko') === 0) handleUtterance(text, 'ko', 'en', true);
+    else handleUtterance(text, 'en', 'ko', false);
+  }).catch(function(){
+    statusMsg.textContent = '자동 통역 준비 중입니다.'; statusMsg.className = 'msg bad';
+  });
 }
 })();
 </script>
