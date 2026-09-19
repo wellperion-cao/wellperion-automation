@@ -24,7 +24,7 @@ $SCP server/counselbot/shared/*.json "$HOST:/srv/erp/counselbot/shared/"   # 배
 $SCP server/erp_api/chat.nginx.conf $HOST:/tmp/chat.conf
 $SCP "3. 웰페리온 가이드/cbo/model/chat_widget.html" $HOST:/srv/www/2_dietcamp/chat_widget.html   # 위젯 — 다캠 페이지와 같은 origin
 
-for t in "1_wellperion" "2_dietcamp" "3_gocheokgolf"; do
+for t in "1_wellperion" "2_dietcamp" "3_gocheokgolf" "4_axlabs"; do
   $S "mkdir -p '/srv/erp/faq/$t'"
   if ! $S "test -f '/srv/erp/faq/$t/faq.json'"; then
     if [ -f "server/erp_api/seed_faq/$t.json" ]; then

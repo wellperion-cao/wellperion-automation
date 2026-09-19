@@ -47,7 +47,7 @@ except ImportError:
 
 router = APIRouter(prefix="/api/chat")
 
-TENANTS = {"1_wellperion", "2_dietcamp", "3_gocheokgolf"}   # 3번은 고척 QA골프(GM 2026-09-09 「스포짐이 부장님거야」로 교체) — FAQ 0 이어도 라우트는 연다
+TENANTS = {"1_wellperion", "2_dietcamp", "3_gocheokgolf", "4_axlabs"}   # 3번은 고척 QA골프(GM 2026-09-09 「스포짐이 부장님거야」로 교체) — FAQ 0 이어도 라우트는 연다. 4번=AX 랩스 회사 채널(배 2866 · 시모 FAQ 작성 중)
 FAQ_DIR = os.environ.get("ERP_FAQ_DIR", "/srv/erp/faq")
 SEED_FAQ_DIR = os.path.join(_HERE, "seed_faq")   # /srv/erp/faq 에 없을 때 폴백 — 개발 PC 자체점검용(검수 L4)
 _LOG_FILENAMES = {"chat": "chat_log.jsonl", "usage": "counsel_usage.jsonl", "feedback": "chat_feedback.jsonl"}

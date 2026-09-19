@@ -1,0 +1,64 @@
+{
+  "tenant": {
+    "id": "4_axlabs",
+    "name": "웰페리온 AX 랩스",
+    "name_en": "WELLPERION AX LABS",
+    "type": "AI 전환(AX) 자동화 개발사 · 회사 채널"
+  },
+  "identity": {
+    "one_liner": "정본 = ssot/canon_values.json platform_one_liner_kr",
+    "tone": "짧고 정중한 존댓말 · 압박 없이 알리기",
+    "counselor_persona": {
+      "name": "AX 랩스 상담",
+      "greeting": "안녕하세요 😊 웰페리온 AX 랩스입니다. 무엇이 궁금하세요?",
+      "handoff": "정확히 확인해서 알려드릴게요. 상담을 남겨 주시면 연락드릴게요.",
+      "typing_ms": 900,
+      "emoji": "적당히"
+    },
+    "service_concept": "컨시어지(호텔급 서비스 마인드) — 원칙 7 = 설계 §3-2 · 업체 어투 위에 얹는다",
+    "sales_style": "압박 없이 알리기 — 요금 등 숫자는 상담으로 넘긴다"
+  },
+  "facts": {
+    "_note": "회사 채널(자기 자신) · 센터형 사실값(주소·시간·주차)이 없는 업종"
+  },
+  "channels": {
+    "reservation_url": ""
+  },
+  "offerings": [],
+  "policies": [],
+  "faq_file": "server/counselbot/tenants/4_axlabs_qa.json (시모 작성 중)",
+  "guards": {
+    "forbidden_topics": [
+      "금액·가격 숫자",
+      "계약·환불 확정",
+      "개인정보 수집"
+    ],
+    "handoff_text": "정확한 안내를 위해 상담을 도와드릴게요."
+  },
+  "learning": {
+    "unanswered_days": 7,
+    "question_bank": [],
+    "ask_channel": null,
+    "ask_time": null
+  },
+  "kpi": {
+    "baseline": {},
+    "metric": "봇이 정본 근거로 자력 답한 고객 질문 비율 / 월",
+    "target": null
+  },
+  "meta": {
+    "version": "1.0",
+    "updated": "2026-09-19",
+    "owner_ai": "시토",
+    "status": "초안 — FAQ 시모 작성 중(server/counselbot/tenants/4_axlabs_qa.json)",
+    "_note": "null·빈 값 = 미수집(지어내지 않음) · 회사 공식값은 ssot/canon_values.json platform_company_name·platform_one_liner_kr",
+    "client_ref": null
+  },
+  "seo": {
+    "title": "웰페리온 AX 랩스 상담 — AI 전환(AX) 자동화 문의",
+    "description": "인공지능 전환(AX) 자동화 개발사 웰페리온 AX 랩스입니다. 궁금한 점을 상담원에게 바로 물어보세요.",
+    "canonical": "https://erp.wellperion.com/info/axlabs/",
+    "h1": "웰페리온 AX 랩스에 무엇이든 물어보세요",
+    "greet": "인공지능 전환(AX) — 일하는 방식과 비즈니스 구조를 AI 중심으로 다시 설계합니다"
+  }
+}
