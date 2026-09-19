@@ -2026,7 +2026,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   today_live:             true,
   lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
   // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
-  member_inquiry_list:    true,
+  // member_inquiry_list·member_registered_list·member_active_list — 공개 목록에서 뺐다(배 12818 · 2026-09-19 시토).
+  //   전화 원문 명단이라 게이트 뒤로. 화면은 erp 도메인에서 서버 거울만 읽고, 서버·PC 스크립트는 key 를 붙인다.
   member_inquiry_summary: true,  // 담당자별 건수만(이름·전화·메모 0) — 업무 SSOT 상단 판이 숫자 4개만 쓰는데
                                  //   member_inquiry_list 를 부르면 694행 PII 를 통째로 내려받게 된다. 그래서 집계 전용.
   member_calendar:        true,
@@ -2035,7 +2036,6 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_delete:  true,  // 행 삭제
   client_write_fail:      true,  // 저장 실패 보고(밀린 건수만·회원 데이터 미저장) — 게이트가 켜져도 실무진 PC 에서
                                  //   실패 신호는 올라와야 한다. 2026-08-25 시포·GM
-  member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   // member_registered_setmonth 제거(2026-08-06 시토, 배295 점검) — 호출부 0건(membership.html 어디서도
   //   부르지 않고, member_registered_list 응답에 월 필드 자체가 없어 체크해도 화면에 뜰 수가 없었다).
   //   member_registered_delete 와 같은 사유(약속 L21, 죽은 쓰기 통로는 남기지 않는다) — 삭제.
@@ -2046,7 +2046,6 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_registered_remove:   true,  // 2026-08-06 시토(배295) — "+직접등록" 되돌리기. 비밀번호 게이트 +
                                       //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
-  member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_person_view:         true,  // 2026-09-02 시포(배11123) — 사람 찾기(이름·전화·회원번호→원장+문의 한 화면). 읽기전용.
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 삭제+유효회원 신규행, 2026-08-26 개정)
@@ -2104,12 +2103,42 @@ var _NAVER_SPLIT_GUARD = 'wp-naver-midcat-split-2026-gm-ok';
 function _accessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
 }
-function _checkSurveyAccess_(action, key) {
-  if (_SURVEY_PUBLIC_ACTIONS[action]) return true;           // 공개 액션은 항상 통과
-  if (_accessProp_('TOKEN_ENFORCE') !== '1') return true;    // 스위치 OFF(기본) = 현행 무중단
+// 배 12818 (2026-09-19 시토) — 스크립트 속성을 넣을 길이 없어(clasp run 불가) 코드 기본값을 둔다.
+//   속성(ACCESS_TOKEN·TOKEN_ENFORCE)이 있으면 속성이 이긴다 — 옛 경로 그대로. 없을 때만 아래 상수.
+//   열쇠 원문은 저장소에 두지 않는다 — sha256 만 둔다(원문 = 서버 api.env·PC .env 의 FUNNEL_ACCESS_TOKEN).
+//   즉시 되돌림 = TOKEN_ENFORCE_DEFAULT 를 false 로 재배포(또는 속성 TOKEN_ENFORCE=0).
+var ACCESS_TOKEN_SHA256 = 'b6f7fe3a1ccb1addbbccfe2d7f62c96471b3bab711cc98fbb537e4a362e761c5';
+var TOKEN_ENFORCE_DEFAULT = false;
+// 스크립트 안에서 스스로 부르는 액션(캐시 워머·번호 부여)은 게이트를 건너뛴다. 요청 칸(body)으로는 켤 수 없다
+//   — doGet 이 질의 파라미터를 전부 body 에 복사하므로 칸 대신 실행 중 전역 계수를 쓴다.
+var _gateInternal_ = 0;
+function _internalAction_(body) {
+  _gateInternal_++;
+  try { return _processAction(body); } finally { _gateInternal_--; }
+}
+function _sha256Hex_(s) {
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8);
+  var h = '';
+  for (var i = 0; i < b.length; i++) h += ('0' + (b[i] & 255).toString(16)).slice(-2);
+  return h;
+}
+function _gateKeyOk_(key) {
+  key = String(key || '');
+  if (!key) return false;
   var tok = _accessProp_('ACCESS_TOKEN');
-  if (!tok) return true;                                     // 토큰 미설정 = 안전을 위해 통과
-  return String(key || '') === tok;
+  if (tok) return key === tok;
+  return !!ACCESS_TOKEN_SHA256 && _sha256Hex_(key) === ACCESS_TOKEN_SHA256;
+}
+function _gateEnforced_() {
+  var p = _accessProp_('TOKEN_ENFORCE');
+  return p ? p === '1' : TOKEN_ENFORCE_DEFAULT === true;
+}
+function _checkSurveyAccess_(action, key) {
+  if (_gateInternal_ > 0) return true;                       // 스크립트 자기 호출
+  if (_SURVEY_PUBLIC_ACTIONS[action]) return true;           // 공개 액션은 항상 통과
+  if (!_gateEnforced_()) return true;                        // 스위치 OFF = 현행 무중단
+  if (!_accessProp_('ACCESS_TOKEN') && !ACCESS_TOKEN_SHA256) return true;  // 열쇠 미설정 = 통과(옛 동작)
+  return _gateKeyOk_(key);
 }
 
 // 게이트 스위치 설정 함수 (배 12818 · 2026-09-19 시토 · 접수 GAS 배 960 과 같은 모양) — clasp run 전용, 라우터 미등록, 토큰 값 자체는 절대 반환 안 함
@@ -2983,7 +3012,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   //   8-26 일괄 부여 뒤에 등록된 사람이 전부 번호 없이 남았고(실측 6명), 회원 미러는 번호 없는 행을 넣지 않아
   //   새 회원이 서버에서 빠지는 구멍이었다. 기존 액션(멱등)을 그대로 재호출하므로 새 장치 없음.
   //   토큰 게이트가 켜져도 자기 호출이 막히지 않게 스크립트 속성의 토큰을 같이 넘긴다.
-  try { _processAction({ action: 'member_registry_build', key: _accessProp_('ACCESS_TOKEN') }); } catch (e) {}
+  try { _internalAction_({ action: 'member_registry_build' }); } catch (e) {}
 }
 
 // ═══════════════════════════════════════════
@@ -5490,7 +5519,8 @@ function _hasRealReply_(memo) {
       pii_mask: String(_accessProp_('PII_MASK') || ''),
       token_set: !!_pt,
       masking_active: !_piiFull_('__diag_nokey__'),
-      key_valid: !!_pt && String(body.key || '') === _pt   // 입장 게이트 비번 검증용(비밀값 미노출)
+      enforce: _gateEnforced_(),                               // 배 12818 — 게이트 발효 여부(속성·코드 기본값 합산)
+      key_valid: _gateKeyOk_(body.key)                         // 입장 게이트 비번 검증용(비밀값 미노출) · 속성 없으면 해시 상수로
     });
   }
 
@@ -12876,7 +12906,7 @@ function warmLessonRosterCache() {
   var types = ['성인강습', '유소년강습'], done = [];
   for (var i = 0; i < types.length; i++) {
     try {
-      _processAction({ action: 'lesson_registered_roster', type: types[i], fresh: '1' });
+      _internalAction_({ action: 'lesson_registered_roster', type: types[i], fresh: '1' });
       done.push(types[i]);
     } catch (e) { /* 한쪽 실패가 다른 쪽을 막지 않게 */ }
   }
@@ -12893,7 +12923,7 @@ function warmLessonRosterCache() {
     { action: 'member_inquiry_list', nocache: '1' }
   ];
   for (var wi = 0; wi < warmActions.length; wi++) {
-    try { _processAction(warmActions[wi]); } catch (eWarmMember) { /* 하나가 죽어도 나머지는 데운다 */ }
+    try { _internalAction_(warmActions[wi]); } catch (eWarmMember) { /* 하나가 죽어도 나머지는 데운다 */ }
   }
 
   // ★대기→멤버십 자동해제 + LOSS일자 자동기록(2026-08-05 시토·배302) — warmDashboardCache에서 이관.
@@ -12959,7 +12989,7 @@ function warmLessonRosterCache() {
   //     전체 노출은 늘지 않는다. 없애려면 쓰기 시각을 보고 put 을 건너뛰는 장치가 필요한데,
   //     그건 실제 피해가 관측되면 그때 만든다(지금은 장치를 늘리지 않는다).
   ['valid', 'ended'].forEach(function (sc) {
-    try { _processAction({ action: 'member_active_list', scope: sc, format: 'rows', nocache: '1' }); }
+    try { _internalAction_({ action: 'member_active_list', scope: sc, format: 'rows', nocache: '1' }); }
     catch (eWarmAa) { /* 한쪽 실패가 다른 쪽·아래 자동처리를 막지 않게 */ }
   });
 
