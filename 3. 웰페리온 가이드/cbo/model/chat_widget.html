@@ -9,6 +9,17 @@
   var API_BASE = (CUR && CUR.getAttribute("data-api-base")) || "";
   if (!TENANT) { console.error("[chat_widget] data-tenant 없음 — 위젯을 붙이지 않는다"); return; }
 
+  // 대화 문맥 유지용 세션 id(counsel/index.html 과 같은 방식) — 이 브라우저 탭 안에서만(sessionStorage), 개인정보 아님.
+  // 안 보내면 서버가 IP 로 익명 세션을 채우는데 그 값은 문맥을 안 잇는다(공용 IP 뒤 다른 손님 섞임 방지 · 시모 제보 2026-09-19).
+  var sessionId = "";
+  try {
+    sessionId = sessionStorage.getItem("wlp_chat_sid") || "";
+    if (!sessionId) {
+      sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+      sessionStorage.setItem("wlp_chat_sid", sessionId);
+    }
+  } catch (e) { /* 시크릿 모드 등 저장 불가 — 세션 없이 매 질문 새로(문맥 유지만 못 함) */ }
+
   var CSS = ""
     + ".wlp-chat-btn{position:fixed;right:20px;bottom:20px;z-index:999999;width:56px;height:56px;border-radius:50%;"
     + "background:#8F7659;color:#F4F0EB;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;font-size:24px;}"
@@ -88,7 +99,7 @@
     fetch(API_BASE + "/api/chat/" + encodeURIComponent(TENANT), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: q })
+      body: JSON.stringify({ q: q, session_id: sessionId })
     }).then(function (r) { return r.json(); }).then(function (data) {
       thinking.remove();
       addMsg((data && data.answer) || "잠시 뒤 다시 시도해 주세요.", "bot");

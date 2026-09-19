@@ -551,9 +551,9 @@ def _handle_chat(tenant: str, body: dict, ip: str = ""):
     q = str(body.get("q") or body.get("message") or body.get("question") or "").strip()
     session_id = str(body.get("session_id") or "")[:128]   # 배1036 GM 구조전환② — 클라이언트가 만든 임의 문자열
     if not session_id:
-        # §11 — session_id 없으면 서버가 채운다. ponytail: IP 로 묶어 익명 다회차 흐름을 살리는 값이라
-        # 같은 IP 뒤 여러 손님(공용 와이파이 등)이 잠깐 문맥을 나눠 쓸 수 있다 — 실측으로 문제되면 세션당
-        # 값(예: User-Agent 조합)으로 좁힌다.
+        # §11 — session_id 없으면 서버가 채운다. 기록·집계용 값일 뿐 문맥은 안 잇는다 — 같은 IP 뒤 다른
+        # 손님(공용 와이파이 등)이 남의 대화를 이어받는 것을 막는다(_session_history 가 "anon-" 접두를
+        # 걸러 빈 문맥으로 처리 · 시모 제보 2026-09-19).
         session_id = "anon-" + hashlib.sha256((ip or "").encode()).hexdigest()[:8]
     visitor = _visitor_of(body, session_id)   # §11 ★ — 집계 분모 판정 칸
     data = _load_faq(tenant)
@@ -1260,8 +1260,10 @@ def _session_history(tenant: str, session_id: str) -> list:
     """같은 테넌트·같은 session_id 의 최근 N턴을 chat_log.jsonl 꼬리에서 재구성(배 12752 #16).
     종전 프로세스 메모리 dict 는 ① 키가 session_id 뿐이라 두 센터 손님 문맥이 섞였고 ② 워커 2개가 각자
     들고 있어 절반 확률로 「기억」이 안 됐다. 로그는 두 워커가 같은 파일에 쓰니 그것이 곧 공유 저장소다 —
-    답이 실제로 나간 행(a 있음)만 문맥으로 쓴다. ponytail: 꼬리 300KB 만 본다(unanswered 와 같은 창)."""
-    if not session_id:
+    답이 실제로 나간 행(a 있음)만 문맥으로 쓴다. ponytail: 꼬리 300KB 만 본다(unanswered 와 같은 창).
+    session_id 가 "anon-"(서버가 IP 해시로 채운 값)로 시작하면 문맥을 안 부른다 — 공용 IP 뒤 다른 손님끼리
+    서로의 대화가 섞이는 것을 막는다(시모 제보 2026-09-19). 기록(_log)은 그대로 그 값으로 남는다."""
+    if not session_id or session_id.startswith("anon-"):
         return []
     try:
         with open(_log_path(tenant), "rb") as fb:
@@ -1819,6 +1821,7 @@ def _selfcheck() -> None:
     assert len(h) == 2 and h[0]["role"] == "user" and h[1]["content"] == out["answer"], h
     assert _session_history("2_dietcamp", "test-s1") == [], "다른 테넌트의 같은 session_id 는 남의 문맥"
     assert _session_history("1_wellperion", "") == []
+    assert _session_history("1_wellperion", "anon-deadbeef") == [], "서버가 채운 anon 세션은 문맥을 안 잇는다(IP 공유 손님 섞임 방지)"
     for k in [k for k in _DAILY_COUNTS if k[0].startswith("ip:198.51.100.")]:
         _DAILY_COUNTS.pop(k, None)
     _ANTHROPIC_CLIENT, FAQ_DIR = saved_client, saved_faq
