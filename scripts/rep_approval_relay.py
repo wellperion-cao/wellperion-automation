@@ -783,16 +783,27 @@ def send_via_gate(text: str, dry_run: bool, sender: str = SENDER, room: str = RO
     여기서 안 받아 notify_approval_done()/run() 이 통째로 죽었다(그 회차 다른 방·다음
     회차 재시도 로직까지 전부 못 돎 — ★운영부 결재완료 4통이 소급 수작업으로 나갔다).
     타임아웃도 실패의 한 종류로 받아 False 로 돌려주면, 호출부의 기존
-    "다음 회차 재후보" 로직이 그대로 재시도한다."""
+    "다음 회차 재후보" 로직이 그대로 재시도한다.
+
+    ★2026-09-19 15:00~16:30 재발(2회째 · GM 지적) — 그 180초를 그대로 두고 위 예외만
+    잡았더니 다른 원인으로 같은 증상이 또 났다: kakao_report_sender.py 의
+    wait_until_user_idle(min_idle=180·max_wait=300 · 배 12749 2026-09-18)이 사람 방
+    발신 앞에서 GM 이 PC 를 계속 쓰는 동안 최대 300초를 기다린다(그래도 결국 보낸다 —
+    사람 방은 건너뛰지 않는다). 바깥 타임아웃(180초)이 그 안쪽 대기(300초)보다 짧아서
+    GM 이 계속 PC 를 쓰면 매 회차 대기 중간에 강제종료돼 전송 시도조차 못 해 보고
+    "실패→다음 회차"만 반복됐다(15:00·15:30·16:00·16:30 4회 전부 — 카톡 완료 로그 없음·
+    kakao_sender_hang.log 에 프로세스 시작만 4번). 바깥 타임아웃을 안쪽 대기 한도보다
+    넉넉히 크게 잡아야 안쪽 로직이 끝까지(기다림→그래도 발신) 갈 수 있다."""
     cmd = [sys.executable, str(SCRIPTS_DIR / "kakao_report_sender.py"),
            "--message", text, "--only-room", room, "--sender", sender]
     if dry_run:
         cmd.append("--dry-run")
+    gate_timeout = 340   # kakao_report_sender.wait_until_user_idle max_wait_sec=300 보다 커야 한다(위 주석)
     try:
         proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=180)
+                              encoding="utf-8", errors="replace", timeout=gate_timeout)
     except subprocess.TimeoutExpired:
-        print(f"  [gate] {room} — 180초 넘게 응답 없어 카톡 관문을 강제 종료(카톡 재시작 직후 등 UI 지연 추정) "
+        print(f"  [gate] {room} — {gate_timeout}초 넘게 응답 없어 카톡 관문을 강제 종료(카톡 재시작 직후 등 UI 지연 추정) "
               f"— 실패로 처리, 다음 회차 재시도")
         return False
     out = (proc.stdout or "") + (proc.stderr or "")
@@ -1004,6 +1015,19 @@ def _selfcheck() -> None:
         assert send_via_gate("테스트", False, SENDER, room=ROOM_OPS) is False
     finally:
         subprocess.run = _orig_run
+    # 2026-09-19 15:00~16:30 재발(2회째) — send_via_gate 의 바깥 타임아웃이 kakao_report_sender.
+    # wait_until_user_idle 의 max_wait_sec=300 보다 짧으면 GM 이 PC 를 계속 쓰는 동안 대기 중간에
+    # 강제종료돼 전송 시도조차 못 한다. 바깥 타임아웃 > 300 을 여기서 고정한다.
+    _seen_timeout = {}
+    def _spy(*_a, **kw):
+        _seen_timeout["v"] = kw.get("timeout")
+        raise subprocess.TimeoutExpired(cmd="kakao_report_sender.py", timeout=kw.get("timeout"))
+    subprocess.run = _spy
+    try:
+        send_via_gate("테스트", False, SENDER, room=ROOM_OPS)
+    finally:
+        subprocess.run = _orig_run
+    assert _seen_timeout.get("v", 0) > 300, _seen_timeout   # kakao_report_sender 안쪽 대기 300초보다 커야 한다
     print("[selfcheck] rep_approval_relay OK")
 
 
