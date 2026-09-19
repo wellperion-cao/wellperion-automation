@@ -739,11 +739,13 @@ def _ceo_gm_burden_indicators() -> dict:
     ① gm_words_trend_delta = 이번 주(월요일) GM 말 수 → 가장 최근 완결일 GM 말 수의 증감.
        worklog.jsonl 의 GM_AREAS 접수(warn) 줄 수(hangro_board._gm_answered_yesterday 와
        같은 방식, 날짜만 바꿔 두 날을 비교). 줄어야(<=0) 정상.
-    ② gm_directive_same_day_rate = 이번 주 접수된 GM지시·GM요청 중 **사람이 증거를 남기고
-       같은 날 완료(ok) 짝난** 비율(%). 아직 안 닫힌 건은 분모에서 뺀다(진행중을 실패로
-       세지 않는다). ★close_gm_refs 의 자동종결(⚠️ 상투어 detail)은 "증거 없이 닫힘"이라
-       완료로 안 센다 — kungjjak_board._is_auto_closed 그대로 재사용(GM 09-18 교훈 재발
-       2026-09-19: 100%가 나온 원인이 자동종결까지 완료로 센 것이었다). 목표 90%.
+    ② gm_directive_same_day_rate = 이번 주(오늘 제외 — 아직 하루가 안 끝났다) 접수된
+       GM지시·GM요청 전체를 분모로, 그중 **사람이 증거를 남기고 같은 날 완료(ok) 짝난**
+       건의 비율(%). 아직 안 닫힌 건도 분모에 넣고 "당일 미종결"로 센다 — 열어 둔 채
+       버티면 분모에서 빠져 100%가 되던 것을 GM 09-19 재지적으로 고쳤다(741건 중 열린
+       건 1건이 빠져 100%가 나온 게 원인). ★close_gm_refs 의 자동종결(⚠️ 상투어 detail)은
+       "증거 없이 닫힘"이라 완료로 안 센다 — kungjjak_board._is_auto_closed 그대로 재사용.
+       gm_directive_open_count = 분모 중 유효한 종결이 아직 없는 건수. 목표 90%.
     ③ gm_repeat_directive_count = 이번 주 날짜로 lessons.md 에 「재지적·재발·N회째」가 붙은
        줄 수(같은 실수를 두 번 지적받은 건). 세는 법: 그 줄 머리 "- [YYYY-MM-DD]" 의 날짜가
        이번 주 안이고, 줄 안에 저 세 낱말 중 하나가 있으면 1건. 목표 0.
@@ -751,7 +753,7 @@ def _ceo_gm_burden_indicators() -> dict:
     out: dict = {
         "gm_words_trend_delta": None, "gm_words_week_start": None, "gm_words_latest": None,
         "gm_directive_same_day_rate": None, "gm_directive_closed_total": None,
-        "gm_repeat_directive_count": None,
+        "gm_directive_open_count": None, "gm_repeat_directive_count": None,
     }
     try:
         sys.path.insert(0, str(ROOT / "scripts"))
@@ -813,23 +815,25 @@ def _ceo_gm_burden_indicators() -> dict:
     if isinstance(start_v, int) and isinstance(latest_v, int):
         out["gm_words_trend_delta"] = latest_v - start_v
 
-    # ② 이번 주 접수 중 같은 날 종결 비율 — 아직 안 닫힌 건은 분모 제외
-    total, same_day = 0, 0
+    # ② 이번 주(오늘 제외) 접수 전체를 분모로 같은 날 종결 비율 — 안 닫힌 건도 분모에 넣는다
+    total, same_day, open_count = 0, 0, 0
     seen_refs = set()
+    week_start_iso, today_iso = week_start.isoformat(), today.isoformat()
     for role, ref, wd in warns:
-        if wd < week_start.isoformat():
+        if wd < week_start_iso or wd >= today_iso:
             continue
         key = (role, ref)
         if key in seen_refs:
             continue
         seen_refs.add(key)
+        total += 1
         cd = closes.get(key)
         if cd is None:
-            continue
-        total += 1
-        if cd == wd:
+            open_count += 1
+        elif cd == wd:
             same_day += 1
     out["gm_directive_closed_total"] = total
+    out["gm_directive_open_count"] = open_count
     if total:
         out["gm_directive_same_day_rate"] = round(same_day / total * 100)
 
