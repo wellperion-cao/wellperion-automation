@@ -270,14 +270,21 @@
   .cpv1-ct .n{font-size:26px;font-weight:800;color:var(--brass);font-family:'Nanum Myeongjo','Batang',Georgia,serif;line-height:1.1}
   .cpv1-ct .l{font-size:10.5px;color:#B9C0B6;margin-top:4px;letter-spacing:.03em}
   .cpv1-sub{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:#8B9389;margin:20px 0 9px;font-weight:700}
-  .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-  .cpv1-ac{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:9px 6px;text-align:center}
-  .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:10px;padding:2px 7px;border-radius:2px;letter-spacing:.05em;margin-bottom:5px}
-  .cpv1-ac .nm{font-size:11px;font-weight:700;color:#EDEBE2;line-height:1.3}
-  .cpv1-ac .st{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:6px;font-size:10px;color:#B9C0B6}
-  .cpv1-ac .dot{width:7px;height:7px;border-radius:50%;background:#5C665F;flex:none}
-  .cpv1-ac.on .dot{background:#4E9E7A;box-shadow:0 0 0 2px rgba(78,158,122,.25)}
-  .cpv1-ac .cnt{font-size:9.5px;color:#8B9389;margin-top:2px;min-height:12px}
+  .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+  .cpv1-ac{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:7px 7px 6px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
+  .cpv1-ac.on{border-color:rgba(78,158,122,.45)}
+  .cpv1-ac.ip{border-color:#B88A44;box-shadow:0 0 0 1px rgba(184,138,68,.3)}
+  .cpv1-ac-hd{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:9.5px;padding:1.5px 6px;border-radius:2px;letter-spacing:.04em}
+  .cpv1-ac .nm{font-size:9.5px;font-weight:700;color:#EDEBE2;line-height:1.2}
+  .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap}
+  @keyframes cpv1pulse{0%,100%{opacity:1}50%{opacity:.32}}
+  .cpv1-ac-meta{display:flex;justify-content:space-between;gap:4px;font-size:8.5px;color:#8B9389;margin-top:4px}
+  .cpv1-ac-meta .cnt{font-weight:700;color:#B9C0B6}
+  .cpv1-ac-feed{margin-top:4px;border-top:1px solid rgba(233,226,204,.1);padding-top:3px;min-height:98px;max-height:98px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+  .cpv1-ac-feed .row{font-size:9px;line-height:1.4;color:#D9D4C2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cpv1-ac-feed .row .t{color:#8B9389;margin-right:3px;font-family:Consolas,'Courier New',monospace;font-size:8.5px}
+  .cpv1-ac-feed .empty{font-size:9px;color:#5C665F;padding:3px 0}
   .cpv1-routines{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:2px}
   .cpv1-rc{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:3px;padding:5px 10px;font-size:10.5px;cursor:default}
   .cpv1-rc .rn{color:#DCD8C8}
@@ -294,7 +301,7 @@
   .cpv1-feed tr:nth-child(even){background:rgba(255,255,255,.02)}
   .cpv1-empty{padding:14px;text-align:center;color:#8B9389;font-size:11px}
   @media (max-width:960px){ .cpv1-agents{grid-template-columns:repeat(4,1fr)} }
-  @media (max-width:640px){ .cpv1-agents{grid-template-columns:repeat(3,1fr)} .cpv1-counters{grid-template-columns:1fr 1fr 1fr;gap:6px} .cpv1-ct{padding:10px 6px} .cpv1-ct .n{font-size:21px} }
+  @media (max-width:640px){ .cpv1-agents{grid-template-columns:repeat(2,1fr)} .cpv1-counters{grid-template-columns:1fr 1fr 1fr;gap:6px} .cpv1-ct{padding:10px 6px} .cpv1-ct .n{font-size:21px} }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <script src="../../_assets/erp_write.js"></script>
@@ -341,18 +348,18 @@
 
     <div class="cpv1-sub">에이전트 12종 · 오늘 활동</div>
     <div class="cpv1-agents" id="cpv1Agents">
-      <div class="cpv1-ac" data-a="A-1"><span class="seal s-a1">A-1</span><div class="nm">이력서담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-2"><span class="seal s-a2">A-2</span><div class="nm">채용담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-3"><span class="seal s-a3">A-3</span><div class="nm">직원담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-4"><span class="seal s-a4">A-4</span><div class="nm">평가담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-5"><span class="seal s-a5">A-5</span><div class="nm">배포담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-6"><span class="seal s-a6">A-6</span><div class="nm">감사자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-7"><span class="seal s-a7">A-7</span><div class="nm">시스템효율담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-8"><span class="seal s-a8">A-8</span><div class="nm">인사기획담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-9"><span class="seal s-a9">A-9</span><div class="nm">보상담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-10"><span class="seal s-a10">A-10</span><div class="nm">노무담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-11"><span class="seal s-a11">A-11</span><div class="nm">교육개발담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
-      <div class="cpv1-ac" data-a="A-12"><span class="seal s-a12">A-12</span><div class="nm">인사분석담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-1"><div class="cpv1-ac-hd"><span class="seal s-a1">A-1</span><span class="nm">이력서담당자</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-2"><div class="cpv1-ac-hd"><span class="seal s-a2">A-2</span><span class="nm">채용담당자</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-3"><div class="cpv1-ac-hd"><span class="seal s-a3">A-3</span><span class="nm">직원담당자</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-4"><div class="cpv1-ac-hd"><span class="seal s-a4">A-4</span><span class="nm">평가담당자</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-5"><div class="cpv1-ac-hd"><span class="seal s-a5">A-5</span><span class="nm">배포담당자</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-6"><div class="cpv1-ac-hd"><span class="seal s-a6">A-6</span><span class="nm">감사자</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-7"><div class="cpv1-ac-hd"><span class="seal s-a7">A-7</span><span class="nm">시스템효율담당</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-8"><div class="cpv1-ac-hd"><span class="seal s-a8">A-8</span><span class="nm">인사기획담당</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-9"><div class="cpv1-ac-hd"><span class="seal s-a9">A-9</span><span class="nm">보상담당</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-10"><div class="cpv1-ac-hd"><span class="seal s-a10">A-10</span><span class="nm">노무담당</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-11"><div class="cpv1-ac-hd"><span class="seal s-a11">A-11</span><span class="nm">교육개발담당</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
+      <div class="cpv1-ac" data-a="A-12"><div class="cpv1-ac-hd"><span class="seal s-a12">A-12</span><span class="nm">인사분석담당</span><span class="ip-badge" style="display:none">● 진행중</span></div><div class="cpv1-ac-meta"><span class="cnt">오늘 0건</span><span class="tm">기록없음</span></div><div class="cpv1-ac-feed"><div class="empty">확인 중…</div></div></div>
     </div>
 
     <div class="cpv1-sub">주기 루틴 7종 상태</div>
@@ -380,13 +387,17 @@
 (function(){
   "use strict";
   var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
-  var POLL_MS = 25000; // 오피스·정직배지와 동일한 폴링 주기(편승)
+  var POLL_MS = 3000;      // 2026-09-19 매니저 지시 v2 — 실시간 체감을 위해 25초→3초로 단축
+  var POLL_MAX_MS = 30000; // 실패 연속 시 상한(과호출 방지 백오프)
+  var pollFailStreak = 0;  // 연속 실패 횟수 — 성공하면 0으로 리셋, 다음 주기를 다시 3초로 복귀
 
   var AGENTS = ["A-1","A-2","A-3","A-4","A-5","A-6","A-7","A-8","A-9","A-10","A-11","A-12"];
   var ISSUE_RE = /반려|실패|보류|수정필요|차단|미완료|중단|오류|불일치/;
+  var pollSeq = 0; // 폴링 역전(오래 걸린 이전 응답이 나중에 도착해 최신 화면을 덮는 경쟁) 방지용 순번
 
+  // "A-<n> 한글이름" 형식(코드+이름 혼재)을 폭넓게 인식 — 대소문자·하이픈 변형(–,—,‐ 등) 허용.
   function actorToAgent(actor){
-    var m = String(actor || "").match(/A-?(1[0-2]|[1-9])(?![0-9])/);
+    var m = String(actor || "").match(/[Aa][-‐-―]?\s*(1[0-2]|[1-9])(?![0-9])/);
     return m ? ("A-" + m[1]) : null;
   }
   function parseKST(s){
@@ -458,34 +469,67 @@
     }
   }
 
+  var FEED_LIMIT = 6; // 카드당 표시할 최근 항목 수(창처럼 위→아래로 흐르는 피드)
+  var IN_PROGRESS_RE = /착수|진행\s*중|진행중|시작/;
+
+  // "착수했고 아직 완료가 안 붙은" 최신 상태만 진행중으로 판정 — 그 에이전트의 가장 최근 행 1건만 본다
+  // (그보다 뒤에 완료 행이 이미 있으면 최신 행 자체가 그 완료 행이므로 자연히 진행중이 아니게 된다).
+  function isInProgress(r){
+    var w = String(r["작업"] || ""), res = String(r["결과"] || "");
+    if(/완료/.test(res)) return false;
+    if(IN_PROGRESS_RE.test(w)) return true;
+    if(res === "" && /착수|시작/.test(w)) return true;
+    return false;
+  }
+
+  // "일시" 문자열 그대로 HH:MM만 뽑는다(당일이면 시각만, 아니면 MM-DD HH:MM) — 카드 폭이 좁아 초단축 표기.
+  function fmtRow(s, today){
+    var raw = String(s || "");
+    if(raw.slice(0, 10) === today) return raw.slice(11, 16);
+    var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2})/.exec(raw);
+    return m ? (m[2] + "-" + m[3] + " " + m[4]) : raw;
+  }
+
   function renderAgents(rows, today){
-    var lastByAgent = {}, todayByAgent = {};
-    AGENTS.forEach(function(a){ todayByAgent[a] = 0; });
+    // 매 폴링(3초)마다 이 함수가 처음부터 다시 집계한다 — 누적/캐시 없이 rows 전량 재계산.
+    // v2(2026-09-19 매니저 지시) — 카드를 "그 에이전트의 자동화로그 피드"로 개편: 최신이 위, 아래로
+    // 흐르는 목록 + 진행중 배지. 이전 v1.1(최근작업 1줄·정확시각)의 재현 실험에서는 재집계 자체는
+    // 정상이었으나(컨트롤 테스트로 확인) 화면이 "오늘 활동" 고정 문구라 변화가 눈에 안 띄던 UX 갭이
+    // 있어, 매 항목이 실제로 오르내리는 피드로 교체했다.
+    var lastRowByAgent = {}, todayByAgent = {}, feedByAgent = {};
+    AGENTS.forEach(function(a){ todayByAgent[a] = 0; feedByAgent[a] = []; });
     rows.forEach(function(r){
       var a = actorToAgent(r["주체"]);
       if(!a || !(a in todayByAgent)) return;
-      if(!lastByAgent[a]) lastByAgent[a] = r["일시"];
+      if(!lastRowByAgent[a]) lastRowByAgent[a] = r;
       if(String(r["일시"] || "").slice(0, 10) === today) todayByAgent[a]++;
+      if(feedByAgent[a].length < FEED_LIMIT) feedByAgent[a].push(r);
     });
     var activeCount = 0;
     AGENTS.forEach(function(a){
       var card = document.querySelector('.cpv1-ac[data-a="' + a + '"]');
       if(!card) return;
-      var stt = card.querySelector(".stt");
+      var last = lastRowByAgent[a], todayCnt = todayByAgent[a], feedRows = feedByAgent[a];
+      var inProgress = last ? isInProgress(last) : false;
+      card.classList.toggle("on", todayCnt > 0);
+      card.classList.toggle("ip", inProgress);
+      if(todayCnt > 0) activeCount++;
+      var ipEl = card.querySelector(".ip-badge");
+      if(ipEl) ipEl.style.display = inProgress ? "" : "none";
       var cnt = card.querySelector(".cnt");
-      var last = lastByAgent[a], todayCnt = todayByAgent[a];
-      if(todayCnt > 0){
-        card.classList.add("on");
-        if(stt) stt.textContent = "오늘 활동";
-        activeCount++;
-      } else if(last){
-        card.classList.remove("on");
-        if(stt) stt.textContent = "유휴 · " + String(last).slice(0, 10);
-      } else {
-        card.classList.remove("on");
-        if(stt) stt.textContent = "기록없음";
+      if(cnt) cnt.textContent = "오늘 " + todayCnt + "건";
+      var tm = card.querySelector(".tm");
+      if(tm) tm.textContent = last ? fmtRow(last["일시"], today) : "기록없음";
+      var feedEl = card.querySelector(".cpv1-ac-feed");
+      if(feedEl){
+        if(!feedRows.length){
+          feedEl.innerHTML = '<div class="empty">기록없음</div>';
+        } else {
+          feedEl.innerHTML = feedRows.map(function(r){
+            return '<div class="row"><span class="t">' + esc(fmtRow(r["일시"], today)) + '</span>' + esc(String(r["작업"] || "")) + '</div>';
+          }).join("");
+        }
       }
-      if(cnt) cnt.textContent = todayCnt > 0 ? ("오늘 " + todayCnt + "건") : "";
     });
     return activeCount;
   }
@@ -507,6 +551,7 @@
   }
 
   async function poll(){
+    var mySeq = ++pollSeq; // 이 폴링만의 순번 — await 이후 더 최신 폴링이 시작돼 있으면 이 결과는 버린다(응답 역전 방지)
     var note = document.getElementById("cpv1Note");
     try{
       // 읽기 서버 우선(/api/hr/autolog) · 안 되면 종전 구글(GAS) 그대로 — 기존 F섹션 정직 배지와 동일 방식.
@@ -514,6 +559,7 @@
         var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
         return await res.json();
       }, {needRows:true});
+      if(mySeq !== pollSeq) return; // 더 최신 폴링이 이미 시작됨 — 느리게 도착한 이 응답으로 화면을 되돌리지 않는다
       if(!j || !j.ok || !Array.isArray(j.results)) throw new Error((j && j.error) || "응답 오류");
 
       var rows = j.results; // 최신순
@@ -553,13 +599,26 @@
       }
 
       renderFeed(rows);
-      if(note) note.textContent = "마지막 갱신 " + new Date().toLocaleTimeString("ko-KR", {hour:"2-digit", minute:"2-digit"}) + " · 25초 폴링";
+      if(mySeq === pollSeq){
+        pollFailStreak = 0;
+        if(note) note.textContent = "마지막 갱신 " + new Date().toLocaleTimeString("ko-KR", {hour:"2-digit", minute:"2-digit", second:"2-digit"}) + " · " + (POLL_MS / 1000) + "초 폴링";
+      }
     }catch(e){
-      if(note) note.textContent = "불러오기 실패 — 다음 폴링에서 재시도";
+      if(mySeq === pollSeq){
+        pollFailStreak++;
+        if(note) note.textContent = "불러오기 실패 — 재시도 중(" + pollFailStreak + ")";
+      }
+    }finally{
+      // 겹쳐 돌지 않도록 매 요청이 끝난 뒤에만 다음 회차를 예약 — 실패가 쌓이면 백오프(상한 30초),
+      // 한 번이라도 성공하면 즉시 3초로 복귀.
+      if(mySeq === pollSeq){
+        var delay = pollFailStreak > 0 ? Math.min(POLL_MS * Math.pow(2, pollFailStreak), POLL_MAX_MS) : POLL_MS;
+        setTimeout(poll, delay);
+      }
     }
   }
 
-  function boot(){ poll(); setInterval(poll, POLL_MS); }
+  function boot(){ poll(); }
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", boot);
   } else {
