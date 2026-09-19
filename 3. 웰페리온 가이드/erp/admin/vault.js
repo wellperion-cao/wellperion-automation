@@ -12,6 +12,9 @@
  */
 (function () {
   var token = '', tokenExp = 0;
+  // 접속 코드 표(entry) — 패스키 잠금해제 표(token/tokenExp)와 절대 안 섞는다. X-Vault-Entry 로만 보낸다.
+  // 목록 GET·저장 POST 같은 「보조 문」에만 쓴다 — 값 보기·set·쓰기는 그대로 X-Vault-Token(패스키).
+  var entryToken = '', entryExp = 0;
 
   function b64d(s) {
     s = s.replace(/-/g, '+').replace(/_/g, '/');
@@ -84,6 +87,14 @@
     unlock: unlock,
     listItems: function (compartment) { return call('GET', 'items?compartment=' + encodeURIComponent(compartment || 'gm')); },
     revealItem: function (compartment, id) { return call('POST', 'reveal', { compartment: compartment, id: id }); },
-    importPaste: function (text) { return call('POST', 'import', { text: text }); }
+    importPaste: function (text) { return call('POST', 'import', { text: text }); },
+    // 접속 코드 문 — {code} 로 표를 받고(entryToken), {set} 은 패스키 잠금해제 상태에서만(X-Vault-Token 그대로).
+    enterCode: function (code) {
+      return call('POST', 'entry', { code: code }).then(function (d) { entryToken = d.token; entryExp = d.exp; return d; });
+    },
+    setEntryCode: function (code) { return call('POST', 'entry', { set: code }); },
+    restoreEntry: function (tok, exp) { entryToken = tok || ''; entryExp = exp || 0; },
+    isEntered: function () { return !!entryToken && entryExp * 1000 > Date.now(); },
+    entryHeaders: function () { return this.isEntered() ? { 'X-Vault-Entry': entryToken } : {}; }
   };
 })();

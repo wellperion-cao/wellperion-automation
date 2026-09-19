@@ -827,6 +827,99 @@
   <h2>파트너사 채널 계정 금고</h2>
   <div class="meta">패스키(지문·얼굴)로 잠금 해제해야 값이 보입니다 · 값은 이 화면·저장소·로그 어디에도 남지 않습니다</div>
 
+  <!-- 접속 코드 관문(배 12843 짝 · GM 지시 2026-09-19) — 이 칸을 지나야 아래 계정 카드·표가 보인다.
+       진입 토큰(X-Vault-Entry)은 패스키 잠금해제 토큰(X-Vault-Token)과 다른 표다 — 값 보기·set·쓰기는 여전히 패스키 몫,
+       이 표는 목록 GET·저장 POST 같은 보조 문에만 쓴다(vault.js WellVault.entryHeaders()). -->
+  <div id="vault-gate" style="border:1px solid var(--pf-line);border-radius:12px;background:var(--pf-panel-2,#f7f7f8);padding:14px 16px;margin:10px 0 18px;max-width:420px;">
+    <div id="vg-reg-need" hidden>
+      <div class="meta">먼저 이 기기의 패스키(지문·얼굴)를 등록하세요.</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0">
+        <input id="vg-reg-code" type="password" inputmode="numeric" placeholder="결재 코드" autocomplete="off" style="width:90px">
+        <input id="vg-reg-label" placeholder="이름표(선택)" autocomplete="off" style="width:140px">
+        <button id="vg-reg-btn">패스키 등록</button>
+      </div>
+    </div>
+    <div id="vg-set-code" hidden>
+      <div class="meta">접속 코드를 정해 주세요.</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0">
+        <button id="vg-unlock-for-set">패스키로 잠금 해제</button>
+        <span id="vg-set-inputs" hidden style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input id="vg-code1" type="password" inputmode="numeric" placeholder="새 접속 코드" autocomplete="off" style="width:120px">
+          <input id="vg-code2" type="password" inputmode="numeric" placeholder="다시 입력" autocomplete="off" style="width:120px">
+          <button id="vg-set-btn">코드 정하기</button>
+        </span>
+      </div>
+    </div>
+    <div id="vg-enter" hidden>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0">
+        <input id="vg-code" type="password" inputmode="numeric" autocomplete="off" placeholder="접속 코드" style="width:140px">
+        <button id="vg-open-btn">열기</button>
+      </div>
+    </div>
+    <div id="vg-msg" class="meta" style="color:var(--pf-bad,inherit)"></div>
+    <div id="vg-passkey-list" class="meta">불러오는 중…</div>
+    <div class="ppre" style="margin:6px 0 0">접속 코드는 GM 님만 압니다 · 5번 틀리면 10분 잠깁니다</div>
+  </div>
+  <script>
+  (function(){
+    var gate=document.getElementById('vault-gate'), body=document.getElementById('vault-body'), msg=document.getElementById('vg-msg');
+    var secRegNeed=document.getElementById('vg-reg-need'), secSetCode=document.getElementById('vg-set-code'), secEnter=document.getElementById('vg-enter');
+    var setInputs=document.getElementById('vg-set-inputs'), pkList=document.getElementById('vg-passkey-list');
+    var STORE_KEY='vault_entry';
+    function showOnly(el){ [secRegNeed,secSetCode,secEnter].forEach(function(s){ s.hidden = s!==el; }); }
+    function passed(){ gate.hidden=true; body.hidden=false; }
+    function loadStored(){
+      var raw=null; try{ raw=sessionStorage.getItem(STORE_KEY); }catch(e){}
+      if(!raw) return false;
+      try{
+        var d=JSON.parse(raw);
+        if(d && d.token && d.exp && d.exp*1000>Date.now()){ window.WellVault.restoreEntry(d.token, d.exp); return true; }
+      }catch(e){}
+      return false;
+    }
+    function saveStored(tok, exp){ try{ sessionStorage.setItem(STORE_KEY, JSON.stringify({token:tok, exp:exp})); }catch(e){} }
+    function renderPasskeys(meta){
+      pkList.textContent = (meta && meta.length) ? ('등록된 패스키: ' + meta.map(function(m){ return (m.label||'이름표 없음')+' · '+m.created; }).join(', ')) : '등록된 패스키 없음';
+    }
+    function check(){
+      window.WellVault.status().then(function(d){
+        renderPasskeys(d.passkey_meta);
+        if(d.passkeys===0){ showOnly(secRegNeed); return; }
+        if(!d.entry_code_set){ setInputs.hidden=true; showOnly(secSetCode); return; }
+        if(loadStored()){ passed(); return; }
+        showOnly(secEnter);
+      }).catch(function(e){ msg.textContent='금고 상태를 못 읽었습니다('+(e.message||'')+')'; });
+    }
+    document.getElementById('vg-reg-btn').addEventListener('click', function(){
+      var code=document.getElementById('vg-reg-code').value, label=document.getElementById('vg-reg-label').value;
+      if(!code){ msg.textContent='결재 코드를 입력하세요'; return; }
+      window.WellVault.registerPasskey(code, label).then(function(){ document.getElementById('vg-reg-code').value=''; msg.textContent=''; check(); })
+        .catch(function(e){ msg.textContent=e.message||'등록 실패'; });
+    });
+    document.getElementById('vg-unlock-for-set').addEventListener('click', function(){
+      window.WellVault.unlock().then(function(){ setInputs.hidden=false; msg.textContent=''; }).catch(function(e){ msg.textContent=e.message||'해제 실패'; });
+    });
+    document.getElementById('vg-set-btn').addEventListener('click', function(){
+      var c1=document.getElementById('vg-code1').value, c2=document.getElementById('vg-code2').value;
+      if(!c1 || c1!==c2){ msg.textContent='두 번 입력한 코드가 같아야 합니다'; return; }
+      window.WellVault.setEntryCode(c1).then(function(){
+        document.getElementById('vg-code1').value=''; document.getElementById('vg-code2').value='';
+        msg.textContent='정해졌습니다'; showOnly(secEnter);
+      }).catch(function(e){ msg.textContent=e.message||'실패'; });
+    });
+    document.getElementById('vg-open-btn').addEventListener('click', function(){
+      var code=document.getElementById('vg-code').value;
+      window.WellVault.enterCode(code).then(function(d){
+        document.getElementById('vg-code').value=''; saveStored(d.token, d.exp); msg.textContent=''; passed();
+      }).catch(function(e){
+        msg.textContent = e.status===429 ? '여러 번 틀려 10분 잠겼습니다' : (e.status===403 ? '코드가 맞지 않습니다' : (e.message||'실패'));
+      });
+    });
+    check();
+  })();
+  </script>
+
+  <div id="vault-body" hidden>
   <div id="ps-form" style="border:1px solid var(--line,#ddd);border-radius:12px;background:var(--pf-panel-2,#f7f7f8);padding:14px 16px;margin:10px 0 18px;">
     <div style="font-weight:700;margin-bottom:10px;">계정 넣기 · 바꾸기 <span id="ps-msg" style="font-weight:400;font-size:12px;color:var(--dim);margin-left:8px"></span></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
@@ -878,7 +971,7 @@
     function tname(t){ return TN[t] ? TN[t]+' <span class="n">('+t+')</span>' : esc(t); }
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
     function load(){
-      fetch(API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
+      fetch(API+'?_='+Date.now(),{cache:'no-store',headers:window.WellVault.entryHeaders()}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
         sel.innerHTML=(d.channels||[]).filter(function(c){ return !WORK_SCREEN[c]; }).map(function(c){ return '<option>'+c+'</option>'; }).join('');
         var items=d.items||[], allChans=d.channels||[], have={};
         var chans=allChans;
@@ -941,14 +1034,14 @@
         }).catch(function(e){ alert(e.message||'잠금 해제 실패'); });
       } else if(b.classList.contains('ps-del')){
         var code2=prompt('삭제 — 코드를 입력하세요'); if(!code2) return; body.code=code2; body.delete=true;
-        fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){ if(!d.ok) alert(d.error||'실패'); load(); });
+        fetch(API,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},window.WellVault.entryHeaders()),body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){ if(!d.ok) alert(d.error||'실패'); load(); });
       }
     }
     boards.addEventListener('click', onClick);
     document.getElementById('ps-save').onclick=function(){
       var g=function(id){ return document.getElementById(id).value; }, msg=document.getElementById('ps-msg');
       var body={tenant:g('ps-tenant'),channel:sel.value,id:g('ps-id'),pw:g('ps-pw'),url:g('ps-url'),note:g('ps-note'),code:g('ps-code')};
-      fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
+      fetch(API,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},window.WellVault.entryHeaders()),body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
         msg.textContent = d.ok ? '저장됨' : ('안 됨 — '+(d.error||'')); if(d.ok){ ['ps-id','ps-pw','ps-code','ps-note','ps-url'].forEach(function(i){ document.getElementById(i).value=''; }); load(); }
       });
     };
@@ -1024,6 +1117,7 @@
     refresh();
   })();
   </script>
+  </div>
 </section>
 
 <!-- 파트너 산출물 — 밖의 업체에 만들어 준 것. 플랫폼을 파는 자리라 여기 둔다(GM 지시 2026-09-14
