@@ -412,6 +412,16 @@ function renderList(){
     if(_pastOpen) past.forEach(function(it){ appendRow(it, el); });
   }
 }
+// gm_handoff 가 심어 둔 todo_id·plan_id 링크 — 임박 순 목록 줄(appendRow)과 달력 날짜 패널
+// (renderDayPanel)이 같은 규칙을 쓰게 여기 하나로 뺐다(GM 지시 2026-09-19 "전사일정에 업무SSOT
+// 연동할 수 있게 링크 걸어줘 각 업무는" — 달력이 접힘 목록보다 먼저 보이는데 거기엔 링크가 없었다).
+function keyLinksHtml(it){
+  if(!(it.todo_id||it.plan_id))return "";
+  var ks=[];
+  if(it.todo_id)ks.push('<a href="../todo/업무 현황 SSOT.html?item='+encodeURIComponent(it.todo_id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸업무</a>');
+  if(it.plan_id)ks.push('<a href="../todo/업무 현황 SSOT.html?owner='+encodeURIComponent('김남욱GM')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸GM업무</a>');
+  return ks.join(' · ');
+}
 function appendRow(it, el){
   (function(){
     var comp=nextOccurrence(it),st=statusOf(it),cat=CATS[it.category]||{label:it.category,color:"#888"};
@@ -429,13 +439,8 @@ function appendRow(it, el){
     // 열쇠 링크 — gm_handoff 가 심어 둔 todo_id·plan_id 가 있을 때만 뜬다(GM 지시 2026-09-14
     // "GM업무/전사일정/중간관리자/업무&결재SSOT 연동"). 일정에서 그 일의 원본 행·카드로 바로 건너간다.
     // 증빙 링크(evTxt)와 같은 규칙 — 새 탭, 링크만 눌렀을 땐 편집 패널이 안 열리게 클릭을 멈춘다.
-    var keyTxt="";
-    if(it.todo_id||it.plan_id){
-      var ks=[];
-      if(it.todo_id)ks.push('<a href="../todo/업무 현황 SSOT.html?item='+encodeURIComponent(it.todo_id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸업무</a>');
-      if(it.plan_id)ks.push('<a href="../todo/업무 현황 SSOT.html?owner='+encodeURIComponent('김남욱GM')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸GM업무</a>');
-      keyTxt='<div class="rvendor">🔗 '+ks.join(' · ')+'</div>';
-    }
+    var _kl=keyLinksHtml(it);
+    var keyTxt=_kl?('<div class="rvendor">🔗 '+_kl+'</div>'):"";
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);
     // 담당자는 note 가 있어도 항상 보인다 (GM 지시 2026-08-25 "담당자 설정할 수 있게 해줘").
     // 종전엔 note 가 있으면 note 만 보여 줘, 설명을 적어 둔 건일수록 담당이 화면에서 사라졌다.
@@ -592,6 +597,7 @@ function renderDayPanel(key){
     var t=String((x.it&&x.it.time)||"").trim()||"시간 미정";
     var who=String((x.it&&x.it.assignee)||"").trim();
     var ev=String((x.it&&x.it.evidence)||"").trim();
+    var kl=keyLinksHtml(x.it);
     return '<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid rgba(127,127,127,0.18);">'+
       '<span style="flex:0 0 66px;font-size:12px;opacity:.75;">'+esc(t)+'</span>'+
       '<span style="flex:0 0 3px;align-self:stretch;background:'+c+';border-radius:2px;"></span>'+
@@ -599,6 +605,7 @@ function renderDayPanel(key){
         (x.auto?' <span style="font-size:11px;opacity:.6;">(예상)</span>':'')+
         (who?' <span style="font-size:11px;opacity:.6;">· '+esc(who)+'</span>':'')+
         (ev?' <a href="'+esc(ev)+'" target="_blank" rel="noopener" style="font-size:11px;">📎 증빙</a>':'')+
+        (kl?' <span style="font-size:11px;">🔗 '+kl+'</span>':'')+
       '</span></div>';
   }).join(""):'<div style="padding:8px 0;font-size:13px;opacity:.65;">이 날짜에 잡힌 일정이 없습니다.</div>';
   box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'+
