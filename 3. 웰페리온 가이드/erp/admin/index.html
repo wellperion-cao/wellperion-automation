@@ -682,10 +682,21 @@
   </script>
 
 </section>
-<!-- 비즈니스 모델(요금체계) — #partners 「구독(자동결제)」 블록 이관(GM 지시 2026-09-19 14:3x 웰리 전달). 사이드 메뉴 신설 · 해시 #business. 요금 표는 BLOCKED — canon_values.json 에 요금 값 없음 · company_roadmap.html 값(v1 99,000/199,000 = 폐기됨 · v2 149,000/249,000/449,000+셋업비300,000 = GM 확정 대기)이 이 화면 실값(스타트 99,000·그로스 199,000)과 다르다 · GM 확정 뒤 채운다(새 값 짓지 않음). -->
+<!-- 비즈니스 모델(요금체계) — #partners 「구독(자동결제)」 블록 이관(GM 지시 2026-09-19 14:3x 웰리 전달). 사이드 메뉴 신설 · 해시 #business.
+     요금 표 = 시보 v2, GM 확정(2026-09-19 15:0x) — 스타트 149,000 · 그로스 249,000 · 운영 449,000(준비 중) · 셋업비 300,000(유료 전환 때 1회) · 최소 6개월.
+     정본 = company_roadmap.html §5(182~184행 문구 그대로). 아래 구독 카드 표시 금액도 같은 값으로 맞춤(시토 서버 결제 금액 동시 반영). -->
 <section class="panel" data-panel="business" hidden>
 <h2>비즈니스 모델(요금체계)</h2>
-<div class="note">요금 표 보류 — canon_values.json 에 요금 값 없음 · company_roadmap.html 값(v1 99,000/199,000 폐기됨 · v2 149,000/249,000/449,000+셋업비300,000 GM 확정 대기)이 아래 실제 구독 화면 값(스타트 99,000·그로스 199,000)과 달라 멈췄다. GM 확정 뒤 표로 채운다.</div>
+<div class="tbl-wrap"><table class="reg">
+  <colgroup><col style="width:12%"><col style="width:14%"><col></colgroup>
+  <thead><tr><th>묶음</th><th>월 요금</th><th>들어가는 것</th></tr></thead>
+  <tbody>
+    <tr><td>스타트</td><td><b>149,000</b></td><td>마케팅 자동화(블로그 매일 임시저장) · 보고 자동화(07:00·21:00 통) · 문서 3종 유지</td></tr>
+    <tr><td>그로스</td><td><b>249,000</b></td><td>스타트 + 상담 자동화(답변 월 1,000건 포함 · 초과 1건 30원) + 문의 폼·자동 접수·알림 + 인스타그램</td></tr>
+    <tr><td>운영</td><td><b>449,000</b> · 준비 중</td><td>그로스 + 운영 자동화(ERP 3모듈) + 강습 예약 자동화(준비 중)</td></tr>
+  </tbody>
+</table></div>
+<p class="note">셋업비 300,000(유료 전환 때 1회) · 최소 6개월 · 공급가 · 부가세 별도 · GM 확정 2026-09-19 · 값 출처 ssot/canon_values.json labs_price_plans</p>
 
   <!-- 구독(자동결제) — 토스페이먼츠 빌링 시안 1장 (배 12680 · 2026-09-16 시토 2단계).
        1단계 서버(api_billing.py)는 이미 있다 — 여기는 그 위에 얹는 화면뿐. 플랜 금액·문구(data-plan 자리)는
@@ -700,8 +711,8 @@
       <option value="3_gocheokgolf">4호 고척GDR QA 골프존</option>
     </select>
     <!-- 묶음(플랜) 두 가지 — 금액·문구는 시보가 data-plan 자리에 채운다. 고른 쪽만 pf-btn.p(진하게). -->
-    <button type="button" class="pf-btn s bl-plan" data-plan="start">스타트 <small class="bl-amt" data-plan="start">월 99,000 · 블로그 매일 + 아침·저녁 통</small></button>
-    <button type="button" class="pf-btn s bl-plan" data-plan="growth">그로스 <small class="bl-amt" data-plan="growth">월 199,000 · 스타트 + 상담 자동화 + 문의 폼</small></button>
+    <button type="button" class="pf-btn s bl-plan" data-plan="start">스타트 <small class="bl-amt" data-plan="start">월 149,000 · 블로그 매일 + 아침·저녁 통</small></button>
+    <button type="button" class="pf-btn s bl-plan" data-plan="growth">그로스 <small class="bl-amt" data-plan="growth">월 249,000 · 스타트 + 상담 자동화 + 문의 폼</small></button>
     <button type="button" id="bl-register" class="pf-btn p">카드 등록</button>
     <span id="bl-msg" class="n"></span>
   </div>
