@@ -1211,7 +1211,14 @@ def _upcoming_closed_days_line(tenant: str, today=None, days: int = 45) -> str:
     closed = [d for d in (today + timedelta(days=i) for i in range(1, days + 1)) if judge(d)]
     if not closed:
         return ""
-    return "앞으로 휴관일: %s · 이 목록에 없는 날은 영업" % "·".join(_fmt_day(d) for d in closed)
+    # 각 휴관 구간(연속일) 뒤 첫 영업일도 날짜·요일 그대로 준다 — 안 주면 모델이 "다음 영업일"을 스스로
+    # 계산하다 날짜·요일을 틀리고(실측: 9/26 다음을 9/27(토)로 오기), 그 날짜가 근거 문자열에 없어
+    # _grounded 에 걸려 핸드오프로도 떨어진다(웰리 재지시로 확인). 계산해서 박아 두면 모델은 베끼기만
+    # 하면 된다.
+    closed_set = set(closed)
+    reopen = [d + timedelta(days=1) for d in closed if d + timedelta(days=1) not in closed_set]
+    return ("앞으로 휴관일: %s · 이 목록에 없는 날은 영업 · 각 휴관 뒤 첫 영업일: %s"
+            % ("·".join(_fmt_day(d) for d in closed), "·".join(_fmt_day(d) for d in reopen)))
 
 
 def _is_hours_question(q: str) -> bool:
@@ -1796,9 +1803,12 @@ def _selfcheck() -> None:
     assert wp.startswith("오늘 9/13(일) · 휴관"), wp
     assert _closed_judge("2_dietcamp", ["매월 셋째 화요일"]) is None, "해석 못 하는 규칙이면 판정 생략"
     assert _closed_judge("2_dietcamp", []) is None
-    # 웰리 요청 — 9/27 오답 수리: 앞날 휴관 목록에 추석 사흘은 있고 9/27(대체 운영)은 없어야 한다.
+    # 웰리 요청 — 9/27 오답 수리: 앞날 휴관 목록에 추석 사흘은 있고, 휴관 목록 자체(콜론 앞부분)엔
+    # 9/27(대체 운영)이 없어야 한다 — "다음 영업일" 구역에는 9/27 이 나오는 게 맞다(재지시 후속).
     up = _upcoming_closed_days_line("1_wellperion", _date(2026, 9, 19))
-    assert "9/26" in up and "9/27" not in up and "9/24" in up and "9/25" in up, up
+    closed_part = up.split(" · 각 휴관 뒤")[0]
+    assert "9/26" in closed_part and "9/27" not in closed_part and "9/24" in closed_part and "9/25" in closed_part, up
+    assert "9/27(일)" in up, "추석 연휴(9/24~26) 다음 첫 영업일은 9/27(일) — 모델이 스스로 계산 안 하게 근거에 박아 둔다"
     assert _upcoming_closed_days_line("3_gocheokgolf", _date(2026, 9, 19)) == "", "규칙 없으면 빈 문자열"
     # #8 FAQ 원자 저장 · 깨진 파일은 폴백 없이 오류.
     saved_faq_dir, FAQ_DIR = FAQ_DIR, _tf.mkdtemp()
