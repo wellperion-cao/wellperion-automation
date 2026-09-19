@@ -156,10 +156,18 @@ def diff(plan: dict, items: list, owners: dict, todo_rows: list, today=None) -> 
     limit = today + _dt.timedelta(days=HORIZON_DAYS)
     cards = open_gm_cards(plan)
     by_sid = {str(it.get("id")): it for it in items if str(it.get("id", "")).startswith("gmwork-")}
+    # 다른 전사일정 항목(evt-* 등)이 이미 plan_id 로 이 카드를 가리키면 gmwork-<카드id> 짝을
+    # 또 만들지 않는다 — 같은 날 두 줄(evt·gmwork)이 뜨는 사고(2026-09-19 GM 지적 · 미소시티 간판건).
+    # gmwork-* 자신의 plan_id(자기 카드id 를 그대로 담고 있는 옛 값)는 "다른 항목"이 아니므로 뺀다 —
+    # 안 빼면 모든 gmwork 항목이 자기 자신을 "이미 짝 있음"으로 오판해 전부 지워진다(실측 09-19).
+    plan_id_covered = {str(it.get("plan_id")).strip() for it in items
+                       if str(it.get("plan_id") or "").strip() and not str(it.get("id", "")).startswith("gmwork-")}
     want, add, fix, drop, notes = {}, [], [], [], []
 
     for c in cards:
         cid = str(c.get("id"))
+        if cid in plan_id_covered:
+            continue                       # 이미 다른 항목의 plan_id 가 이 카드를 가리킨다 — 짝 중복 방지
         # 담당 = ①GM 이 화면 보드에서 고른 값 → ②전사일정 줄에 이미 적힌 담당(사람이 손으로 넣은 값 —
         #   나우열M·이정헌 소장 등) → ③카드의 owner 칸. 보드에 3건뿐이라 「담당없음 20건」이 매일
         #   헛경보였고(2026-09-11 실측), 카드 owner 는 역할 코드(ceo)라 일정 줄의 사람 이름을 덮으면 안 된다.
@@ -266,12 +274,22 @@ def _selftest() -> None:
         {"id": "D", "title": "라 카드", "status": "진행", "due": "2026-09-30"},   # 태그만 빠진 살아 있는 카드
         {"id": "E", "title": "마 카드", "status": "진행", "due": "2026-09-30",
          "progress_note": "▶[이관 2026-09-10 · GM 지시] 중간관리자 업무로 이관."},  # 이관돼 태그를 뗀 카드
+        {"id": "F", "title": "사 카드 (GM 직접)", "status": "진행", "due": "2026-09-26", "dept": "운영부"},
+        {"id": "G", "title": "바 카드 (GM 직접)", "status": "진행", "due": "2026-09-25", "dept": "운영부"},
+        {"id": "H", "title": "자 카드 (GM 직접)", "status": "진행", "due": "2026-09-27", "dept": "운영부"},
     ]}}}
     items = [{"id": "gmwork-A", "next_due": "2026-09-20", "assignee": ""},
              {"id": "mop-A", "next_due": "2026-09-30", "assignee": ""},
              {"id": "gmwork-D", "next_due": "2026-09-30", "assignee": ""},
              {"id": "gmwork-E", "next_due": "2026-09-30", "assignee": ""},
-             {"id": "gmwork-C", "next_due": "2026-09-30", "assignee": "이경연 실장"}]
+             {"id": "gmwork-C", "next_due": "2026-09-30", "assignee": "이경연 실장"},
+             # F·G — evt 항목이 이미 plan_id 로 카드를 가리킨다(전사일정 링크 중복 방지, 2026-09-19)
+             {"id": "evt-plan-f", "next_due": "2026-09-26", "plan_id": "F"},
+             {"id": "evt-plan-g", "next_due": "2026-09-25", "plan_id": "G"},
+             {"id": "gmwork-G", "next_due": "2026-09-25", "assignee": ""},  # 낡은 짝 — 새 규칙으로 지워져야 함
+             # H — gmwork 항목이 자기 카드id 를 그대로 담은 plan_id(실측 버그) — "다른 항목"이
+             # 아니므로 안 걸리고 정상 처리(날짜 수정)돼야 한다.
+             {"id": "gmwork-H", "next_due": "2026-09-20", "assignee": "", "plan_id": "H"}]
     owners = {"A": "이경연 실장"}
     rows = [{"업무명": "가 카드", "id": "T1", "대표싸인": ""},
             {"업무명": "혼자 도는 결재 건", "id": "T2", "대표싸인": "PENDING"}]
@@ -279,7 +297,7 @@ def _selftest() -> None:
     assert r["add"] == [], r["add"]                                   # A 는 이미 있다
     assert ("gmwork-A", "날짜", "2026-09-20", "2026-09-30") in r["fix"], r["fix"]
     assert ("gmwork-A", "담당", "", "이경연 실장") in r["fix"], r["fix"]
-    assert r["drop"] == ["gmwork-C"], r["drop"]                       # 완료 카드의 짝만 뺀다
+    assert set(r["drop"]) == {"gmwork-C", "gmwork-G"}, r["drop"]          # 완료 카드 + plan_id 짝 있는 카드의 낡은 gmwork 만 뺀다
     assert "gmwork-D" not in r["drop"], r["drop"]                     # 태그만 빠진 살아 있는 카드는 안 지운다
     assert ("태그빠짐", "D", "라 카드") in r["notes"], r["notes"]
     assert "gmwork-E" not in r["drop"], r["drop"]                     # 이관된 카드도 안 지운다
@@ -289,6 +307,13 @@ def _selftest() -> None:
     kinds = {n[0] for n in r["notes"]}
     assert "기한없음" in kinds and "결재만있음" in kinds, r["notes"]
     assert "SSOT행없음" not in {n[0] for n in r["notes"] if n[1] == "A"}, r["notes"]
+    # F·G — 이미 plan_id 로 짝 있는 카드는 gmwork 추가·수정·알림 대상에서 빠진다(짝 중복 방지)
+    assert "gmwork-F" not in r["add"] and "gmwork-G" not in r["add"], r["add"]
+    assert not any(t[0] in ("gmwork-F", "gmwork-G") for t in r["fix"]), r["fix"]
+    assert not any(n[1] in ("F", "G") for n in r["notes"]), r["notes"]
+    # H — gmwork 의 자기참조 plan_id 는 "다른 항목"이 아니다 · 날짜가 다르면 정상적으로 고쳐진다
+    assert ("gmwork-H", "날짜", "2026-09-20", "2026-09-27") in r["fix"], r["fix"]
+    assert "gmwork-H" not in r["drop"], r["drop"]
     assert similar("CCTV 전체 교체 — 93대 계약·설치", "CCTV 전체 교체")
     assert not similar("가", "")
     print("[selftest] gm_surfaces_sync OK")
