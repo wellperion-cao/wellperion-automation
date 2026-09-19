@@ -3388,10 +3388,10 @@ function _apiMemberList(scope) {
 }
 // 문의 DB(멤버십) 읽기 — /api/inquiries?type=멤버십 을 offset 으로 끝까지 받아 member_inquiry_list 응답 모양으로.
 // 행 안 칸(timestamp·name·status·rowIndex·rowKey…)은 미러가 GAS 응답을 그대로 저장한 것이라 화면 코드 무변경.
-function _apiInquiryList(type) {
+function _apiInquiryList(type, scope) {
   var all = [];
   function page(off) {
-    return _apiJson('/api/inquiries?type=' + encodeURIComponent(type) + '&limit=1000&offset=' + off).then(function(d){
+    return _apiJson('/api/inquiries?type=' + encodeURIComponent(type) + '&limit=1000&offset=' + off + (scope === 'all' ? '&scope=all' : '')).then(function(d){
       all = all.concat(d.rows || []);
       return (d.count && off + d.count < (d.total || 0)) ? page(off + d.count) : all;
     });
@@ -4999,9 +4999,9 @@ function _lessonDashRenderChannel(t, statsD){
 // §3 회원 구성 — lesson_registered_roster(type) 종목별 수강 headcount. 외부관리(루프메소드 등) sheetFound=false는 별도 배지로 정직 표기(0 날조 금지).
 function _lessonDashRenderMember(t, lsType){
   var el = document.getElementById('lessonDashSecMember_' + t); if (!el) return;
-  if (GAS_URL === GAS_PLACEHOLDER) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 없음</div>'; return; }
-  var _rosterGas = function(){ return fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  (ERP_API_ON ? _apiLessonRoster(lsType).catch(function(){ return _rosterGas(); }) : _rosterGas())
+  if (!ERP_API_ON) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 없음</div>'; return; }
+  // ★2026-09-19 시토(0d1652abbd) — GAS 폴백 제거, 서버 roster 만(배2859).
+  _apiLessonRoster(lsType)
     .then(function(d){
       if (!d || !d.ok) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 불러오기 실패</div>'; return; }
       var chips = '<span class="mdash-chip teal">수강 중 <b>' + (d.total || 0).toLocaleString() + '</b></span>';
@@ -5536,12 +5536,10 @@ function lessonLoad(t) {
   //   GAS lesson_inquiry_list 는 _lessonReadRowsMerged_ 로 '강습 신규문의' intake 탭을 병합(소스오브트루스) → GAS로 읽으면 intake 포함.
   //   (멤버십 member_inquiry_list gviz 경로는 무변경 — 그쪽은 intake 별도탭 이슈 없음). 역롤백=이 블록을 구 하이브리드 삼항으로 복원.
   // ★ERP 도메인은 강습 문의도 서버 미러(/api/inquiries?type=성인강습·유소년강습)에서 읽는다(2026-09-03 시포 · GM "강습도 시트 읽는 것 같다").
-  //   미러는 연도 범위(scope 기본)만 떠 오므로 '전체보기'(scope=all)는 여전히 GAS(모양 커버 못 함 — 배2859 BLOCKED).
-  // ★2026-09-19 시포(배2859) — 연도 범위(scope 기본)는 쓰기 즉시 거울 반영(mirror_inquiry.py)이라 GAS 폴백 없이 서버 미러만.
-  //   비-ERP(공개 사본)는 서버가 없어 조회 자체를 안 한다. 쓰기는 여전히 GAS.
-  var _lessonGas = function(){ return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
-  var _lessonPromise = (st.scope === 'all') ? _lessonGas()
-    : (ERP_API_ON ? _apiInquiryList(st.type) : Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.')));
+  // ★2026-09-19 시토(0d1652abbd) — '전체보기'(scope=all)도 서버가 별도 미러("성인강습|all")로 커버한다(배2859 BLOCKED 해소).
+  //   연도 범위·전체보기 모두 쓰기 즉시 거울 반영(mirror_inquiry.py)이라 GAS 폴백 없이 서버 미러만. 비-ERP(공개 사본)는 서버가 없어 조회 자체를 안 한다. 쓰기는 여전히 GAS.
+  var _lessonPromise = ERP_API_ON ? _apiInquiryList(st.type, st.scope)
+    : Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'));
   _lessonPromise
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
@@ -5571,10 +5569,9 @@ function lessonLoad(t) {
 
 function lessonLoadStats(t) {
   var st = _lessonState[t];
-  if (GAS_URL === GAS_PLACEHOLDER) return;
-  // ★2026-09-09 배1050 — 강습 미러 우선(4916 요약 경로와 같은 라우트), 실패하면 종전 GAS.
-  var _lsGas = function(){ return fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(st.type) + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/lesson/stats?type=' + encodeURIComponent(st.type) + '&scope=' + (st.scope === 'all' ? 'all' : 'year')).catch(function(){ return _lsGas(); }) : _lsGas())
+  if (!ERP_API_ON) return;
+  // ★2026-09-19 시토(0d1652abbd) — lesson_stats scope=all 도 서버가 커버(배2859). GAS 폴백 제거.
+  _apiJson('/api/lesson/stats?type=' + encodeURIComponent(st.type) + '&scope=' + (st.scope === 'all' ? 'all' : 'year'))
     .then(function(d){
       if (!d || !d.ok) return;
       var el = document.getElementById('lessonStatLine_' + t);
@@ -6668,12 +6665,13 @@ function lessonRegLoad(t, force) {
   var st = _lessonState[t];
   st.memLoaded = true;
   var b = document.getElementById('lessonMemBody_' + t);
-  if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 자동으로 등록 회원이 표시됩니다.'); return; }
+  if (!ERP_API_ON) { if (b) b.innerHTML = _lessonRegRow('미연동', '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'); return; }
   if (b) b.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  // ★2026-09-09 배1050 — 강습 미러 우선. 단 '새로고침'(force)은 원본을 다시 읽는 게 목적이라 GAS 그대로 간다.
-  var _lrGas = function(){ return fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + (force ? '&fresh=1' : '') + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !force && !_wroteRecently()) ? _apiLessonRoster(st.type).catch(function(){ return _lrGas(); }) : _lrGas())
+  // ★2026-09-19 시토(0d1652abbd) — GAS 폴백 제거. '새로고침'(force)은 /api/lesson/refresh 로 명단 거울을 먼저
+  //   재동기화(쿨다운·실패는 무시하고 그냥 진행)한 뒤 서버 roster 를 읽는다.
+  (force ? fetch('/api/lesson/refresh?type=' + encodeURIComponent(st.type), { method: 'POST', credentials: 'same-origin' }).catch(function(){}) : Promise.resolve())
+    .then(function(){ return _apiLessonRoster(st.type); })
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
       st.roster = d.roster || [];
@@ -15091,18 +15089,16 @@ var WriteBuffer = (function(){
     //   운영 시스템이라 "무효화 직후 다른(동시) 조회가 옛 값을 다시 캐시에 채워 넣는" 경합이 실측 재현됐다
     //   (저장 직후 read-back이 '불일치'로 오탐 — 저장은 성공했는데 캐시가 옛 값을 돌려준 것이었다).
     //   read-back은 신뢰가 핵심이라 캐시를 아예 우회해 시트 원본을 direct로 읽는다(서버는 이미 지원하는 기존 파라미터 — GAS 미변경).
+    // ★2026-09-19 시토(0d1652abbd) — 문의는 쓰기 즉시 거울 반영(mirror_inquiry.py)이라 nocache 경합이 없다.
+    //   ERP 도메인은 서버 미러(_apiInquiryList)로 되읽고, 비-ERP(공개 사본)는 서버가 없어 대조를 건너뛴다(null).
     if (key === 'member_inquiry') {
-      return fetch(GAS_URL + '?action=member_inquiry_list&nocache=1' + _wpKeyParam())
-        .then(function (r) { return r.json(); })
-        .then(function (d) { return (d && d.ok) ? (d.data || []) : null; })
-        .catch(function () { return null; });
+      if (!ERP_API_ON) return Promise.resolve(null);
+      return _apiInquiryList('멤버십').then(function (d) { return (d && d.ok) ? (d.data || []) : null; }).catch(function () { return null; });
     }
     if (key.indexOf('lesson_inquiry:') === 0) {
+      if (!ERP_API_ON) return Promise.resolve(null);
       var type = key.slice('lesson_inquiry:'.length);
-      return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(type) + '&nocache=1')
-        .then(function (r) { return r.json(); })
-        .then(function (d) { return (d && d.ok) ? (d.data || []) : null; })
-        .catch(function () { return null; });
+      return _apiInquiryList(type).then(function (d) { return (d && d.ok) ? (d.data || []) : null; }).catch(function () { return null; });
     }
     if (key === 'member_active') {
       /* ★2026-08-20 시포 — GM "동기화 진행·완료가 정말 늦게 뜬다".
