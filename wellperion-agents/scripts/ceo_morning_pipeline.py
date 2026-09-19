@@ -1660,6 +1660,66 @@ def _coo_north_star_lines() -> list[str]:
         return []
 
 
+def _reception_status_line() -> str:
+    """종합접수처 미처리(총 미처리 N건 · 3일 넘은 N건) — status/reception_watch.json 직독
+    (report_stream_2b_reception._write_reception_watch 산출물, 새로 안 센다)."""
+    try:
+        watch = json.loads((STATUS_DIR / "reception_watch.json").read_text(encoding="utf-8"))
+        total = sum(int(v.get("open") or 0) for v in (watch.get("by_dept") or {}).values())
+        overdue = int(watch.get("overdue_3d") or 0)
+        return f"📋 종합접수처 미처리 {total}건 (3일 넘음 {overdue})"
+    except Exception:
+        return "📋 종합접수처 미처리 — 못 읽음"
+
+
+def _check_submit_status_line() -> str:
+    """지원부 점검 어제 제출률 — coo_north_star.support_submit_rate_7d 를 어제 하루만 보이게
+    closed_fn 으로 다른 날을 전부 닫아 재사용(약속 L01, 새 산식 없음). 휴관일은 「휴관」."""
+    try:
+        sys.path.insert(0, str(REPO / "scripts"))
+        from coo_north_star import support_submit_rate_7d  # noqa: PLC0415
+        from coo_registry import _closed_day  # noqa: PLC0415
+        yday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        ledger = json.loads((STATUS_DIR / "check_incomplete_ledger.json").read_text(encoding="utf-8"))
+        pct = support_submit_rate_7d(ledger, today_str, closed_fn=lambda d: d != yday)
+        if pct is None:
+            return "✅ 지원부 점검 어제 휴관" if _closed_day(yday) else "✅ 지원부 점검 어제 — 못 읽음"
+        return f"✅ 지원부 점검 어제 {round(pct)}%"
+    except Exception:
+        return "✅ 지원부 점검 어제 — 못 읽음"
+
+
+def _mgr_reply_pending_line() -> str:
+    """중간관리자 회신 대기(원장 열린 건 사람별 N건 · 최장 경과일) — send_ops_digest.py 의
+    ★중간관리자 원장 판정(mgr_open_candidates)을 그대로 쓴다(약속 L01). 나우열M 건 제외
+    (텔레그램 업무관리 방 몫 · GM 2026-09-14)."""
+    try:
+        sys.path.insert(0, str(REPO / "scripts"))
+        import send_ops_digest  # noqa: PLC0415
+        ledger = json.loads(send_ops_digest.MGR_LEDGER.read_text(encoding="utf-8"))
+        rows = [r for r in send_ops_digest.mgr_open_candidates(ledger)
+                if send_ops_digest.NAWOOL_WHO not in str(r.get("owner") or "")]
+        if not rows:
+            return "💬 중간관리자 회신 대기 0건"
+        counts: dict[str, int] = {}
+        for r in rows:
+            key = str(r.get("owner") or "").split()[-1] or "?"
+            counts[key] = counts.get(key, 0) + 1
+        max_age = max(r["age"] for r in rows)
+        parts = " · ".join(f"{k} {v}" for k, v in counts.items())
+        return f"💬 중간관리자 회신 대기 {parts} (최장 {max_age}일)"
+    except Exception:
+        return "💬 중간관리자 회신 대기 — 못 읽음"
+
+
+def _ops_status_lines() -> list[str]:
+    """08:00 보고 3줄 상시 — 종합접수처·점검·중간관리자 회신 현황(배 12857 · GM 지시
+    2026-09-19). 새 통·새 집계 없음, 기존 산출물만 읽는다. 못 읽으면 그 줄만 「못 읽음」
+    (0 으로 위장 금지) — 한 줄 실패가 나머지 두 줄까지 지우지 않게 줄마다 따로 감싼다."""
+    return ["", _reception_status_line(), _check_submit_status_line(), _mgr_reply_pending_line()]
+
+
 def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str, str | None]:
     """
     08:00 보고를 업무보고방/AI 진행현황방 2건으로 분리 조립.
@@ -1678,6 +1738,7 @@ def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str
         + _northstar_head()
         + _board_summary_lines(_office_secs) + _build_appendix_lines()
         + _coo_north_star_lines()
+        + _ops_status_lines()
         + _gm_asks_lines()
     )
 
