@@ -78,7 +78,7 @@
 <div class="wrap">
   <div id="portraitView" class="portrait">
     <h1>AI 번역비서 <span style="font-weight:500;color:var(--text-soft)">— 실시간 통역</span></h1>
-    <div class="sub">버튼을 누르고 있는 동안 말하고, 떼면 번역합니다.</div>
+    <div class="sub">버튼을 한 번 누르면 듣기 시작, 다시 누르면 멈추고 번역합니다.</div>
 
     <div class="chat" id="chat"><div class="empty">번역이 여기 쌓입니다.</div></div>
 
@@ -100,7 +100,12 @@
     </div>
     <div class="msg" id="statusMsg"></div>
 
-    <div class="note">크롬·사파리에서 지원됩니다(Web Speech API) — 마이크 소리는 서버로 전송되지 않고 브라우저 안에서만 글자로 바뀝니다. 텍스트만 번역 서버로 보냅니다.</div>
+    <div class="note">
+      ① 🇰🇷/🇺🇸 버튼 한 번 누르고 말하기 → 다시 누르면 번역·읽기<br>
+      ② 🎤 자동 통역 = 한 번 누르면 언어를 알아서 알아듣고 말이 끊길 때마다 바로 통역 · 다시 누르면 끝<br>
+      ③ 크롬·사파리 · 처음 한 번 마이크 허용 · 조용한 곳에서 또박또박<br>
+      마이크 소리는 브라우저 안에서만 글자로 바뀌고, 텍스트만 번역 서버로 보냅니다.
+    </div>
   </div>
 
   <!-- 가로 태블릿 좌우 분할 — 왼쪽 우리(한국어)·오른쪽 손님(상대 언어). 회전 배치 없음(GM 09-18) -->
@@ -133,6 +138,7 @@
 
 var LANG_NAME = { ko:'한국어' };
 var SPEECH_LOCALE = { ko:'ko-KR' };
+var LANG_FLAG = { ko:'🇰🇷' };
 
 var otherSel = document.getElementById('otherLang');
 var btnKo = document.getElementById('btnKo');
@@ -154,7 +160,7 @@ var chat = document.getElementById('chat');
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
 function updateOtherBtnLabel(){
-  var label = LANG_NAME[otherSel.value] + '로 말하기';
+  var label = (LANG_FLAG[otherSel.value] || '🌐') + ' ' + LANG_NAME[otherSel.value] + '로 말하기';
   btnOther.textContent = label;
   btnOtherSplit.textContent = label;
   otherLangSplit.value = otherSel.value;
@@ -172,12 +178,13 @@ otherLangSplit.addEventListener('change', function(){ otherSel.value = otherLang
 /* ── 언어 목록 — 정본 assistant_langs.json(배 12815). 못 읽으면 ko/en 두 개로 폴백. ── */
 function applyLangs(list, defTarget){
   list.forEach(function(l){
-    if (l.code === 'ko') return;
+    if (l.code === 'ko') { if (l.flag) LANG_FLAG.ko = l.flag; return; }
     LANG_NAME[l.code] = l.name_ko;
+    LANG_FLAG[l.code] = l.flag || '🌐';
     if (l.speech) SPEECH_LOCALE[l.code] = l.speech;
   });
   var optsHtml = list.filter(function(l){ return l.code !== 'ko'; }).map(function(l){
-    return '<option value="' + esc(l.code) + '">' + esc(l.name_ko) + (l.speech ? '' : ' (음성 인식 미지원 · 입력은 글자로)') + '</option>';
+    return '<option value="' + esc(l.code) + '">' + esc((l.flag || '🌐') + ' ' + l.name_ko) + (l.speech ? '' : ' (음성 인식 미지원 · 입력은 글자로)') + '</option>';
   }).join('');
   otherSel.innerHTML = optsHtml;
   otherLangSplit.innerHTML = optsHtml;
@@ -190,18 +197,22 @@ fetch('assistant_langs.json', {cache:'no-store'}).then(function(r){
 }).then(function(d){
   applyLangs(d.langs || [], d.default && d.default.target);
 }).catch(function(){
-  applyLangs([{code:'en', name_ko:'영어', speech:'en-US'}], 'en');
+  applyLangs([{code:'en', name_ko:'영어', speech:'en-US', flag:'🇺🇸'}], 'en');
 });
 
-/* ── 인식(Web Speech API) — 누르면 받아쓰기 · 떼면 번역(push-to-talk · GM 지시 2026-09-18 19:3x) ── */
+/* ── 인식(Web Speech API) — 한 번 누르면 듣기 시작 · 다시 누르면 멈추고 번역(click-toggle · GM 지시 2026-09-19) ── */
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
-var pressing = null;      // {source, target, mine} 누르고 있는 동안만
-var pendingSt = null;     // 뗀 시점 — onend 에서 이 값으로 번역을 부른다
-var liveFinal = '';       // 누르는 동안 쌓인 받아쓴 글(중간 결과 포함 인식이라 final 만 모은다)
+var pressing = null;      // {source, target, mine, which} 듣는 중일 때만
+var pendingSt = null;     // 멈춘 시점 — onend 에서 이 값으로 번역을 부른다
+var liveFinal = '';       // 듣는 동안 쌓인 받아쓴 글(중간 결과 포함 인식이라 final 만 모은다)
 var finalSegs = [];       // liveFinal 을 이루는 확정 조각들 — mergeFinal 이 마지막 조각을 교체/버림 판정할 때 씀
 var stopReason = null;
-var recActive = false;    // 인식이 지금 실제로 돌고 있는가(onstart~onend) — 스스로 끝난 뒤 뗄 때를 구분한다
+var recActive = false;    // 인식이 지금 실제로 돌고 있는가(onstart~onend) — 스스로 끝난 뒤 멈출 때를 구분한다
+var talkTimer = null;     // 60초 안전 상한(GM 09-19) — 누르고 잊어버려도 자동으로 멈추고 번역
+var TALK_MAX_MS = 60000;
+var TALK_LABEL_LISTENING = '⏹ 듣는 중… 다시 누르면 번역';
+var KO_REST_LABEL = btnKo.textContent;
 
 // 확정 조각 합치기 — meeting_note.html mergeFinal 과 같은 규칙(모바일 크롬이 isFinal 결과를 누적 문장으로
 // 주거나 되풀이해 보내는 것 때문에 같은 말이 반복 붙는 것을 막는다).
@@ -259,9 +270,12 @@ if (!SR) {
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
       statusMsg.textContent = '마이크 권한이 없습니다 — 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
       statusMsg.className = 'msg bad';
+      var which = pressing && pressing.which;
+      clearTimeout(talkTimer); talkTimer = null;
       pressing = null; setPressUI(null);
+      if (which) restoreTalkLabel(which);
     }
-    // no-speech·network·audio-capture 등은 onend 가 이어서 처리(누르는 중이면 재시작)
+    // no-speech·network·audio-capture 등은 onend 가 이어서 처리(듣는 중이면 재시작)
   };
   recognition.onend = function(){
     recActive = false;
@@ -289,22 +303,34 @@ function setPressUI(which){
   btnKoSplit.classList.toggle('active', which === 'ko');
   btnOtherSplit.classList.toggle('active', which === 'other');
 }
+function setListeningLabel(which){
+  if (which === 'ko') { btnKo.textContent = TALK_LABEL_LISTENING; btnKoSplit.textContent = TALK_LABEL_LISTENING; }
+  else { btnOther.textContent = TALK_LABEL_LISTENING; btnOtherSplit.textContent = TALK_LABEL_LISTENING; }
+}
+function restoreTalkLabel(which){
+  if (which === 'ko') { btnKo.textContent = KO_REST_LABEL; btnKoSplit.textContent = KO_REST_LABEL; }
+  else { updateOtherBtnLabel(); }
+}
 function startPress(source, target, mine, which){
   if (!recognition || pressing || stopReason === 'translate') return;
   try { speechSynthesis.cancel(); } catch (e) {}
-  pressing = { source: source, target: target, mine: mine };
+  pressing = { source: source, target: target, mine: mine, which: which };
   liveFinal = ''; finalSegs = [];
   recognition.lang = SPEECH_LOCALE[source] || source;
   setPressUI(which);
+  setListeningLabel(which);
   statusMsg.textContent = '듣는 중… (' + LANG_NAME[source] + ')'; statusMsg.className = 'msg ok';
-  // recActive 는 onstart(비동기)가 아니라 여기서 바로 켠다 — onstart 전에 떼도(빠른 탭) endPress 가
-  // stop() 을 부르게 해서 마이크가 켜진 채 방치되지 않게 한다.
   try { recognition.start(); recActive = true; } catch (e) {}
+  clearTimeout(talkTimer);
+  talkTimer = setTimeout(endPress, TALK_MAX_MS); // 60초 안전 상한
 }
 function endPress(){
   if (!recognition || !pressing) return;
+  clearTimeout(talkTimer); talkTimer = null;
+  var which = pressing.which;
   pendingSt = pressing; pressing = null;
   setPressUI(null);
+  restoreTalkLabel(which);
   if (recActive) {
     stopReason = 'translate';
     try { recognition.stop(); } catch (e) {}
@@ -314,18 +340,17 @@ function endPress(){
     finishPress(st);
   }
 }
-function pressKo(e){ e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} startPress('ko', otherSel.value, true, 'ko'); }
-function pressOther(e){ e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} startPress(otherSel.value, 'ko', false, 'other'); }
-btnKo.addEventListener('pointerdown', pressKo);
-btnOther.addEventListener('pointerdown', pressOther);
-btnKoSplit.addEventListener('pointerdown', pressKo);
-btnOtherSplit.addEventListener('pointerdown', pressOther);
-['pointerup', 'pointercancel', 'pointerleave'].forEach(function(evt){
-  btnKo.addEventListener(evt, endPress);
-  btnOther.addEventListener(evt, endPress);
-  btnKoSplit.addEventListener(evt, endPress);
-  btnOtherSplit.addEventListener(evt, endPress);
-});
+// 한 번 누르면 듣기 시작 · 듣는 중 아무 말하기 버튼을 누르면 지금 것을 멈추고 번역(새 버튼 요청은 무시 — 동시 듣기 없음)
+function talkClick(source, target, mine, which){
+  if (pressing) { endPress(); return; }
+  startPress(source, target, mine, which);
+}
+function clickKo(){ talkClick('ko', otherSel.value, true, 'ko'); }
+function clickOther(){ talkClick(otherSel.value, 'ko', false, 'other'); }
+btnKo.addEventListener('click', clickKo);
+btnOther.addEventListener('click', clickOther);
+btnKoSplit.addEventListener('click', clickKo);
+btnOtherSplit.addEventListener('click', clickOther);
 
 /* ── 글 입력(GM 「글 입력도 남긴다」) — 미지원 브라우저는 이것이 유일한 입력 수단,
    지원 브라우저에선 말하기 버튼의 보조 수단(배 12833) ── */
@@ -348,7 +373,7 @@ typeOtherSplit.addEventListener('keydown', function(e){ if (e.key === 'Enter') s
 
 /* ── 번역 요청 → 말풍선(크게) → 읽어주기 ── */
 var translateSeq = 0;    // 동시 요청 중 늦게 온 응답이 최신 표시를 덮지 않게(요청 번호 비교)
-function handleUtterance(text, source, target, mine){
+function handleUtterance(text, source, target, mine, pauseMicDuringSpeak){
   var seq = ++translateSeq;
   var bubble = addBubble(mine, text, '번역 중…');
   fetch('/api/translate', {
@@ -366,7 +391,8 @@ function handleUtterance(text, source, target, mine){
     if (seq !== translateSeq) return;   // 늦게 온 응답 — 최신 표시·읽기는 버림(이 말풍선 자체엔 이미 반영됨)
     if (target === 'ko') lastKoEl.textContent = tr;
     else lastOtherEl.textContent = tr;
-    speak(tr, target, function(){});
+    if (pauseMicDuringSpeak) autoPaused = true;
+    speak(tr, target, function(){ if (pauseMicDuringSpeak) autoPaused = false; });
   }).catch(function(){
     bubble.querySelector('.tr').textContent = '(번역 요청 실패)';
   });
@@ -393,14 +419,23 @@ function speak(text, lang, done){
   } catch (e) { done(); }
 }
 
-/* ── 자동 통역(배 12831) — 눌러 녹음, 다시 누르거나 15초 도달하면 멈추고 서버가 ko/en 을 스스로 판별한다.
-   서버(/api/transcribe)는 ko-KR·en-US 만 다뤄 이 버튼은 그 둘 사이만 오간다(GM 09-18 요청 범위) ── */
+/* ── 자동 통역(배 12831 · 연속 듣기 GM 09-19) — 한 번 누르면 계속 듣고, 말이 끊길 때마다(무음 약 1.2초)
+   그 구간을 바로 판별·번역·읽는다. 다시 누르면 끝. 구간 최대 15초(서버 상한과 같게). 서버(/api/transcribe)는
+   ko-KR·en-US 만 다뤄 이 버튼은 그 둘 사이만 오간다(GM 09-18 요청 범위) ── */
 LANG_NAME.en = LANG_NAME.en || '영어';
 SPEECH_LOCALE.en = SPEECH_LOCALE.en || 'en-US';
+LANG_FLAG.en = LANG_FLAG.en || '🇺🇸';
 
 var AUTO_SAMPLE_RATE = 16000;
-var AUTO_MAX_MS = 15000;
+var AUTO_MAX_MS = 15000;      // 구간 최대 길이(서버 상한과 동일)
+var AUTO_VAD_RMS = 0.015;     // 이 값 넘으면 말소리로 본다
+var AUTO_SILENCE_MS = 1200;   // 말소리 시작 뒤 이만큼 조용하면 구간을 끊어 보낸다
 
+function computeRms(float32Arr){
+  var sum = 0;
+  for (var i = 0; i < float32Arr.length; i++) sum += float32Arr[i] * float32Arr[i];
+  return Math.sqrt(sum / float32Arr.length);
+}
 function floatToInt16(float32Arr){
   var out = new Int16Array(float32Arr.length);
   for (var i = 0; i < float32Arr.length; i++) {
@@ -428,8 +463,13 @@ function downsampleTo16k(float32Arr, inputRate){
 
 var btnAuto = document.getElementById('btnAuto');
 var AutoAC = window.AudioContext || window.webkitAudioContext;
-var autoRecording = false, autoStarting = false, autoCtx = null, autoStream = null, autoSource = null, autoProcessor = null, autoTimer = null;
+var autoRecording = false, autoStarting = false, autoCtx = null, autoStream = null, autoSource = null, autoProcessor = null;
 var autoChunks = [];
+var autoVoiced = false;    // 지금 구간에서 말소리를 들었는가
+var autoSilenceMs = 0;     // 말소리 시작 뒤 누적 무음 길이
+var autoSegMs = 0;         // 지금 구간 누적 길이
+var autoPaused = false;    // 번역문을 읽어 주는 동안 마이크 구간 수집을 멈춘다(자기 목소리 재수집 방지)
+var autoErrorShown = false; // 서버 오류 안내는 한 번만
 
 if (!btnAuto) {
   /* 없음 — 방어. 정상 화면에선 항상 존재 */
@@ -446,6 +486,7 @@ if (!btnAuto) {
 function startAutoRecording(){
   autoStarting = true;
   btnAuto.disabled = true;
+  autoErrorShown = false;
   navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
     autoStarting = false;
     btnAuto.disabled = false;
@@ -453,17 +494,23 @@ function startAutoRecording(){
     autoCtx = new AutoAC();
     autoSource = autoCtx.createMediaStreamSource(stream);
     autoProcessor = autoCtx.createScriptProcessor(4096, 1, 1);
-    autoChunks = [];
+    autoChunks = []; autoVoiced = false; autoSilenceMs = 0; autoSegMs = 0; autoPaused = false;
     autoProcessor.onaudioprocess = function(e){
-      autoChunks.push(downsampleTo16k(e.inputBuffer.getChannelData(0), autoCtx.sampleRate));
+      if (!autoRecording || autoPaused) return;
+      var input = e.inputBuffer.getChannelData(0);
+      autoChunks.push(downsampleTo16k(input, autoCtx.sampleRate));
+      var frameMs = input.length / autoCtx.sampleRate * 1000;
+      autoSegMs += frameMs;
+      if (computeRms(input) > AUTO_VAD_RMS) { autoVoiced = true; autoSilenceMs = 0; }
+      else if (autoVoiced) { autoSilenceMs += frameMs; }
+      if ((autoVoiced && autoSilenceMs >= AUTO_SILENCE_MS) || autoSegMs >= AUTO_MAX_MS) flushAutoSegment();
     };
     autoSource.connect(autoProcessor);
     autoProcessor.connect(autoCtx.destination);
     autoRecording = true;
     btnAuto.classList.add('active');
-    btnAuto.textContent = '⏹ 듣는 중… (다시 누르면 멈춤)';
+    btnAuto.textContent = '⏹ 자동 통역 중… 다시 누르면 끝';
     statusMsg.textContent = '자동 통역 듣는 중…'; statusMsg.className = 'msg ok';
-    autoTimer = setTimeout(stopAutoRecording, AUTO_MAX_MS);
   }).catch(function(){
     autoStarting = false;
     btnAuto.disabled = false;
@@ -471,27 +518,33 @@ function startAutoRecording(){
     statusMsg.className = 'msg bad';
   });
 }
+function flushAutoSegment(){
+  var chunks = autoChunks; autoChunks = [];
+  var hadVoice = autoVoiced;
+  autoVoiced = false; autoSilenceMs = 0; autoSegMs = 0;
+  if (!hadVoice) return; // 순수 무음 구간 — 버림
+  sendAutoPcm(chunks);
+}
 function stopAutoRecording(){
   if (!autoRecording) return;
   autoRecording = false;
-  clearTimeout(autoTimer); autoTimer = null;
   btnAuto.classList.remove('active');
   btnAuto.textContent = '🎤 자동 통역';
+  if (autoChunks.length && autoVoiced) sendAutoPcm(autoChunks); // 마지막 구간까지 처리
+  autoChunks = []; autoVoiced = false; autoSilenceMs = 0; autoSegMs = 0; autoPaused = false;
   if (autoProcessor) { autoProcessor.disconnect(); autoProcessor.onaudioprocess = null; autoProcessor = null; }
   if (autoSource) { autoSource.disconnect(); autoSource = null; }
   if (autoStream) { autoStream.getTracks().forEach(function(t){ t.stop(); }); autoStream = null; }
   if (autoCtx) { autoCtx.close(); autoCtx = null; }
-  sendAutoPcm();
+  statusMsg.textContent = ''; statusMsg.className = 'msg';
 }
-function sendAutoPcm(){
+function sendAutoPcm(chunks){
   var total = 0;
-  autoChunks.forEach(function(c){ total += c.length; });
-  var chunks = autoChunks; autoChunks = [];
+  chunks.forEach(function(c){ total += c.length; });
   if (!total) return;
   var merged = new Int16Array(total);
   var off = 0;
   chunks.forEach(function(c){ merged.set(c, off); off += c.length; });
-  statusMsg.textContent = '인식 중…'; statusMsg.className = 'msg';
   fetch('/api/transcribe?langs=ko-KR,en-US', {
     method: 'POST', cache: 'no-store',
     headers: { 'Content-Type': 'application/octet-stream' },
@@ -500,17 +553,26 @@ function sendAutoPcm(){
     if (!r.ok) throw new Error('http ' + r.status);
     return r.json();
   }).then(function(d){
-    if (d.error) { statusMsg.textContent = '자동 통역 준비 중입니다.'; statusMsg.className = 'msg bad'; return; }
+    if (!autoRecording) return; // 이미 꺼짐 — 결과 버림
+    if (d.error) { autoServerError(); return; }
     var text = (d.text || '').trim();
-    if (!text) { statusMsg.textContent = '다시 말씀해 주세요.'; statusMsg.className = 'msg'; return; }
+    if (!text) return; // 연속 듣기라 매 구간 경고를 띄우지 않는다
     var lang = (d.lang || '').trim();
-    if (!lang) { statusMsg.textContent = '언어를 못 알아들었어요.'; statusMsg.className = 'msg bad'; return; }
-    statusMsg.textContent = ''; statusMsg.className = 'msg';
-    if (lang.indexOf('ko') === 0) handleUtterance(text, 'ko', 'en', true);
-    else handleUtterance(text, 'en', 'ko', false);
-  }).catch(function(){
-    statusMsg.textContent = '자동 통역 준비 중입니다.'; statusMsg.className = 'msg bad';
-  });
+    if (!lang) return;
+    if (lang.indexOf('ko') === 0) handleAutoUtterance(text, 'ko', 'en', true);
+    else handleAutoUtterance(text, 'en', 'ko', false);
+  }).catch(function(){});
+}
+function autoServerError(){
+  if (!autoErrorShown) {
+    autoErrorShown = true;
+    statusMsg.textContent = '자동 통역은 서버 준비 중입니다 — 🇰🇷 한국어 / 🇺🇸 영어 버튼을 써 주세요.';
+    statusMsg.className = 'msg bad';
+  }
+  stopAutoRecording(); // 계속 재시도하지 않는다
+}
+function handleAutoUtterance(text, source, target, mine){
+  handleUtterance(text, source, target, mine, true); // 읽는 동안 마이크 일시정지
 }
 })();
 </script>
