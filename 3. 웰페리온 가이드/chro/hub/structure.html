@@ -202,6 +202,7 @@
   }
   .hb-live{background:#2E6B5E}
   .hb-delayed{background:#9A6B2F}
+.hb-red{background:#8E2F2F}
   .hb-none{background:transparent;color:var(--muted);border:1px dashed #A9A695;font-weight:700}
   .hb-ondemand{background:#45607A}
   .hbadge-time{font-size:10.5px;color:var(--muted)}
@@ -507,6 +508,7 @@
         var ts = r["일시"];
         var thresholdH = item.kind === "weekly" ? item.days * 24 : item.hours;
         var hoursSince = (Date.now() - parseKST(ts)) / 3600000;
+        if(item.red && item.red.test(w + " " + d)) return { state: "red", last: ts };
         return { state: (hoursSince <= thresholdH ? "live" : "delayed"), last: ts };
       }
     }
@@ -1169,9 +1171,10 @@
 
     <div class="item">
       <div class="item-head"><span class="badge bg-auto">클라우드 루틴</span><span class="badge bg-a1">A-1</span><h3>아침 이력서 자동 처리</h3></div>
-      <p>Drive <b>이력서 자동수신 폴더</b>에 들어온 이력서를 아침에 자동 처리하고 처리 리포트를 남깁니다. <b>아침 브리핑</b>은 등록 메모 맨 앞의 <span class="mono">[자동 수집 날짜]</span> 마커를 집계해 "오늘 정리된 이력서"와 신규 지원자 행 포인터를 알려줍니다.</p>
+      <p>Drive <b>이력서 자동수신 폴더</b>에 들어온 이력서를 아침에 자동 처리하고 처리 리포트를 남깁니다. <b>아침 브리핑</b>은 등록 메모 맨 앞의 <span class="mono">[자동 수집 날짜]</span> 마커를 집계해 "오늘 정리된 이력서"와 신규 지원자 행 포인터를 알려줍니다. <b>2026-09-19 1단계</b>부터는 15분 주기 러너 <span class="mono">resume-pipeline</span>이 접수 파일을 <b>즉시 "서류 검토(평가 대기)"로 등록</b>하고, AI 5축 평가는 뒤따라 채웁니다. 아래 배지는 러너가 4시간마다 남기는 하트비트·등록 로그 기준(빨강 = 러너가 스스로 점검 필요를 기록).</p>
       <div class="hbadge-row">
         <span class="hbadge-item"><span class="hb-name">아침 이력서 루틴</span><span id="hb-resume" class="hbadge hb-loading">확인 중…</span><span id="hb-resume-t" class="hbadge-time"></span></span>
+        <span class="hbadge-item"><span class="hb-name">이력서 파이프라인(15분)</span><span id="hb-pipeline" class="hbadge hb-loading">확인 중…</span><span id="hb-pipeline-t" class="hbadge-time"></span></span>
         <span class="hbadge-item"><span class="hb-name">아침 브리핑</span><span id="hb-briefing" class="hbadge hb-loading">확인 중…</span><span id="hb-briefing-t" class="hbadge-time"></span></span>
       </div>
       <div class="tags"><span class="tag act">register-applicant</span><span class="tag db">db:appl</span><span class="tag tool">Drive 자동수신 폴더</span><span class="tag tool">schedule 루틴</span></div>
@@ -1246,6 +1249,10 @@
       match: function(a, w, d){
         return a === "클라우드 루틴(이력서)" || /아침\s*이력서\s*자동\s*처리/.test(w);
       } },
+    { id: "pipeline", label: "이력서 파이프라인", kind: "daily", hours: 4.5,
+      match: function(a, w, d){
+        return /A-?7/.test(a) && /이력서\s*파이프라인|지원자\s*즉시등록/.test(w);
+      }, red: /health=red/ },
     { id: "briefing", label: "아침 브리핑", kind: "daily", hours: 25,
       match: function(a, w, d){
         return a === "리마인드 루틴" && /아침\s*(브리핑|리마인드)\s*발송/.test(w);
@@ -1266,6 +1273,7 @@
         if(item.kind === "ondemand") return { state: "ondemand", last: ts };
         var thresholdH = item.kind === "weekly" ? item.days * 24 : item.hours;
         var hoursSince = (Date.now() - epoch) / 3600000;
+        if(item.red && item.red.test(w + " " + d)) return { state: "red", last: ts };
         return { state: (hoursSince <= thresholdH ? "live" : "delayed"), last: ts };
       }
     }
@@ -1288,6 +1296,10 @@
     } else if(status.state === "live"){
       el.textContent = "🟢 LIVE";
       el.className = "hbadge hb-live";
+      if(tEl) tEl.textContent = "· 최근 " + fmtLast(status.last);
+    } else if(status.state === "red"){
+      el.textContent = "🔴 점검 필요";
+      el.className = "hbadge hb-red";
       if(tEl) tEl.textContent = "· 최근 " + fmtLast(status.last);
     } else {
       el.textContent = "⚠️ 지연";
