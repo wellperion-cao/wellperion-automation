@@ -3571,16 +3571,12 @@ function fetchCap(url, ms){
    돌려주는 모양은 GAS 와 같게 맞춘다({ok:true, data:[...]}) — 읽는 쪽 코드를 안 바꾸려고. */
 function inqList(type, action, qs){
   if (!ERP_API_ON) {
-    // 2026-09-18 배 12818 — member_inquiry_list(회원 GAS 비공개 액션)는 공개 사본에서 GAS 를 부르지 않는다.
-    if (action === 'member_inquiry_list') return Promise.resolve({ ok: true, data: [], _note: '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.' });
-    return p2fetch(action, qs);   // 강습 문의(lesson_inquiry_list)는 범위 밖 — Pages 캡처는 그대로 GAS
+    // 2026-09-18 배 12818 · 2026-09-19 배 2859 — 회원·강습 문의(둘 다 GAS 비공개 액션) 공개 사본에서 GAS 를 부르지 않는다.
+    return Promise.resolve({ ok: true, data: [], _note: '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.' });
   }
-  // 2026-09-18 GM 지시(배 12817·12818②) — 회원 문의 원장(멤버십)은 ERP 도메인에서 GAS 폴백 제거.
-  //   강습 문의(성인/유소년)는 범위 밖 — 그대로 미러 실패 시 GAS 폴백.
-  if (action === 'member_inquiry_list') {
-    return inqMirror(type).catch(function(e){ console.warn('[2면] ' + type + ' 거울 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); });
-  }
-  return inqMirror(type).catch(function(e){ console.warn('[2면] ' + type + ' 거울 실패 → 시트:', e && e.message); return p2fetch(action, qs); });
+  // 2026-09-18 GM 지시(배 12817·12818②)·2026-09-19 시포(배2859) — 회원·강습 문의 원장 모두 ERP 도메인에서
+  //   GAS 폴백 제거(쓰기 즉시 거울 반영 mirror_inquiry.py 라 시트보다 거울이 항상 새 값).
+  return inqMirror(type).catch(function(e){ console.warn('[2면] ' + type + ' 거울 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); });
 }
 function inqMirror(type){
   var acc = [];

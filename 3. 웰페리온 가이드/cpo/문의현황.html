@@ -294,11 +294,20 @@ function fetchLessonBreakdown(from, to) {
     .catch(function(e) { console.warn('[lesson_breakdown] 실패:', e && e.message); return null; });
 }
 // 가입전환 상세 명단(서버 기존 액션, funnel_conversion과 동일 매칭 규칙) — 2026-07-20 GM 지시(배834)
+// ★2026-09-19 시포(배2859) — 전화번호 공개 노출 닫기: 이 액션(가입전환 상세 명단=이름·전화 포함)만 _fetchFunnel
+//   공용 GAS 폴백을 안 쓰고 서버 라우트 전용으로 뗐다(funnel_conversion·lesson_breakdown 두 액션은 그대로 —
+//   PII 없음·범위 밖). /api/funnel 은 캐시 미스여도 서버가 그 자리에서 GAS 1회를 대신 불러 채운다(api_funnel.py
+//   머리말) — 브라우저가 GAS 를 직접 부를 이유가 없다.
 var _convDetailCache = {};  // key: from+'|'+to → Promise
 function fetchFunnelConversionDetail(from, to) {
   var key = (from || '') + '|' + (to || '');
   if (_convDetailCache[key]) return _convDetailCache[key];
-  var p = _fetchFunnel('funnel_conversion_detail', from, to)
+  var q = (from && to) ? ('?from=' + from + '&to=' + to) : '';
+  var p = (ERP_API_ON
+    ? fetch('/api/funnel/funnel_conversion_detail' + q)
+        .then(function(r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .then(function(data) { if (!data || !data.ok) throw new Error('api ok=false'); return data; })
+    : Promise.reject(new Error('서버 연결이 필요합니다 — ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.')))
     .catch(function(e) { console.warn('[funnel_conversion_detail] 실패:', e && e.message); delete _convDetailCache[key]; return null; });
   _convDetailCache[key] = p;
   return p;

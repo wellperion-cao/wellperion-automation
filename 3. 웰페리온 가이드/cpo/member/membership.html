@@ -3430,26 +3430,28 @@ function _memberListFetch(scope) {
 }
 function _apiPersonView(q) {
   // 사람 찾기 — /api/members?q= 로 사람을 찾고 /api/members/{번호} 로 문의를 붙여 GAS member_person_view 와 같은 모양으로 만든다.
-  // 미러에 없는 사람(문의 단계·번호 미부여)은 GAS 가 문의 3벌에서 찾으므로 0명이면 일부러 실패시켜 폴백한다.
+  // ★2026-09-19 시포(배2859) — 전화번호 공개 노출 닫기: GAS member_person_view 는 열쇠 없이 부르던 액션이라
+  //   브라우저 직접 호출을 뺐다. 미러(회원 명부)에 없는 사람(문의 단계·번호 미부여)은 못 찾는다 — 구 GAS 폴백은
+  //   문의 3벌까지 뒤졌지만 이제는 "일치하는 사람이 없습니다"로 정직하게 끝난다(0명 → 실패 아님).
   var TAB = { valid: '유효회원', ended: '유효회원', corp: '법인 현황', archive: 'LOSS보관' };
   var list = /^M\d{5}$/i.test(q) ? Promise.resolve({ rows: [{ _member_no: q.toUpperCase() }] })
                                   : _apiJson('/api/members?q=' + encodeURIComponent(q) + '&limit=50');
   return list.then(function(d){
-    if (!(d.rows || []).length) throw new Error('미러에 없음');
-    return Promise.all(d.rows.map(function(r){ return _apiJson('/api/members/' + r._member_no); }));
-  }).then(function(people){
-    var phones = {};
-    people.forEach(function(p){ if (p._phone) phones[p._phone] = (phones[p._phone] || 0) + 1; });
-    return { ok: true, found: true, query: q, count: people.length, _source: 'sheet-mirror', people: people.map(function(p){
-      var rec = { tab: TAB[p._scope] || p._scope, rowIndex: p.rowIndex };
-      Object.keys(p).forEach(function(k){ if (k.charAt(0) !== '_' && k !== 'rowIndex' && k !== 'rowKey' && k !== 'inquiries' && k !== 'inquiry_count' && k !== 'candidates') rec[k] = p[k]; });
-      var inq = { 멤버십: [], 강습성인: [], 강습유소년: [] };
-      (p.inquiries || []).forEach(function(r){
-        if (r._type === '멤버십') inq.멤버십.push(r);
-        else (r._type === '성인강습' ? inq.강습성인 : inq.강습유소년).push({ timestamp: r.timestamp, 종목: [r.sport || ''], 담당: r.owner ? [r.owner] : [], 대표상태: r.status || '', 원본: [r] });
-      });
-      return { 회원번호: p._member_no, 이름: p['회원명'] || '', 전화: p['휴대폰 번호'] || p._phone || '', 원장: [rec], 문의: inq, 중복의심: !!(p._phone && phones[p._phone] > 1) };
-    }) };
+    if (!(d.rows || []).length) return { ok: true, found: false, query: q, count: 0, _source: 'sheet-mirror', people: [] };
+    return Promise.all(d.rows.map(function(r){ return _apiJson('/api/members/' + r._member_no); })).then(function(people){
+      var phones = {};
+      people.forEach(function(p){ if (p._phone) phones[p._phone] = (phones[p._phone] || 0) + 1; });
+      return { ok: true, found: true, query: q, count: people.length, _source: 'sheet-mirror', people: people.map(function(p){
+        var rec = { tab: TAB[p._scope] || p._scope, rowIndex: p.rowIndex };
+        Object.keys(p).forEach(function(k){ if (k.charAt(0) !== '_' && k !== 'rowIndex' && k !== 'rowKey' && k !== 'inquiries' && k !== 'inquiry_count' && k !== 'candidates') rec[k] = p[k]; });
+        var inq = { 멤버십: [], 강습성인: [], 강습유소년: [] };
+        (p.inquiries || []).forEach(function(r){
+          if (r._type === '멤버십') inq.멤버십.push(r);
+          else (r._type === '성인강습' ? inq.강습성인 : inq.강습유소년).push({ timestamp: r.timestamp, 종목: [r.sport || ''], 담당: r.owner ? [r.owner] : [], 대표상태: r.status || '', 원본: [r] });
+        });
+        return { 회원번호: p._member_no, 이름: p['회원명'] || '', 전화: p['휴대폰 번호'] || p._phone || '', 원장: [rec], 문의: inq, 중복의심: !!(p._phone && phones[p._phone] > 1) };
+      }) };
+    });
   });
 }
 // 강습 회원관리 3종(lesson_stats·lesson_registered_roster·lesson_registry_list) — sync_lesson.py 미러(배 922 레인 W)를
@@ -4960,8 +4962,8 @@ function loadLessonDash(t){
     var gas = function(){ return fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType)).then(function(r){ return r.json(); }); };
     return ERP_API_ON ? _apiLessonStats(lsType).catch(function(){ return gas(); }) : gas();
   })().then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
-  ((ERP_API_ON && !_wroteRecently()) ? _apiInquiryList(lsType).catch(function(){ return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }); })
-    : fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }))
+  // 2026-09-19 시포(배2859) — 강습 문의는 쓰기 즉시 거울 반영(mirror_inquiry.py)이라 GAS 폴백 없이 서버 미러만.
+  (ERP_API_ON ? _apiInquiryList(lsType) : Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.')))
     .then(function(d){
       var rows = (d && d.ok && Array.isArray(d.data)) ? d.data : [];
       res.regAll = rows.filter(function(r){ return r.status === 'SUC' || r.status === '단기SUC'; });
@@ -5217,11 +5219,11 @@ function personSearchGo() {
   var box = document.getElementById('personSearchResult');
   if (!q) { box.innerHTML = '이름·전화·회원번호를 입력하세요.'; return; }
   box.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">검색 중…</div></div>';
-  var gas = function(){ return fetch(GAS_URL + '?action=member_person_view&q=' + encodeURIComponent(q)).then(function(r){ return r.json(); }); };
-  // ERP 도메인=미러 API 먼저(배 942) · 미러에 없거나 실패하면 GAS(문의 단계 사람까지 찾는다)
-  (ERP_API_ON ? _apiPersonView(q).catch(function(e){ console.warn('[사람찾기] API 실패 → GAS 폴백:', e && e.message); return gas(); }) : gas())
+  // ★2026-09-19 시포(배2859) — 전화번호 공개 노출 닫기: GAS member_person_view 직행(열쇠 없음)을 뺐다.
+  //   ERP 도메인=미러 API만. 비-ERP(공개 사본)는 서버가 없어 조회 자체를 안 한다.
+  (ERP_API_ON ? _apiPersonView(q) : Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.')))
     .then(_renderPersonSearch)
-    .catch(function(){ box.innerHTML = '<span style="color:#c0392b">조회 실패 — 다시 시도해 주세요.</span>'; });
+    .catch(function(e){ box.innerHTML = '<span style="color:#c0392b">' + esc((e && e.message) || '조회 실패 — 다시 시도해 주세요.') + '</span>'; });
 }
 // rec 원본 칼럼 중 값 있는 것만 "키 값" 나열 — 탭마다 칼럼이 달라도(유효회원/법인현황/LOSS보관) 그대로 나온다.
 function _pvKV(rec) {
@@ -5529,9 +5531,12 @@ function lessonLoad(t) {
   //   GAS lesson_inquiry_list 는 _lessonReadRowsMerged_ 로 '강습 신규문의' intake 탭을 병합(소스오브트루스) → GAS로 읽으면 intake 포함.
   //   (멤버십 member_inquiry_list gviz 경로는 무변경 — 그쪽은 intake 별도탭 이슈 없음). 역롤백=이 블록을 구 하이브리드 삼항으로 복원.
   // ★ERP 도메인은 강습 문의도 서버 미러(/api/inquiries?type=성인강습·유소년강습)에서 읽는다(2026-09-03 시포 · GM "강습도 시트 읽는 것 같다").
-  //   미러는 연도 범위(scope 기본)만 떠 오므로 '전체보기'(scope=all)는 GAS 그대로. 실패·6분 내 쓰기면 GAS 폴백. 쓰기는 GAS.
+  //   미러는 연도 범위(scope 기본)만 떠 오므로 '전체보기'(scope=all)는 여전히 GAS(모양 커버 못 함 — 배2859 BLOCKED).
+  // ★2026-09-19 시포(배2859) — 연도 범위(scope 기본)는 쓰기 즉시 거울 반영(mirror_inquiry.py)이라 GAS 폴백 없이 서버 미러만.
+  //   비-ERP(공개 사본)는 서버가 없어 조회 자체를 안 한다. 쓰기는 여전히 GAS.
   var _lessonGas = function(){ return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
-  var _lessonPromise = (ERP_API_ON && st.scope !== 'all' && !_wroteRecently()) ? _apiInquiryList(st.type).catch(function(e){ console.warn('[강습문의] API 실패 → GAS 폴백:', e && e.message); return _lessonGas(); }) : _lessonGas();
+  var _lessonPromise = (st.scope === 'all') ? _lessonGas()
+    : (ERP_API_ON ? _apiInquiryList(st.type) : Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.')));
   _lessonPromise
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
