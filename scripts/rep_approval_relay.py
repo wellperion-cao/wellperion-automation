@@ -395,6 +395,7 @@ def pick_new_rows(rows: list[dict], notified: dict[str, str], today: str) -> lis
             if _kst_day(r.get("생성일")) == today
             and not _AI_RE.search(str(r.get("생성자") or ""))
             and "나우열" not in f'{r.get("담당자") or ""} {r.get("생성자") or ""}'
+            and not is_hr_row(r)
             and str(r.get("id") or "").strip() not in notified]
 
 
@@ -639,6 +640,20 @@ def run_reject(send: bool = False, dry_run: bool = False) -> int:
 #     뒤집혔다(그 밖=★운영부, 예외만 ★중간관리자).
 NOTIFY_TELEGRAM = "텔레그램(AtoA)"
 APPROVAL_URL = "https://erp.wellperion.com/coo/todo/" + quote("결재 현황 SSOT.html")
+# 인사 건 제외(GM 결정 2026-09-19 09:4x 카드) — 계약해지·진급·추가근무 같은 인사·처우는
+# 운영부방(도 신규 업무 통)에 안 싣는다. 카테고리 칸이 있으면 그 값을 먼저 본다(실측: 인사 건
+# 3건 전부 「[3] 인사&파트너팀」) — 없을 때만 업무명 낱말로 판정한다.
+HR_CATEGORY_RE = re.compile(r"인사")
+HR_KEYWORD_RE = re.compile(r"계약해지|해지|진급|승진|채용|퇴사|퇴직|급여|연봉|징계|추가근무|근무수당|인사")
+
+
+def is_hr_row(row: dict) -> bool:
+    cat = _CAT_RE.sub("", str(row.get("카테고리") or "").strip())
+    if cat:
+        return bool(HR_CATEGORY_RE.search(cat))
+    return bool(HR_KEYWORD_RE.search(str(row.get("업무명") or "")))
+
+
 # 조용 시간대 — 이 30분 예약은 daily_scheduler 를 안 거치고 Windows 작업 스케줄러가
 #   직접 rep_approval_relay.py 를 부르므로(GM 지시 2026-09-18 배 2760 · 30분 08~22시), 기존
 #   ①(_run_rep_approval_relay 의 22~08시 스킵)과 달리 여기서 직접 막아야 한다. 세 창은 같은
@@ -682,13 +697,13 @@ def build_direct_message(rows: list[dict], prefix: str = "", today: str | None =
     if not rows:
         return ""
     _, md = _md(today)
-    lines = [f"{prefix}📋 {md} 결재 완료 {len(rows)}건 — 진행해 주세요"]
+    lines = [f"{prefix}📋 {md} 결재 완료 {len(rows)}건 — 공유드립니다"]
     for r in rows[:5]:
         lines.append(f"▪ {str(r.get('업무명') or '').strip()} ({str(r.get('담당자') or '').strip()})")
     if len(rows) > 5:
         lines.append(f"▪ 외 {len(rows) - 5}건")
     lines.append(f"📎 결재 SSOT {APPROVAL_URL}")
-    lines.append("진행 기록은 업무 SSOT 행에 남겨 주세요.")
+    lines.append("담당자분은 진행 기록을 업무 SSOT 행에 남겨 주세요.")
     lines.append(SIGNOFF)
     return "\n".join(lines)
 
@@ -711,12 +726,20 @@ def notify_approval_done(send: bool = False, dry_run: bool = False) -> int:
         _save_notified("notified_direct", notified, f"직접안내 축 기준선 {len(notified)}건(seed · 최근 2일 서명 제외 · 전달 안 함)")
         print(f"[approval-done] 첫 실행 — 기존 {len(notified)}건 seed(최근 2일 서명 제외), 이번 회차는 다음 회차로")
         return 0
-    picked = pick_approval_done(rows, notified)
+    picked_all = pick_approval_done(rows, notified)
+    today = datetime.now().strftime("%Y-%m-%d")
+    hr_rows = [r for r in picked_all if is_hr_row(r)]
+    picked = [r for r in picked_all if not is_hr_row(r)]
+    if hr_rows:
+        # 인사 건은 운영부·중간관리자·AtoA 어디에도 안 보낸다(GM 결정 2026-09-19) — 지문만 남겨 다시 안 뜨게.
+        for r in hr_rows:
+            notified[str(r.get("id")).strip()] = f"hr-skip-{today}"
+        _save_notified("notified_direct", notified, f"인사 건 제외 {len(hr_rows)}건 ({today})")
+        print(f"[approval-done] 인사 건 {len(hr_rows)}건 — 발송 제외(hr-skip 기록)")
     by_route: dict[tuple[str, str], list[dict]] = {}
     for r in picked:
         route = route_direct(_owner_key(r.get("담당자")))
         by_route.setdefault(route, []).append(r)
-    today = datetime.now().strftime("%Y-%m-%d")
     print(f"[approval-done] 결재완료(미안내) {len(picked)}건 — " +
          " · ".join(f"{room} {len(rr)}건" for (room, _), rr in by_route.items()))
     quiet = _in_quiet_window()
@@ -939,7 +962,13 @@ def _selfcheck() -> None:
     picked = pick_approval_done(ad, {"AD2": "2026-09-17"})
     assert [r["id"] for r in picked] == ["AD1", "AD3"], picked   # 지문 있는 AD2·미서명 AD4 제외
     msg = build_direct_message([ad[0]], "", "2026-09-18").splitlines()
-    assert msg[0] == "📋 9/18 결재 완료 1건 — 진행해 주세요" and msg[1] == "▪ 짐벌 카메라 (최준용M)", msg
+    assert msg[0] == "📋 9/18 결재 완료 1건 — 공유드립니다" and msg[1] == "▪ 짐벌 카메라 (최준용M)", msg
+    assert msg[-2] == "담당자분은 진행 기록을 업무 SSOT 행에 남겨 주세요.", msg
+    # 인사 건 제외(GM 결정 2026-09-19) — 카테고리 「인사&파트너팀」 이면 업무명과 무관하게 인사, 없으면 낱말 판정
+    assert is_hr_row({"업무명": "최현준 골프팀장 계약해지 및 인수인계", "카테고리": "[3] 인사&파트너팀"}) is True
+    assert is_hr_row({"업무명": "골프팀 팀리더 김태엽 진급", "카테고리": "[3] 인사&파트너팀"}) is True
+    assert is_hr_row({"업무명": "남 지원부 추가근무", "카테고리": ""}) is True   # 카테고리 없을 때 낱말 판정
+    assert is_hr_row({"업무명": "CCTV 100대 전체 교체 계약", "카테고리": "[5] 시설 및 환경"}) is False
     assert APPROVAL_URL.startswith("https://erp.wellperion.com/coo/todo/%") and APPROVAL_URL.endswith("SSOT.html")
     # 조용 시간대(GM 지시 2026-09-18 배 2760 — 30분 예약이 다른 예약통과 카톡 UI 를 안 다투게)
     from datetime import datetime as _dt
