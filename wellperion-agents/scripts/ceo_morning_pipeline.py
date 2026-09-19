@@ -1649,6 +1649,17 @@ def _gm_asks_lines() -> list[str]:
     return lines
 
 
+def _coo_north_star_lines() -> list[str]:
+    """08:00 보고 한 줄 — 시우 궁극 목표 「무인 운영 시스템 완성」 진척률(GM 결정 2026-09-19).
+    scripts/coo_north_star.py 한 곳에서만 계산한다(약속 L01) — 실패해도 보고는 안 죽는다."""
+    try:
+        sys.path.insert(0, str(REPO / "scripts"))
+        import coo_north_star  # noqa: PLC0415
+        return [coo_north_star.line()]
+    except Exception:
+        return []
+
+
 def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str, str | None]:
     """
     08:00 보고를 업무보고방/AI 진행현황방 2건으로 분리 조립.
@@ -1666,6 +1677,7 @@ def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str
         ([holiday_line, ""] if holiday_line else [])
         + _northstar_head()
         + _board_summary_lines(_office_secs) + _build_appendix_lines()
+        + _coo_north_star_lines()
         + _gm_asks_lines()
     )
 
