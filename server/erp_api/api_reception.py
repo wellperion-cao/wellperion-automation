@@ -82,11 +82,11 @@ CORS = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POS
 #   dept 변경 시 원본(GAS)도 같이 고쳐야 하던 것을, 이제 이 표 한 곳만 고치면 된다(GAS 쪽은 더 이상 안 쓴다).
 REG_CATEGORIES = {
     "lost":       {"label": "분실물 접수",           "dept": "운영부", "photo": True,  "extra": ("itemName", "lostWhen")},
-    "facility":   {"label": "시설물 고장 접수",       "dept": "시설부", "photo": True,  "extra": ()},
-    "clean":      {"label": "청결 이슈 접수",         "dept": "",       "photo": True,  "extra": ()},
-    "praise":     {"label": "직원·강사 칭찬합니다",   "dept": "운영부", "photo": False, "extra": ()},
-    "voice":      {"label": "직원·강사 쓴소리합니다", "dept": "운영부", "photo": False, "extra": ()},
-    "complaint":  {"label": "컴플레인 접수",          "dept": "운영부", "photo": True,  "extra": ()},
+    "facility":   {"label": "시설물 고장 접수",       "dept": "시설부", "photo": True,  "extra": ("equipName", "severity", "usable")},
+    "clean":      {"label": "청결 이슈 접수",         "dept": "",       "photo": True,  "extra": ("issueKind", "urgency")},
+    "praise":     {"label": "직원·강사 칭찬합니다",   "dept": "운영부", "photo": False, "extra": ("targetStaff", "episode")},
+    "voice":      {"label": "직원·강사 쓴소리합니다", "dept": "운영부", "photo": False, "extra": ("targetStaff", "episode", "anonymousPref")},
+    "complaint":  {"label": "컴플레인 접수",          "dept": "운영부", "photo": True,  "extra": ("area", "occurredAt")},
 }
 REG_LOC_DEPT = {
     "헬스장": "P.T팀", "수영장": "수영팀", "남자사우나": "지원부(남)", "여자사우나": "지원부(여)",
