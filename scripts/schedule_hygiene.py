@@ -5,6 +5,10 @@ GM 원문: 「이런건 시우가 좀 관리좀 해줘 자동으로 계속 이�
   ①같은 건 중복(미소시티 간판 2개) ②지난 대비 필러(추석 연휴대비) ③GM 일정 시간 빈칸
   ④휴관일에 걸린 GM 일정 ⑤지워 달라 했는데 동기화로 되살아날 위험.
 
+★2026-09-19 (월요일 정리 배) — ⑥ 같은 todo_id 중복 추가: 같은 업무 SSOT 행(todo_id)에 전사일정
+  항목이 2개 이상 걸리면 목록에 올린다(①의 이름-닮음 판정과 별개 — id 는 같은데 이름이 갈려도
+  잡는다). 자동 병합은 안 한다 — 사람이 봐야 할 목록만.
+
 원천 = schedule_ssot.pull_from_live()(GAS 라이브). 옛 JSON 만 보고 판정하지 않는다.
 휴관일 판정은 coo_registry._closed_day 를 그대로 재사용한다.
 
@@ -286,6 +290,19 @@ def check_closed_day_conflict(items: list, today: date) -> list:
 
 
 # ═══════════════════════════════════════════
+# ⑥ 같은 todo_id 중복 — 업무 SSOT 한 행에 전사일정 항목이 2개 이상 걸린 경우(자동 처리 없음 · 목록만)
+# ═══════════════════════════════════════════
+def check_same_todo_id(items: list) -> list:
+    groups: dict[str, list] = {}
+    for it in items:
+        tid = str(it.get("todo_id") or "").strip()
+        if not tid:
+            continue
+        groups.setdefault(tid, []).append(it)
+    return [g for g in groups.values() if len(g) >= 2]
+
+
+# ═══════════════════════════════════════════
 # 보고
 # ═══════════════════════════════════════════
 def _line(it: dict, reason: str) -> str:
@@ -297,6 +314,7 @@ def run_report(items: list, today: date, source_note: str) -> dict:
     fillers = check_stale_filler(items, today)
     gm_blanks = check_gm_time_blank(items, today)
     closed = check_closed_day_conflict(items, today)
+    same_todo = check_same_todo_id(items)
 
     print(f"[전사일정 자동 정리 점검] 원천={source_note} · 대상 {len(items)}건")
 
@@ -318,10 +336,15 @@ def run_report(items: list, today: date, source_note: str) -> dict:
 
     print("⑤ 되살아남 — 삭제 이력 원장 없음(점검 생략)")
 
-    if not (dups or fillers or gm_blanks or closed):
+    print(f"⑥ 같은 todo_id 중복 {len(same_todo)}건")
+    for g in same_todo:
+        ids = ", ".join(str(x.get("id")) for x in g)
+        print(f"  - todo_id={g[0].get('todo_id')} · {ids}")
+
+    if not (dups or fillers or gm_blanks or closed or same_todo):
         print("→ 진짜 0건" if "라이브" in source_note else "→ 0건이나 원천 못 읽어 판정 보류")
 
-    return {"dups": dups, "fillers": fillers, "gm_blanks": gm_blanks, "closed": closed}
+    return {"dups": dups, "fillers": fillers, "gm_blanks": gm_blanks, "closed": closed, "same_todo": same_todo}
 
 
 # ═══════════════════════════════════════════
@@ -380,6 +403,13 @@ def _selfcheck() -> None:
         {"id": "d3", "name": "지난 휴관일 사무 건", "next_due": (today - timedelta(days=10)).isoformat(),
          "assignee": "김남욱 GM", "cycle": ""},
         {"id": "e1", "name": "정상 일정", "next_due": fake_soon, "time": "10:00", "assignee": "박호균 과장"},
+        # ── ⑥ 같은 todo_id 중복 판정용(time 채워서 ③ 대상에서 뺀다) ──
+        {"id": "evt-f1", "name": "공조 민원 접수", "next_due": fake_soon, "time": "10:00",
+         "assignee": "김남욱 GM", "todo_id": "TODO-DUPTEST"},
+        {"id": "gmwork-f1", "name": "[GM업무] 공조 민원 접수", "next_due": fake_soon, "time": "10:00",
+         "assignee": "김남욱 GM", "todo_id": "TODO-DUPTEST"},
+        {"id": "evt-f2", "name": "다른 건", "next_due": fake_soon, "time": "10:00",
+         "assignee": "김남욱 GM", "todo_id": "TODO-UNIQUE"},
     ]
 
     dups = check_duplicates(items)
@@ -410,6 +440,11 @@ def _selfcheck() -> None:
     assert "d1" not in ids_closed, "시설부 담당 휴관일 정비를 충돌로 오판"
     assert "d2" in ids_closed, f"사무 일 휴관일 충돌 못 잡음: {closed}"
     assert "d3" not in ids_closed, "지난 날짜를 충돌로 오판"
+
+    same_todo = check_same_todo_id(items)
+    same_todo_ids = {tuple(sorted(str(x.get("id")) for x in g)) for g in same_todo}
+    assert ("evt-f1", "gmwork-f1") in same_todo_ids, f"같은 todo_id 중복 못 잡음: {same_todo}"
+    assert not any("evt-f2" in g for g in same_todo_ids), "혼자인 todo_id 를 중복으로 오판"
 
     applied = apply_gm_time_fill(items, gm_blanks)
     by_id = {it["id"]: it for it in items}
@@ -459,7 +494,7 @@ def main() -> None:
     worklog_log(
         "coo", "일정위생",
         f"전사일정 자동 정리 점검 — 중복{counts['dups']}·필러{counts['fillers']}"
-        f"·GM빈칸{counts['gm_blanks']}·휴관충돌{counts['closed']}",
+        f"·GM빈칸{counts['gm_blanks']}·휴관충돌{counts['closed']}·todo_id중복{counts['same_todo']}",
         result="ok" if pull.get("ok") else "warn",
         detail=source_note,
         ref="schedule_hygiene",
