@@ -148,6 +148,18 @@
           "upload": "—",
           "open": true,
           "evidence": null
+        },
+        {
+          "ref": "GM-20260919-1020",
+          "no": "20",
+          "got": "statusline 작업 내역 영어로 나오는데 한글로좀 나오게해줘",
+          "did": "상태줄 영어 라벨 한글로 — 모델·주간·맥락·스킬·생각중·도구/에이전트/스킬 수·남은 시간(GM 2026-09-19) · fix(hud): 상태줄 영어 라벨 한글로 — 모델·주간·맥락·스킬·생각 — 커밋 74388513cc · 배 12849 · statusline 작업 내역 영어 → 한글 — wellperion_hud.mjs 라벨 한글화(모델·주간·맥락·스킬·생각중·도구/에이전트/스킬·남은 시간)",
+          "start": "10:29",
+          "end": "10:31",
+          "minutes": 2,
+          "upload": "✅ 배포 (74388513c)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -156,13 +168,25 @@
           "area": "GM지시",
           "event": "PC 강제 재부팅 원인 파악·해결 + 전 C-Level 작업 이어가기 + admin 두 주소 같은 화면인지",
           "detail": "원인=INCA nProtect 드라이버 TKFsAv64.sys 블루스크린(0x3B) · nProtect 제거 · NUL 깨짐 파일 0건(큐 복구 확인) · 5개 창에 이어가기 지시 · 두 주소=다른 화면(자율현황/회사)"
+        },
+        {
+          "time": "10:31",
+          "area": "작업",
+          "event": "fix(hud): 상태줄 영어 라벨 한글로 — 모델·주간·맥락·스킬·생각중·도구/에이전트/스킬 수·남은 시간(GM 2026-09-19)",
+          "detail": "커밋 74388513cc · 배 12849"
+        },
+        {
+          "time": "10:31",
+          "area": "GM지시",
+          "event": "statusline 작업 내역 영어 → 한글",
+          "detail": "wellperion_hud.mjs 라벨 한글화(모델·주간·맥락·스킬·생각중·도구/에이전트/스킬·남은 시간) · 74388513cc"
         }
       ],
-      "count": 12,
-      "done": 0,
+      "count": 13,
+      "done": 1,
       "open": 12,
-      "avg_minutes": null,
-      "work_count": 1,
+      "avg_minutes": 2,
+      "work_count": 3,
       "missed": [],
       "unclosed": [
         {
@@ -177,7 +201,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 238
+          "waited": 247
         },
         {
           "ref": "GM-20260919-1006",
@@ -191,7 +215,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 111
+          "waited": 120
         }
       ],
       "just": [
@@ -207,7 +231,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 76
+          "waited": 85
         },
         {
           "ref": "GM-20260919-1009",
@@ -221,7 +245,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 68
+          "waited": 77
         },
         {
           "ref": "GM-20260919-1010",
@@ -235,7 +259,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 66
+          "waited": 75
         },
         {
           "ref": "GM-20260919-1011",
@@ -249,7 +273,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 64
+          "waited": 73
         },
         {
           "ref": "GM-20260919-1012",
@@ -263,7 +287,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 62
+          "waited": 71
         },
         {
           "ref": "GM-20260919-1013",
@@ -277,7 +301,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 59
+          "waited": 68
         },
         {
           "ref": "GM-20260919-1015",
@@ -291,7 +315,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 36
+          "waited": 45
         },
         {
           "ref": "GM-20260919-1016",
@@ -305,7 +329,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 11
+          "waited": 20
         },
         {
           "ref": "GM-20260919-1017",
@@ -319,7 +343,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 8
+          "waited": 17
         },
         {
           "ref": "GM-20260919-1019",
@@ -333,7 +357,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 11
         }
       ],
       "repeats": []
@@ -450,13 +474,19 @@
           "area": "작업",
           "event": "feat(pc): PC 강제 재부팅 재발 방지 — 은행 보안 드라이버 자동 차단·페이지 풀 경보·재부팅 뒤 NUL 파일 자동 복구",
           "detail": "커밋 64364d28c7 · 배 12680"
+        },
+        {
+          "time": "10:30",
+          "area": "작업",
+          "event": "fix(kakao): send_via_gate 관문 타임아웃(180초)을 실패로 받아 재시도 흐름 유지 (배 12841)",
+          "detail": "커밋 b156fd7a79 · 배 12680"
         }
       ],
       "count": 4,
       "done": 1,
       "open": 3,
       "avg_minutes": 1,
-      "work_count": 10,
+      "work_count": 11,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -472,7 +502,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 77
+          "waited": 86
         },
         {
           "ref": "GM-20260919-2005",
@@ -486,7 +516,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 67
+          "waited": 76
         },
         {
           "ref": "GM-20260919-2008",
@@ -500,7 +530,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 14
+          "waited": 23
         }
       ],
       "repeats": []
@@ -603,6 +633,42 @@
           "upload": "—",
           "open": true,
           "evidence": null
+        },
+        {
+          "ref": "GM-20260919-3010",
+          "no": "10",
+          "got": "# Autonomous loop check",
+          "did": "아직",
+          "start": "10:31",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
+          "ref": "GM-20260919-3011",
+          "no": "11",
+          "got": "응 병렬로 작업진행",
+          "did": "아직",
+          "start": "10:31",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
+          "ref": "GM-20260919-3013",
+          "no": "13",
+          "got": "구글비즈니스 링크 띄워줘 크롬으로",
+          "did": "아직",
+          "start": "10:35",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -623,13 +689,25 @@
           "area": "작업",
           "event": "perf(geo): 홈 iconsmind 아이콘 서브셋 폰트 추가 - 6글자 1.9KB (배 2740)",
           "detail": "커밋 f22de1f943 · 배 12757"
+        },
+        {
+          "time": "10:29",
+          "area": "작업",
+          "event": "refactor(axlabs): 회사소개서·전략 로드맵 글 줄이기 + 랜딩 버튼 3개(소개서/로드맵 내부/홈페이지) (배 12845 · GM 지시 2026-09-19)",
+          "detail": "커밋 530d7cb1c0 · 배 12757"
+        },
+        {
+          "time": "10:30",
+          "area": "작업",
+          "event": "feat(axlabs): 랩스 공개 첫 화면을 새 홈페이지로 교체 · 워드프레스 /labs 블록 (배 12845 · GM 지시 2026-09-19)",
+          "detail": "커밋 c1300cd472 · 배 12757"
         }
       ],
-      "count": 8,
+      "count": 11,
       "done": 0,
-      "open": 8,
+      "open": 11,
       "avg_minutes": null,
-      "work_count": 3,
+      "work_count": 5,
       "missed": [],
       "unclosed": [
         {
@@ -644,7 +722,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 608
+          "waited": 617
         }
       ],
       "just": [
@@ -660,7 +738,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 66
+          "waited": 75
         },
         {
           "ref": "GM-20260919-3003",
@@ -674,7 +752,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 46
+          "waited": 55
         },
         {
           "ref": "GM-20260919-3004",
@@ -688,7 +766,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 46
+          "waited": 55
         },
         {
           "ref": "GM-20260919-3005",
@@ -702,7 +780,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 40
+          "waited": 49
         },
         {
           "ref": "GM-20260919-3007",
@@ -716,7 +794,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 25
+          "waited": 34
         },
         {
           "ref": "GM-20260919-3008",
@@ -730,7 +808,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 25
+          "waited": 34
         },
         {
           "ref": "GM-20260919-3009",
@@ -744,7 +822,49 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 12
+        },
+        {
+          "ref": "GM-20260919-3010",
+          "no": "10",
+          "got": "# Autonomous loop check",
+          "did": "아직",
+          "start": "10:31",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 5
+        },
+        {
+          "ref": "GM-20260919-3011",
+          "no": "11",
+          "got": "응 병렬로 작업진행",
+          "did": "아직",
+          "start": "10:31",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 5
+        },
+        {
+          "ref": "GM-20260919-3013",
+          "no": "13",
+          "got": "구글비즈니스 링크 띄워줘 크롬으로",
+          "did": "아직",
+          "start": "10:35",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
         }
       ],
       "repeats": []
@@ -811,7 +931,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 45
+          "waited": 54
         }
       ],
       "repeats": []
@@ -866,6 +986,18 @@
           "upload": "—",
           "open": true,
           "evidence": null
+        },
+        {
+          "ref": "GM-20260919-5005",
+          "no": "05",
+          "got": "칭찬 폼 테스트 접수해서 확인해줘 그리고 테스트건은 삭제해줘",
+          "did": "실무진 피드백 FB260919 칭찬 사례 누락 종결 (배 12841) [지연 재시도] · 중간관리자 이월 항목 정리 + 기한 없는 채팅체크 14일 자동제외 (배 12842)",
+          "start": "10:29",
+          "end": "10:29",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "🔁재확인"
         }
       ],
       "work": [
@@ -882,10 +1014,10 @@
           "detail": "커밋 5dfb933121 · 배 12760"
         }
       ],
-      "count": 4,
-      "done": 0,
+      "count": 5,
+      "done": 1,
       "open": 4,
-      "avg_minutes": null,
+      "avg_minutes": 0,
       "work_count": 2,
       "missed": [],
       "unclosed": [
@@ -901,7 +1033,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 613
+          "waited": 622
         }
       ],
       "just": [
@@ -917,7 +1049,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 63
+          "waited": 72
         },
         {
           "ref": "GM-20260919-5003",
@@ -931,7 +1063,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 21
+          "waited": 30
         },
         {
           "ref": "GM-20260919-5004",
@@ -945,7 +1077,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 20
+          "waited": 29
         }
       ],
       "repeats": []
@@ -1018,7 +1150,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 15
+          "waited": 24
         }
       ],
       "repeats": []
@@ -1030,7 +1162,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-19T10:27:19",
+    "published_at": "2026-09-19T10:36:27",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -1038,20 +1170,20 @@
         "alive": false,
         "signal": "09:30",
         "last": {
-          "time": "10:26",
+          "time": "10:31",
           "area": "GM지시",
-          "event": "ERP 계정 정리: 시설지원·강습·운영·운영부·현장 점검 공용 계정 불필요 · 이름 칸엔 이름만, 직함 칸 따로",
-          "result": "warn"
+          "event": "statusline 작업 내역 영어 → 한글",
+          "result": "ok"
         },
-        "idle_since": "10:26",
-        "saves": 0,
+        "idle_since": "10:31",
+        "saves": 1,
         "lanes": 0
       },
       "cto": {
         "nick": "시토",
         "session": "welperion-automation-8a",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
           "time": "09:23",
           "area": "진행",
@@ -1059,13 +1191,13 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 18,
+        "saves": 21,
         "lanes": 2
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-57",
-        "alive": true,
+        "alive": false,
         "signal": "10:15",
         "last": {
           "time": "09:15",
@@ -1074,7 +1206,7 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 9,
+        "saves": 12,
         "lanes": 1
       },
       "cpo": {
@@ -1096,15 +1228,15 @@
         "nick": "시우",
         "session": "welperion-automation-8b",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
-          "time": "10:09",
-          "area": "작업",
-          "event": "fix(coo): 종합접수처 제출 extra 필드 5종 복원 — 칭찬·쓴소리·시설고장·청결·컴플레인 사례값 누락 (배 12841)",
-          "result": "ok"
+          "time": "10:35",
+          "area": "GM요청",
+          "event": "# Autonomous loop check",
+          "result": "warn"
         },
-        "idle_since": null,
-        "saves": 10,
+        "idle_since": "10:35",
+        "saves": 13,
         "lanes": 0
       },
       "cbo": {
