@@ -1095,14 +1095,14 @@
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 실시간 대시보드</h3></div>
-      <p>office.html은 <b>비밀번호 입장 단계 없이</b> 로드 즉시 <code>office-autolog</code>(공개, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트 — 상세 필드 제외)로 <b>로그 피드·오늘 카운터·에이전트별 집계</b>를 25초 폴링 연동합니다. 주체(actor)의 A-1~A-12 코드를 인식해 <b>캐릭터 애니메이션</b>(2026-07-31 신설 5종 좌석 포함)으로도 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
-      <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">office.html</span><span class="tag tool">25초 폴링</span></div>
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 폐지 → 실시간 관제판 v1</h3></div>
+      <p><b>2026-09-19 매니저 지시로 캐릭터 오피스 화면(office.html·office-8bit.html)을 폐지</b>했습니다 — 구 주소는 <a href="./structure.html#cpv1">본 페이지 상단 실시간 관제판</a>으로 넘어가는 안내 화면으로 교체(2초 자동이동). 로그 피드·오늘 카운터·에이전트별 집계는 동일 공개 액션(<code>office-autolog</code>, 비밀번호 불필요, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트)을 그대로 재사용해 <b>실시간 관제판</b>(본 페이지 상단, 25초→3초 폴링으로 개선)이 이어받았습니다. 단 <b>캐릭터 애니메이션 표시는 종료</b>(관제판은 표 형태). ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
+      <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">관제판 v1(#cpv1)</span><span class="tag tool">3초 폴링</span></div>
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드)</h3></div>
-      <p>오피스 CMD 입력창은 <b>비밀번호 없이</b> 바로 접수됩니다(<code>office-cmd-push</code>, 2026-07-10 2차 개편 — 1차 A-6 병렬감사 NO-GO로 철회했던 것을 매니저 재지시로 서버측 스팸 가드 3종(대기 pending 5건 상한·시간당 20건 상한·텍스트 500자 상한)을 갖춰 재도입, A-6 재감사 GO). 접수는 "적재(pending)"까지만 — <b>회수(cmd-pull)·결과기록(cmd-result)·실제 실행은 여전히 admin 비밀번호 필요</b>, CHRO 세션 중 매니저님 "오피스큐" 입력 시에만 목록을 먼저 보고하고 승인분만 실행합니다. 24시간 무인 자동실행은 보안상 의도적으로 없음(RCE 방지). 큐에서 온 명령은 외부 입력으로 취급해 파괴적 지시는 매니저님 확인 후 실행합니다.</p>
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드) — 접수 UI 소실 ⚠️</h3></div>
+      <p><code>office-cmd-push</code> 백엔드 액션·명령큐 탭 자체는 <b>무변경</b>(2026-07-10 2차 개편 스팸 가드 3종 그대로 유효)이지만, <b>이를 비밀번호 없이 호출하던 유일한 화면(오피스 CMD 입력창)이 office.html 폐지와 함께 사라졌습니다</b> — 관제판 v1은 읽기 전용(표시 전용)이라 입력창을 대체하지 않습니다. 즉 "누구나 로그인 없이 명령을 적재"하는 경로는 현재 없음(회수 cmd-pull·결과기록 cmd-result·실제 실행은 원래도 admin 비밀번호 필요였고 그 부분은 그대로). 필요 시 CHRO 세션에서 직접 요청하거나, 별도 입력 화면 신설을 매니저가 결정해야 합니다.</p>
       <div class="hbadge-row">
         <span class="hbadge-item"><span class="hb-name">명령큐 회수</span><span id="hb-cmd" class="hbadge hb-loading">확인 중…</span><span id="hb-cmd-t" class="hbadge-time"></span></span>
       </div>
@@ -1119,7 +1119,7 @@
 </section>
 
 <!-- ═══════════ 정직 배지(실가동 상태) — 자동화로그 실측 ═══════════
-     office.html이 이미 쓰는 공개 액션(autolog-list, 비밀번호 불필요)을 동일하게 사용.
+     (구)office.html이 쓰던 공개 액션(autolog-list, 비밀번호 불필요)을 동일하게 사용 — 2026-09-19 office.html 폐지 후 이 문서 상단 관제판(#cpv1)이 그 역할을 이어받음.
      "할 수 있다"(설계·문서상 존재)와 "지금 진짜 돈다"(로그에 실제 흔적)를 분리 표시하는
      정직 배지 — 매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정.
      (참고: A-6 정합성 스윕 1회차는 러너 인코딩 버그로 주체/작업 필드가 깨져 기록됨 —
@@ -1355,8 +1355,8 @@
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
     <div class="item">
-      <div class="item-head"><h3>GitHub Pages 4사이트</h3></div>
-      <p><b>운영허브</b>(chro/hub) · <b>리크루팅</b>(chro/recruiting, 인덱스 + 공고 6페이지 — 운영부·사우나·골프 프로·골프팀 파트너·주차/발렛·기사) · <b>ERP 메인</b>(wellperion_guide) · <b>HR office</b>(office.html)가 하나의 저장소에서 서비스됩니다. 서비스 루트는 <span class="mono">3. 웰페리온 가이드/</span>.</p>
+      <div class="item-head"><h3>GitHub Pages 3사이트</h3></div>
+      <p><b>운영허브</b>(chro/hub, 실시간 관제판 v1 포함) · <b>리크루팅</b>(chro/recruiting, 인덱스 + 공고 6페이지 — 운영부·사우나·골프 프로·골프팀 파트너·주차/발렛·기사) · <b>ERP 메인</b>(wellperion_guide)이 하나의 저장소에서 서비스됩니다. 서비스 루트는 <span class="mono">3. 웰페리온 가이드/</span>. (구 <b>HR office</b>는 2026-09-19 폐지 — office.html은 관제판(#cpv1)으로 넘어가는 안내 화면만 남음.)</p>
       <div class="tags"><span class="tag tool">GitHub Pages</span><span class="tag tool">Deploy 워크플로우</span></div>
     </div>
     <div class="item">
