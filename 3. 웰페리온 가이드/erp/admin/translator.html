@@ -159,6 +159,12 @@ function updateOtherBtnLabel(){
   btnOtherSplit.textContent = label;
   otherLangSplit.value = otherSel.value;
   typeOtherSplit.placeholder = '또는 ' + LANG_NAME[otherSel.value] + '로 입력';
+  // speech:null 언어(예 mn) — 말하기 버튼 숨김(recognition 이 아예 없을 때의 hide 는 건드리지 않는다)
+  if (recognition) {
+    var speechOk = !!SPEECH_LOCALE[otherSel.value];
+    btnOther.classList.toggle('hide', !speechOk);
+    btnOtherSplit.classList.toggle('hide', !speechOk);
+  }
 }
 otherSel.addEventListener('change', updateOtherBtnLabel);
 otherLangSplit.addEventListener('change', function(){ otherSel.value = otherLangSplit.value; updateOtherBtnLabel(); });
@@ -193,7 +199,30 @@ var recognition = null;
 var pressing = null;      // {source, target, mine} 누르고 있는 동안만
 var pendingSt = null;     // 뗀 시점 — onend 에서 이 값으로 번역을 부른다
 var liveFinal = '';       // 누르는 동안 쌓인 받아쓴 글(중간 결과 포함 인식이라 final 만 모은다)
+var finalSegs = [];       // liveFinal 을 이루는 확정 조각들 — mergeFinal 이 마지막 조각을 교체/버림 판정할 때 씀
 var stopReason = null;
+var recActive = false;    // 인식이 지금 실제로 돌고 있는가(onstart~onend) — 스스로 끝난 뒤 뗄 때를 구분한다
+
+// 확정 조각 합치기 — meeting_note.html mergeFinal 과 같은 규칙(모바일 크롬이 isFinal 결과를 누적 문장으로
+// 주거나 되풀이해 보내는 것 때문에 같은 말이 반복 붙는 것을 막는다).
+function mergeFinal(prev, seg){
+  var p = (prev || '').trim();
+  var s = (seg || '').trim();
+  if (!s) return { mode: 'skip', text: s };
+  if (!p) return { mode: 'append', text: s };
+  if (s === p) return { mode: 'skip', text: s };
+  if (s.indexOf(p) === 0) return { mode: 'replace', text: s }; // 누적형: 새 것이 이어짐 → 직전 것을 새 것으로
+  if (p.indexOf(s) === 0) return { mode: 'skip', text: s };    // 새 것이 직전의 부분집합 → 버림
+  return { mode: 'append', text: s };
+}
+(function selfcheckMergeFinal(){
+  var r;
+  r = mergeFinal('안녕', '안녕 하세요'); console.assert(r.mode === 'replace', 'mergeFinal 누적형 실패', r);
+  r = mergeFinal('안녕 하세요', '안녕 하세요'); console.assert(r.mode === 'skip', 'mergeFinal 중복형 실패', r);
+  r = mergeFinal('안녕 하세요', '반갑습니다'); console.assert(r.mode === 'append', 'mergeFinal 정상조각형 실패', r);
+  r = mergeFinal('안녕', ''); console.assert(r.mode === 'skip', 'mergeFinal 빈조각 실패', r);
+  r = mergeFinal(' 안녕 ', '안녕 하세요 '); console.assert(r.mode === 'replace', 'mergeFinal 공백트림 실패', r);
+})();
 
 if (!SR) {
   /* 인식 미지원 브라우저 — 비활성이 아니라 버튼을 숨기고 글 입력만 남긴다(GM 09-18) */
@@ -213,10 +242,18 @@ if (!SR) {
   recognition.continuous = true;
   recognition.interimResults = true;
 
+  recognition.onstart = function(){ recActive = true; };
   recognition.onresult = function(e){
     for (var i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) liveFinal += (liveFinal ? ' ' : '') + e.results[i][0].transcript;
+      if (!e.results[i].isFinal) continue;
+      var t = e.results[i][0].transcript;
+      var prev = finalSegs.length ? finalSegs[finalSegs.length - 1] : '';
+      var m = mergeFinal(prev, t);
+      if (m.mode === 'append') finalSegs.push(m.text);
+      else if (m.mode === 'replace') finalSegs[finalSegs.length - 1] = m.text;
+      // skip: 중복 확정 조각 — 아무것도 안 함
     }
+    liveFinal = finalSegs.join(' ');
   };
   recognition.onerror = function(e){
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -224,15 +261,26 @@ if (!SR) {
       statusMsg.className = 'msg bad';
       pressing = null; setPressUI(null);
     }
+    // no-speech·network·audio-capture 등은 onend 가 이어서 처리(누르는 중이면 재시작)
   };
   recognition.onend = function(){
-    if (stopReason !== 'translate') return;
-    stopReason = null;
-    var st = pendingSt; pendingSt = null;
-    var text = liveFinal.trim();
-    if (text) handleUtterance(text, st.source, st.target, st.mine);
-    else { statusMsg.textContent = '알아듣지 못했습니다 — 버튼을 다시 눌러 말씀해 주세요.'; statusMsg.className = 'msg'; }
+    recActive = false;
+    if (stopReason === 'translate') {
+      stopReason = null;
+      var st = pendingSt; pendingSt = null;
+      finishPress(st);
+      return;
+    }
+    // 인식이 스스로 끝남(no-speech·network 등) — 아직 누르고 있으면 이어서 듣는다
+    if (pressing) { try { recognition.start(); } catch (e) {} }
   };
+}
+
+function finishPress(st){
+  var text = liveFinal.trim();
+  statusMsg.textContent = ''; statusMsg.className = 'msg';
+  if (text) handleUtterance(text, st.source, st.target, st.mine);
+  else { statusMsg.textContent = '알아듣지 못했습니다 — 버튼을 다시 눌러 말씀해 주세요.'; statusMsg.className = 'msg'; }
 }
 
 function setPressUI(which){
@@ -242,9 +290,10 @@ function setPressUI(which){
   btnOtherSplit.classList.toggle('active', which === 'other');
 }
 function startPress(source, target, mine, which){
-  if (!recognition || pressing) return;
+  if (!recognition || pressing || stopReason === 'translate') return;
+  try { speechSynthesis.cancel(); } catch (e) {}
   pressing = { source: source, target: target, mine: mine };
-  liveFinal = '';
+  liveFinal = ''; finalSegs = [];
   recognition.lang = SPEECH_LOCALE[source] || source;
   setPressUI(which);
   statusMsg.textContent = '듣는 중… (' + LANG_NAME[source] + ')'; statusMsg.className = 'msg ok';
@@ -253,12 +302,18 @@ function startPress(source, target, mine, which){
 function endPress(){
   if (!recognition || !pressing) return;
   pendingSt = pressing; pressing = null;
-  stopReason = 'translate';
   setPressUI(null);
-  try { recognition.stop(); } catch (e) {}
+  if (recActive) {
+    stopReason = 'translate';
+    try { recognition.stop(); } catch (e) {}
+  } else {
+    // 인식이 이미 스스로 끝나 있었다 — onend 가 다시 안 오므로 여기서 바로 처리
+    var st = pendingSt; pendingSt = null;
+    finishPress(st);
+  }
 }
-function pressKo(e){ e.preventDefault(); startPress('ko', otherSel.value, true, 'ko'); }
-function pressOther(e){ e.preventDefault(); startPress(otherSel.value, 'ko', false, 'other'); }
+function pressKo(e){ e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} startPress('ko', otherSel.value, true, 'ko'); }
+function pressOther(e){ e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} startPress(otherSel.value, 'ko', false, 'other'); }
 btnKo.addEventListener('pointerdown', pressKo);
 btnOther.addEventListener('pointerdown', pressOther);
 btnKoSplit.addEventListener('pointerdown', pressKo);
@@ -290,15 +345,23 @@ btnTypeOtherSplit.addEventListener('click', sendTypedOtherSplit);
 typeOtherSplit.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendTypedOtherSplit(); });
 
 /* ── 번역 요청 → 말풍선(크게) → 읽어주기 ── */
+var translateSeq = 0;    // 동시 요청 중 늦게 온 응답이 최신 표시를 덮지 않게(요청 번호 비교)
 function handleUtterance(text, source, target, mine){
+  var seq = ++translateSeq;
   var bubble = addBubble(mine, text, '번역 중…');
   fetch('/api/translate', {
     method: 'POST', cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text: text, source: source, target: target })
   }).then(function(r){ return r.json(); }).then(function(d){
-    var tr = d.translation || d.error || '(번역 실패)';
+    if (d.error) {
+      bubble.querySelector('.tr').textContent = '(번역 실패)';
+      if (seq === translateSeq) { statusMsg.textContent = d.error; statusMsg.className = 'msg bad'; }
+      return;
+    }
+    var tr = d.translation || '(번역 실패)';
     bubble.querySelector('.tr').textContent = tr;
+    if (seq !== translateSeq) return;   // 늦게 온 응답 — 최신 표시·읽기는 버림(이 말풍선 자체엔 이미 반영됨)
     if (target === 'ko') lastKoEl.textContent = tr;
     else lastOtherEl.textContent = tr;
     speak(tr, target, function(){});
@@ -320,6 +383,7 @@ function addBubble(mine, orig, tr){
 function speak(text, lang, done){
   if (!('speechSynthesis' in window) || !text) { done(); return; }
   try {
+    speechSynthesis.cancel();   // 읽는 중에 새 번역이 오면 쌓이지 않게 먼저 끊는다
     var u = new SpeechSynthesisUtterance(text);
     u.lang = SPEECH_LOCALE[lang] || lang;
     u.onend = done; u.onerror = done;
@@ -362,7 +426,7 @@ function downsampleTo16k(float32Arr, inputRate){
 
 var btnAuto = document.getElementById('btnAuto');
 var AutoAC = window.AudioContext || window.webkitAudioContext;
-var autoRecording = false, autoCtx = null, autoStream = null, autoSource = null, autoProcessor = null, autoTimer = null;
+var autoRecording = false, autoStarting = false, autoCtx = null, autoStream = null, autoSource = null, autoProcessor = null, autoTimer = null;
 var autoChunks = [];
 
 if (!btnAuto) {
@@ -371,12 +435,18 @@ if (!btnAuto) {
   btnAuto.classList.add('hide');
 } else {
   btnAuto.addEventListener('click', function(){
-    if (autoRecording) stopAutoRecording(); else startAutoRecording();
+    if (autoRecording) { stopAutoRecording(); return; }
+    if (autoStarting) return;
+    startAutoRecording();
   });
 }
 
 function startAutoRecording(){
+  autoStarting = true;
+  btnAuto.disabled = true;
   navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+    autoStarting = false;
+    btnAuto.disabled = false;
     autoStream = stream;
     autoCtx = new AutoAC();
     autoSource = autoCtx.createMediaStreamSource(stream);
@@ -393,6 +463,8 @@ function startAutoRecording(){
     statusMsg.textContent = '자동 통역 듣는 중…'; statusMsg.className = 'msg ok';
     autoTimer = setTimeout(stopAutoRecording, AUTO_MAX_MS);
   }).catch(function(){
+    autoStarting = false;
+    btnAuto.disabled = false;
     statusMsg.textContent = '마이크 권한이 없습니다 — 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
     statusMsg.className = 'msg bad';
   });
@@ -429,8 +501,10 @@ function sendAutoPcm(){
     if (d.error) { statusMsg.textContent = '자동 통역 준비 중입니다.'; statusMsg.className = 'msg bad'; return; }
     var text = (d.text || '').trim();
     if (!text) { statusMsg.textContent = '다시 말씀해 주세요.'; statusMsg.className = 'msg'; return; }
+    var lang = (d.lang || '').trim();
+    if (!lang) { statusMsg.textContent = '언어를 못 알아들었어요.'; statusMsg.className = 'msg bad'; return; }
     statusMsg.textContent = ''; statusMsg.className = 'msg';
-    if ((d.lang || '').indexOf('ko') === 0) handleUtterance(text, 'ko', 'en', true);
+    if (lang.indexOf('ko') === 0) handleUtterance(text, 'ko', 'en', true);
     else handleUtterance(text, 'en', 'ko', false);
   }).catch(function(){
     statusMsg.textContent = '자동 통역 준비 중입니다.'; statusMsg.className = 'msg bad';
