@@ -4,5 +4,30 @@
     "what": "회원 GAS 무로그인 명단",
     "open": false,
     "closed": "2026-09-19 @336 강제 ON — 명단 3종 열쇠 없음 unauthorized·전화 0 · 옛 배포 9개 undeploy · 남은 공개 PII 5종(lesson_inquiry_list·lesson_registered_roster·rentbiz_inquiry_list·funnel_conversion_detail·member_person_view)은 범위 밖"
+  },
+  {
+    "id": "lesson_inquiry_list",
+    "what": "회원 GAS 공개 액션(전화 원시행) — membership.html·문의현황.html·wellperion_guide(main).html·매출회원현황보고.html 이 무열쇠로 직접/폴백 호출해 공개목록에서 못 뺀다. 미러 있음(/api/inquiries) — ERP 도메인 우선, 실패·6분내 쓰기·Pages 도메인은 GAS 직행",
+    "open": true
+  },
+  {
+    "id": "lesson_registered_roster",
+    "what": "회원 GAS 공개 액션(전화 포함 강습 등록 명단) — membership.html 무열쇠 직접호출 유지. 미러 있음(/api/lesson/roster), 실패 시 GAS 직행이라 공개목록 유지 필요",
+    "open": true
+  },
+  {
+    "id": "rentbiz_inquiry_list",
+    "what": "회원 GAS 공개 액션(연락처 포함 공간렌트·비즈니스 문의) — membership.html 무열쇠 직접호출. 미러 있음(/api/funnel/rentbiz_inquiry_list), 실패 시 GAS 직행이라 공개목록 유지 필요",
+    "open": true
+  },
+  {
+    "id": "funnel_conversion_detail",
+    "what": "회원 GAS 공개 액션(연락처 뒷4자리 가입전환 상세명단) — 문의현황.html 계열 무열쇠 직접호출. 미러 있음(/api/funnel/funnel_conversion_detail), 실패 시 GAS 직행이라 공개목록 유지 필요",
+    "open": true
+  },
+  {
+    "id": "member_person_view",
+    "what": "회원 GAS 공개 액션(이름·전화·회원번호 사람찾기) — membership.html 호출에 키 파라미터 자체가 없음. 미러 있음(/api/members?q=)이지만 문의단계 사람은 GAS만 찾아 폴백 상시 발생. 공개목록 유지 필요",
+    "open": true
   }
 ]
