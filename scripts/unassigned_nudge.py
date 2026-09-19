@@ -585,7 +585,14 @@ def build_sla_alert_text(violations: list[dict], since_note: "str | None" = "8/1
     # ★2026-09-01 GM 지시 — "회신도 좀 해달라고 해줘. 매번 놓치는 것 같아."
     #   회신 요청이 넷째 줄에 있었는데, 그 아래로 명단 수십 줄과 링크가 붙어 완전히 묻혔다.
     #   맨 끝, 서명 바로 위로 옮긴다 — 카톡은 끝까지 읽지 않아도 마지막 줄은 눈에 걸린다.
-    lines.append("❓ 처리하신 건은 「○○ 완료」 한 줄만 이 방에 남겨 주시면 목록에서 빠집니다")
+    # ★2026-09-19 배 2834 — 종전 「○○ 완료 한 줄을 이 방에」는 구현이 없었다(방 수신을 안 읽는다).
+    #   실제로 목록에서 빠지는 조건 = 화면 연락 기록(_has_contact). 강습(collect_sla_violations)은
+    #   담당 지정까지 있어야 빠지고, 멤버십(send_ops_digest._uncontacted_rows)은 연락 기록만 보면 된다.
+    _screen = "강습 화면" if _types <= {"성인강습", "유소년강습"} else (
+        "멤버십 화면" if _types == {"멤버십"} else "화면")
+    _need_owner = any("강습" in v.get("type", "") and not v.get("assigned") for v in violations)
+    lines.append(f"❓ 연락하신 건은 {_screen} 그 회원 줄에 연락 기록 한 줄을 남기시면 목록에서 빠집니다"
+                 + (" (담당 미정 강습은 담당 지정도)" if _need_owner else ""))
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 
