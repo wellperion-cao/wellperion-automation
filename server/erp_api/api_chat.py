@@ -1464,7 +1464,11 @@ def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None,
         if meta is not None:
             meta["guard"] = "ko_greeting_strip"
     price_blocked, allowed_price = _price_check(text, prof.get("allowed_prices"))
-    if not text or _output_unsafe(text) or price_blocked or not _grounded(text, system_text):
+    # 근거 문자열에 질문(q)도 더한다 — 손님이 직접 적은 날짜("9월 27일")를 답이 그대로 옮기면 그건
+    # 지어낸 숫자가 아니라 되짚은 것이다. [오늘] 문맥은 "휴관일"만 나열하므로(배 웰리요청 9/27 수리)
+    # 휴관이 아닌 미래 날짜는 원래 문맥에 없다 — q 를 안 더하면 정답("9/27 정상 운영")까지 매번 핸드오프로
+    # 떨어진다(실측 재현). 금액은 이 완화와 무관하게 _price_check 가 별도로 막는다.
+    if not text or _output_unsafe(text) or price_blocked or not _grounded(text, system_text + "\n" + q):
         return None, "invalid", None
     return text, "ok", allowed_price   # 문맥은 호출부 _log 가 남기는 행이 곧 세션 저장(배 12752 #16)
 
@@ -1604,6 +1608,11 @@ def _selfcheck() -> None:
     assert _today_hours_line("_no_such_tenant_") == "", "facts.hours 가 없으면 빈 문자열이어야 핸드오프로 넘어간다"
     assert not _grounded("100원 할인해드려요", "이 문서엔 숫자가 전혀 없습니다")   # 근거 밖 숫자 → 탈락
     assert _grounded("06:00부터 22:30까지 운영해요", "평일 06:00~22:30 운영")      # 근거 안 숫자만 → 통과
+    # 웰리 요청 후속 — [오늘] 문맥은 휴관일만 나열해 휴관 아닌 미래 날짜(9/27 등)는 원래 근거에 없다.
+    # 손님이 직접 적은 날짜를 답이 그대로 옮기면 지어낸 숫자가 아니다 — _concierge_answer 가 q 를 근거에
+    # 더해 통과시키는지(실측 재현: 9/27 정답이 매번 핸드오프로 떨어짐 · 라이브 debug 로 확인).
+    assert not _grounded("9월 27일은 정상 운영합니다", "앞으로 휴관일: 9/24(목)·9/25(금)·9/26(토)")
+    assert _grounded("9월 27일은 정상 운영합니다", "앞으로 휴관일: 9/24(목)·9/25(금)·9/26(토)\n9월 27일 운영하나요?")
 
     # 배1036 시보 오탐 신고 수리 — "환불 되나요"에 대한 안전한 미루기 답이 잘못 핸드오프로 떨어진 건 원인이
     # _grounded 가 아니라 _forbidden_hit(질문용 낱말을 답에도 그대로 씀)였다(재현 확인). 실제 로그 원문으로 검증.
