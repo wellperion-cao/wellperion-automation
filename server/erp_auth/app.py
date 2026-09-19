@@ -506,6 +506,7 @@ def init() -> None:
     with db() as c:
         c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TEXT")   # 사용 현황(ERP관리 층 · 2026-09-14)
         c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS session_ver INTEGER NOT NULL DEFAULT 0")   # 세션 세대(배 12752 P1 #10)
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS title TEXT")   # 직함(이름과 분리 · 배 12848 2단계)
         admin_email = os.environ.get("ERP_ADMIN_EMAIL")
         if admin_email and not c.execute("SELECT 1 FROM users WHERE tenant_id=%s AND email=%s", (T, admin_email)).fetchone():
             salt, h = hash_pw(os.environ["ERP_ADMIN_PW"])
@@ -547,6 +548,23 @@ def touch_login(uid: int) -> None:
     try:
         with db() as c:
             c.execute("UPDATE users SET last_login=%s WHERE tenant_id=%s AND id=%s", (now(), T, uid))
+    except Exception:
+        pass                                       # 기록 실패가 로그인을 막지 않는다
+
+
+LOGIN_LOG_KEEP_DAYS = 90
+
+
+def log_login(request: Request, uid: int) -> None:
+    """로그인 기록 한 줄(배 12848 2단계 B) — ts·uid·IP·UA 만, 비밀번호·토큰은 안 남긴다. touch_login 과 같은 3자리에서 부른다.
+    ponytail: 매 로그인마다 90일 지난 줄을 지운다(전용 정리 배치 없음) — 로그인 빈도가 낮아 비용이 안 된다."""
+    try:
+        ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
+        ua = (request.headers.get("user-agent") or "")[:120]
+        cutoff = (datetime.now(KST) - timedelta(days=LOGIN_LOG_KEEP_DAYS)).strftime("%Y-%m-%d %H:%M")
+        with db() as c:
+            c.execute("INSERT INTO login_log(tenant_id,uid,at,ip,ua) VALUES(%s,%s,%s,%s,%s)", (T, uid, now(), ip, ua))
+            c.execute("DELETE FROM login_log WHERE tenant_id=%s AND at<%s", (T, cutoff))
     except Exception:
         pass                                       # 기록 실패가 로그인을 막지 않는다
 
@@ -1200,6 +1218,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
     dest = _login_dest(u, safe_next(next))
     touch_login(u["id"])
+    log_login(request, u["id"])
     r = RedirectResponse(dest, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"     # nginx 만 보냄 · http(IP접속)는 종전대로 secure 없음
     r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(keep), httponly=True, samesite="lax", path="/", secure=https)
@@ -1251,7 +1270,8 @@ def signup_page(msg: str = ""):
 <label>아이디<input id=uid name=username autocomplete=username maxlength=40
 placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 <label>비밀번호<input name=password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
-<label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
+<label>이름<input name=name placeholder="이름만" autocomplete=name required></label>
+<label>직함<input name=title maxlength=20 placeholder="예: 실장 · 매니저(선택)" autocomplete=off></label>
 <label>연락처<input name=phone type=tel autocomplete=tel placeholder="010-0000-0000" required></label>
 <label>부서<select name=dept required><option value="">선택</option>{dept_opts}</select></label>
 <label>직급<select name=rank required><option value="">선택</option>{rank_opts}</select></label>
@@ -1262,8 +1282,9 @@ placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 
 @app.post("/auth/signup")
 def signup(name: str = Form(...), username: str = Form(...), password: str = Form(...),
-           phone: str = Form(...), dept: str = Form(...), rank: str = Form("")):
+           phone: str = Form(...), dept: str = Form(...), rank: str = Form(""), title: str = Form("")):
     name = name.strip()
+    title = title.strip()[:20]
     uid = "".join(username.split()).lower()
     if dept not in DEPTS:
         return RedirectResponse("/auth/signup?msg=부서를 선택해 주세요", status_code=303)
@@ -1289,9 +1310,9 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
              "groups": [], "modules": dept_modules_for(dept, tier), "deny": tier_deny(tier)}
     try:
         with db() as c:
-            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) "
-                      "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                      (T, uid, name, salt, h, "staff", status, now(), approved_at, json.dumps(perms, ensure_ascii=False)))
+            c.execute("INSERT INTO users(tenant_id,email,name,title,salt,pw,role,status,created_at,approved_at,perms) "
+                      "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (T, uid, name, title or None, salt, h, "staff", status, now(), approved_at, json.dumps(perms, ensure_ascii=False)))
     except _db.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 있는 아이디입니다", status_code=303)
     sent = tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid})\n"
@@ -1361,7 +1382,8 @@ def _profile(u) -> dict:
     # 역할 칸 = 시스템 role(admin/staff)이 아니라 직급 층(ranks.json tiers) — 실장·팀장은 「팀 리더」(GM 2026-09-17 「실장인데 왜 직원이야」)
     tier = p.get("tier") or rank_tier(p.get("rank") or "")
     role_label = ROLE_LABEL["admin"] if u["role"] == "admin" else TIER_LABEL.get(tier, ROLE_LABEL["staff"])
-    return {"email": u["email"], "name": u["name"], "role": u["role"], "role_label": role_label,
+    return {"email": u["email"], "name": u["name"], "title": (u["title"] if "title" in u.keys() else "") or "",
+            "role": u["role"], "role_label": role_label,
             "dept": p.get("dept") or "", "rank": p.get("rank") or "", "phone": p.get("phone") or "",
             "tenant": None if u["role"] == "admin" else (p.get("tenant") or None),   # 상담봇 파트너 센터(배 12768 §12⑤)
             "last_login": str(u["last_login"] or "") if "last_login" in u.keys() else "",
@@ -1385,7 +1407,7 @@ def account_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "
         return RedirectResponse("/auth/login?next=/auth/account", status_code=303)
     d = _profile(u)
     n_allowed = len(allowed_ids(u)) if u["role"] != "admin" else len(modules()) + len(documents())
-    rows = [("이름", d["name"] or "—"), ("아이디", d["email"]), ("부서", d["dept"] or "—"), ("직급", d["rank"] or "—"),
+    rows = [("이름", d["name"] or "—"), ("직함", d["title"] or "—"), ("아이디", d["email"]), ("부서", d["dept"] or "—"), ("직급", d["rank"] or "—"),
             ("역할", d["role_label"]), ("최근 로그인", short_dt(d["last_login"]) or "—"), ("열린 화면", "%d개" % n_allowed)]
     info = "".join(f"<div class=row><span class=k>{escape(k)}</span><b>{escape(str(v))}</b></div>" for k, v in rows)
     pw_form = ("<p class=muted>구글·네이버·카카오로 로그인하는 계정은 비밀번호가 그 서비스에 있습니다.</p>" if d["social"] else f"""
@@ -1562,6 +1584,7 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
         return RedirectResponse(f"/auth/google/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
     dest = _login_dest(u, nxt)
     touch_login(u["id"])
+    log_login(request, u["id"])
     r = RedirectResponse(dest, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
     r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
@@ -1731,6 +1754,7 @@ def _social_callback(request: Request, provider: str, code: str, state: str, err
             return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
         dest = _login_dest(u, nxt)
         touch_login(u["id"])
+        log_login(request, u["id"])
         r = RedirectResponse(dest, status_code=303)
         https = request.headers.get("x-forwarded-proto") == "https"
         r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
@@ -1875,7 +1899,7 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
     return JSONResponse({
         "me": {"id": u["id"], "name": u["name"], "email": u["email"]},
         "users": [{
-            "id": r["id"], "name": r["name"], "email": r["email"], "role": r["role"], "status": r["status"],
+            "id": r["id"], "name": r["name"], "title": r["title"] or "", "email": r["email"], "role": r["role"], "status": r["status"],
             "created_at": r["created_at"], "approved_at": r["approved_at"],
             "google": False,   # ponytail: users 표에 구글 전용 여부 열이 없다 — 배지만 안 뜬다, 필요해지면 스키마에 열 추가
             "perms": _perms(r), "fixed_perms": accts.get((r["email"] or "").lower()),
@@ -2039,7 +2063,7 @@ def admin_api_usage(erp_session: Optional[str] = Cookie(default=None), erp_admin
     _admin_json_gate(erp_session, erp_admin)
     since = (datetime.now(KST) - timedelta(days=30)).strftime("%Y-%m-%d")
     with db() as c:
-        users = c.execute("SELECT id, email, name, role, status, last_login FROM users WHERE tenant_id=%s ORDER BY id", (T,)).fetchall()
+        users = c.execute("SELECT id, email, name, title, role, status, last_login FROM users WHERE tenant_id=%s ORDER BY id", (T,)).fetchall()
         rows = c.execute("SELECT user_email, action, MAX(at) last_at, COUNT(*) n FROM write_log "
                          "WHERE tenant_id=%s AND at >= %s AND gas_status <> 'test' GROUP BY user_email, action", (T, since)).fetchall()
     per_user: dict = {}
@@ -2057,7 +2081,7 @@ def admin_api_usage(erp_session: Optional[str] = Cookie(default=None), erp_admin
     for x in users:
         u = per_user.get((x["email"] or "").lower(), {"writes": 0, "last": "", "areas": {}})
         top = sorted(u["areas"].items(), key=lambda kv: -kv[1])[:3]
-        out_users.append({"email": x["email"], "name": x["name"], "role": x["role"], "status": x["status"],
+        out_users.append({"email": x["email"], "name": x["name"], "title": x["title"] or "", "role": x["role"], "status": x["status"],
                           "last_login": x["last_login"] or "", "writes_30d": u["writes"], "last_write": u["last"],
                           "areas": [{"area": k, "n": n} for k, n in top]})
     out_areas = [{"area": k, "writes_30d": v["writes"], "users": len(v["users"]), "last_write": v["last"]}
@@ -2255,6 +2279,17 @@ async def tenant_save(uid: int, request: Request, erp_session: Optional[str] = C
         p.pop("tenant", None)
     _set_perms(uid, p, me["email"])
     return JSONResponse({"ok": True, "tenant": tenant})
+
+
+@app.post("/auth/admin/{uid}/title")
+async def title_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
+                     erp_admin: Optional[str] = Cookie(default=None)):
+    """직함(users.title) 수정 — 권한(rank·tier·modules)과 무관, 이름 옆 표시용 값만 고친다(배 12848 2단계)."""
+    admin_only(erp_session, erp_admin)
+    title = str((await request.form()).get("title") or "").strip()[:20]
+    with db() as c:
+        c.execute("UPDATE users SET title=%s WHERE tenant_id=%s AND id=%s", (title or None, T, uid))
+    return JSONResponse({"ok": True, "title": title})
 
 
 @app.post("/auth/admin/{uid}/{action}")

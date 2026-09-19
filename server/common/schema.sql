@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
   email       TEXT NOT NULL,
   name        TEXT NOT NULL,
+  title       TEXT,                        -- 직함(이름과 분리 · GM 2026-09-19 「이름에는 이름만」· 배 12848)
   salt        TEXT NOT NULL,
   pw          TEXT NOT NULL,
   role        TEXT NOT NULL DEFAULT 'staff',
@@ -16,6 +17,17 @@ CREATE TABLE IF NOT EXISTS users (
   perms       TEXT,
   UNIQUE (tenant_id, email)
 );
+
+-- 로그인 기록(배 12848 2단계 B · GM 2026-09-19) — 공용 계정 사용자 실측용. 비밀번호·토큰은 안 남긴다.
+CREATE TABLE IF NOT EXISTS login_log (
+  id         BIGSERIAL PRIMARY KEY,
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  uid        INTEGER NOT NULL,
+  at         TEXT NOT NULL,
+  ip         TEXT,
+  ua         TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_login_log_uid ON login_log (tenant_id, uid, at DESC);
 
 CREATE TABLE IF NOT EXISTS inquiries (
   tenant_id TEXT NOT NULL DEFAULT 'wellperion',
