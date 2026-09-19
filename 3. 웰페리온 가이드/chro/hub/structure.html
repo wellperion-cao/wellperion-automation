@@ -279,7 +279,7 @@
   .cpv1-ac-hd{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
   .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:10.5px;padding:2px 6px;border-radius:2px;letter-spacing:.04em}
   .cpv1-ac .nm{font-size:11.5px;font-weight:700;color:#EDEBE2;line-height:1.25}
-  .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap}
+  .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72%}
   @keyframes cpv1pulse{0%,100%{opacity:1}50%{opacity:.32}}
   .cpv1-ac-meta{min-width:0;display:flex;justify-content:space-between;gap:4px;overflow:hidden;font-size:10px;color:#8B9389;margin-top:5px}
   .cpv1-ac-meta .cnt{font-weight:700;color:#B9C0B6}
@@ -399,6 +399,38 @@
   var AGENTS = ["A-1","A-2","A-3","A-4","A-5","A-6","A-7","A-8","A-9","A-10","A-11","A-12"];
   var ISSUE_RE = /반려|실패|보류|수정필요|차단|미완료|중단|오류|불일치/;
   var pollSeq = 0; // 폴링 역전(오래 걸린 이전 응답이 나중에 도착해 최신 화면을 덮는 경쟁) 방지용 순번
+
+  // [추가 2026-09-19 A-5] presence — 세션이 자기 진행상황을 직접 보고하는 실시간 하트비트(별도 폴링,
+  // 백엔드 presence-get/공개/CacheService 전용, 시트 무관). autolog 기반 "진행중" 추정(IN_PROGRESS_RE)보다
+  // 우선 표시하고, presence가 없는 에이전트는 기존 추정 배지로 자연 폴백한다(레이아웃·기존 로직 무변경).
+  var PRESENCE_POLL_MS = 15000;
+  var presenceMap = {}; // "A-n" -> {text, pct, since, session}
+  function shortText(s, n){ s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function mergePresence(sessions){
+    var map = {};
+    (sessions || []).forEach(function(s){
+      (s && s.agents || []).forEach(function(a){
+        if(!a || !a.code) return;
+        var cur = map[a.code];
+        // 같은 코드로 여러 세션이 동시에 보고하면 since(ISO 문자열)가 더 최근인 쪽을 채택.
+        if(!cur || String(a.since || "") > String(cur.since || "")){
+          map[a.code] = { text: a.text || "", pct: (typeof a.pct === "number" ? a.pct : parseInt(a.pct, 10) || 0), since: a.since || "", session: s.session || "" };
+        }
+      });
+    });
+    return map;
+  }
+  async function pollPresence(){
+    try{
+      var res = await fetch(EXEC_URL, { method: "POST", cache: "no-store", body: JSON.stringify({ action: "presence-get" }) });
+      var j = await res.json();
+      presenceMap = (j && j.ok && Array.isArray(j.sessions)) ? mergePresence(j.sessions) : {};
+    }catch(e){
+      presenceMap = {}; // 실패해도 조용히 무시 — 다음 회차에 재시도, 화면은 기존 추정 배지로 폴백
+    }finally{
+      setTimeout(pollPresence, PRESENCE_POLL_MS);
+    }
+  }
 
   // "A-<n> 한글이름" 형식(코드+이름 혼재)을 폭넓게 인식 — 대소문자·하이픈 변형(–,—,‐ 등) 허용.
   function actorToAgent(actor){
@@ -520,7 +552,18 @@
       card.classList.toggle("ip", inProgress);
       if(todayCnt > 0) activeCount++;
       var ipEl = card.querySelector(".ip-badge");
-      if(ipEl) ipEl.style.display = inProgress ? "" : "none";
+      var live = presenceMap[a];
+      if(ipEl){
+        if(live && live.text){
+          ipEl.style.display = "";
+          ipEl.textContent = "● " + shortText(live.text, 14) + (live.pct > 0 ? " " + live.pct + "%" : "");
+          ipEl.title = live.session ? ("실시간 · 세션 " + live.session) : "실시간";
+        } else {
+          ipEl.style.display = inProgress ? "" : "none";
+          ipEl.textContent = "● 진행중";
+          ipEl.removeAttribute("title");
+        }
+      }
       var cnt = card.querySelector(".cnt");
       if(cnt) cnt.textContent = "오늘 " + todayCnt + "건";
       var tm = card.querySelector(".tm");
@@ -626,7 +669,7 @@
     }
   }
 
-  function boot(){ poll(); }
+  function boot(){ poll(); pollPresence(); }
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", boot);
   } else {
