@@ -2072,7 +2072,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_hold_intake_migrate: true,  // 휴회 접수 탭 이관(회원DB→종합접수처) — 대조키 복사·원본 보존·기본 예행·토큰 필요. 배9948
   warm_cache_trigger:         true,  // 명단 캐시 워머 트리거 설치/해제/상태 — 읽기 전용 워밍·토큰 필요. 2026-07-23 시포·GM
   // 공간렌트·비즈니스 문의 패널(CPO) — lesson_inquiry_list/lesson_stats 와 동일 취급(PII 노출·전체공개). 2026-07-04 시포.
-  rentbiz_inquiry_list:       true,  // 공간렌트·비즈니스 문의 목록(성함/단체명·연락처 등 원시 필드 포함)
+  // rentbiz_inquiry_list — 공개 목록에서 뺐다(배 2859 · 2026-09-19 시토). 연락처 원문 명단이라 게이트 뒤로. 화면은 서버 거울(/api/funnel/rentbiz_inquiry_list), 서버 sync_funnel 은 key 를 붙인다.
   rentbiz_stats:              true,  // 공간렌트·비즈니스 통계(총·이번달·경로 분포·상태별 — 상태컬럼 없으면 상태 집계 생략)
   pii_status:                 true,  // [진단] PII_MASK/토큰 설정 상태(비밀값 미노출) 2026-06-25 시토
   // 트리거 관리 — 설치/조회/테스트 (2026-06-25 시모, 즉시알림 전환)
