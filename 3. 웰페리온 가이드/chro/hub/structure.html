@@ -271,7 +271,8 @@
   .cpv1-ct .l{font-size:10.5px;color:#B9C0B6;margin-top:4px;letter-spacing:.03em}
   .cpv1-sub{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:#8B9389;margin:20px 0 9px;font-weight:700}
   .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
-  .cpv1-ac{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:7px 7px 6px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
+  .cpv1-agents>*{min-width:0}
+  .cpv1-ac{min-width:0;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:7px 7px 6px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
   .cpv1-ac.on{border-color:rgba(78,158,122,.45)}
   .cpv1-ac.ip{border-color:#B88A44;box-shadow:0 0 0 1px rgba(184,138,68,.3)}
   .cpv1-ac-hd{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
@@ -279,10 +280,10 @@
   .cpv1-ac .nm{font-size:9.5px;font-weight:700;color:#EDEBE2;line-height:1.2}
   .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap}
   @keyframes cpv1pulse{0%,100%{opacity:1}50%{opacity:.32}}
-  .cpv1-ac-meta{display:flex;justify-content:space-between;gap:4px;font-size:8.5px;color:#8B9389;margin-top:4px}
+  .cpv1-ac-meta{min-width:0;display:flex;justify-content:space-between;gap:4px;overflow:hidden;font-size:8.5px;color:#8B9389;margin-top:4px}
   .cpv1-ac-meta .cnt{font-weight:700;color:#B9C0B6}
-  .cpv1-ac-feed{margin-top:4px;border-top:1px solid rgba(233,226,204,.1);padding-top:3px;min-height:98px;max-height:98px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
-  .cpv1-ac-feed .row{font-size:9px;line-height:1.4;color:#D9D4C2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cpv1-ac-feed{min-width:0;margin-top:4px;border-top:1px solid rgba(233,226,204,.1);padding-top:3px;min-height:98px;max-height:98px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+  .cpv1-ac-feed .row{min-width:0;max-width:100%;font-size:9px;line-height:1.4;color:#D9D4C2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cpv1-ac-feed .row .t{color:#8B9389;margin-right:3px;font-family:Consolas,'Courier New',monospace;font-size:8.5px}
   .cpv1-ac-feed .empty{font-size:9px;color:#5C665F;padding:3px 0}
   .cpv1-routines{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:2px}
