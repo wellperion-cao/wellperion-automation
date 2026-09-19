@@ -2108,7 +2108,7 @@ function _accessProp_(k) {
 //   열쇠 원문은 저장소에 두지 않는다 — sha256 만 둔다(원문 = 서버 api.env·PC .env 의 FUNNEL_ACCESS_TOKEN).
 //   즉시 되돌림 = TOKEN_ENFORCE_DEFAULT 를 false 로 재배포(또는 속성 TOKEN_ENFORCE=0).
 var ACCESS_TOKEN_SHA256 = 'b6f7fe3a1ccb1addbbccfe2d7f62c96471b3bab711cc98fbb537e4a362e761c5';
-var TOKEN_ENFORCE_DEFAULT = false;
+var TOKEN_ENFORCE_DEFAULT = true;
 // 스크립트 안에서 스스로 부르는 액션(캐시 워머·번호 부여)은 게이트를 건너뛴다. 요청 칸(body)으로는 켤 수 없다
 //   — doGet 이 질의 파라미터를 전부 body 에 복사하므로 칸 대신 실행 중 전역 계수를 쓴다.
 var _gateInternal_ = 0;
