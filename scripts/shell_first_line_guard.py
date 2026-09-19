@@ -34,6 +34,15 @@ CD_HEAD = re.compile(r'^cd\s+["\']?([^"\'&;|]+)')
 # 경로가 시작하는 자리 — 윈도우 드라이브(C:\ · C:/) 또는 Git Bash 형(/c/)
 PATH_START = re.compile(r'[A-Za-z]:[\\/]|/[a-z]/Users')
 
+# heredoc(<<EOF …)으로 넘긴 파이썬 코드 안의 백슬래시는 셸이 풀어 "\n"·"\\" 가 깨진다
+# (lessons.md 09-15·09-16·09-17·09-18 4~5회 재발). 백슬래시가 있는 파이썬 heredoc만 막는다 —
+# 백슬래시 없는 heredoc, 파이썬이 아닌 heredoc(커밋 메시지 등)은 통과.
+HEREDOC_HEAD = re.compile(r'<<-?\s*([\'"]?)(\w+)\1')
+HEREDOC_MSG = (
+    "heredoc 안 파이썬에 백슬래시가 있다 — 풀려서 코드가 깨진다(이번 주 5회).\n"
+    "  Write 도구로 스크래치 파일에 쓰고 python 파일경로 로 실행하라."
+)
+
 MSG = (
     "GM 화면 첫 줄이 저장소 경로가 된다 — 무슨 작업인지 안 보인다(GM 5회 지적).\n"
     "  고치는 법: 첫 줄을 '작업'으로 시작한다.\n"
@@ -65,6 +74,36 @@ def _bash_violation(cmd: str) -> str:
     return ""
 
 
+def _heredoc_python_backslash(cmd: str) -> str:
+    for m in HEREDOC_HEAD.finditer(cmd):
+        delim = m.group(2)
+        head_line_end = cmd.find("\n", m.end())
+        if head_line_end == -1:
+            continue  # heredoc 본문이 없는 줄 — 대상 아님
+        header_line_start = cmd.rfind("\n", 0, m.start()) + 1
+        header_line = cmd[header_line_start:head_line_end]
+        is_python = bool(re.search(r"\bpython3?(\.\d+)?\b", header_line, re.I)) or bool(
+            re.search(r"\.py\b", header_line)
+        )
+        if not is_python:
+            continue
+        body_start = head_line_end + 1
+        search_from = body_start
+        body_end = len(cmd)
+        while True:
+            nxt = cmd.find("\n", search_from)
+            line = cmd[search_from: nxt if nxt != -1 else len(cmd)]
+            if line.strip() == delim:
+                body_end = search_from
+                break
+            if nxt == -1:
+                break
+            search_from = nxt + 1
+        if "\\" in cmd[body_start:body_end]:
+            return HEREDOC_MSG
+    return ""
+
+
 def _agent_violation(prompt: str) -> str:
     head = _first_line(prompt)
     if head.startswith(("/", "C:", "c:", '"', "'")) or head.lower().startswith(REPO_MARK):
@@ -90,7 +129,12 @@ def main() -> int:
         return 0
 
     if tool == "Bash":
-        why = _bash_violation(str(args.get("command") or ""))
+        cmd = str(args.get("command") or "")
+        hb = _heredoc_python_backslash(cmd)
+        if hb:
+            print(f"[셸 heredoc 가드] {hb}", file=sys.stderr)
+            return 2
+        why = _bash_violation(cmd)
     elif tool in ("Agent", "Task"):
         why = _agent_violation(str(args.get("prompt") or ""))
     else:
@@ -115,6 +159,12 @@ def _selfcheck() -> None:
     assert _agent_violation('/c/Users/jjky0/welperion-automation 를 본다')
     assert not _agent_violation('배773 알림 점검. 저장소는 C:\\Users\\jjky0\\welperion-automation 이다.')
     assert not _agent_violation('알림 50개를 훑어 결함을 찾는다.')
+    bs_body = "python - <<'EOF'\n" + r"x = 'a\b'" + "\nEOF"
+    assert _heredoc_python_backslash(bs_body)
+    no_bs_body = "python - <<'EOF'\nx = 'ab'\nEOF"
+    assert not _heredoc_python_backslash(no_bs_body)
+    commit_body = "git commit -m \"$(cat <<'EOF'\n" + r"메시지 안 \n 백슬래시" + "\nEOF\n)\""
+    assert not _heredoc_python_backslash(commit_body)
     print("selfcheck OK")
 
 
