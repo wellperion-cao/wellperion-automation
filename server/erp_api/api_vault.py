@@ -26,6 +26,8 @@
   POST /api/vault/register/verify        {credential, label, prf}
   POST /api/vault/unlock/options
   POST /api/vault/unlock/verify          {credential} → {token, exp}
+  POST /api/vault/entry                  {code} → {token,exp}(10분 표) · {set:새코드}(패스키 잠금해제 상태에서만) ·
+                                          코드 없으면 {unset:true} · 5회 오답 10분 잠금 · 코드는 scrypt 해시만 저장
   GET  /api/vault/items?compartment=gm|partner      표 필요 · 제목·가림표만
   POST /api/vault/reveal                 {compartment, id}  표 필요 · 값
   POST /api/vault/import                 {text}  표 필요 · 붙여넣은 표(TSV/CSV) → gm 칸 · 건수만 돌려준다
@@ -62,6 +64,9 @@ GM = os.environ.get("VAULT_GM_EMAIL", "cao@wellperion.com").strip().lower()
 MODE = "B-server-envelope"
 CHALLENGE_TTL = 120
 UNLOCK_TTL = 300
+ENTRY_TTL = 600          # 배 12843 — 금고 접속 코드 문(패스키 대신 쓰는 보조 문) 잠금해제 표 유효시간
+ENTRY_MAX_FAILS = 5
+ENTRY_LOCK_SEC = 600
 KST = dt.timezone(dt.timedelta(hours=9))
 
 
@@ -140,8 +145,8 @@ def _sign(email, sess, exp):
     return hmac.new(_sub(b"unlock"), ("%s|%s|%d" % (email, sess, exp)).encode(), hashlib.sha256).hexdigest()
 
 
-def _issue(request):
-    exp = int(time.time()) + UNLOCK_TTL
+def _issue(request, ttl=UNLOCK_TTL):
+    exp = int(time.time()) + ttl
     return "%d.%s" % (exp, _sign(_who(request), _sess(request), exp)), exp
 
 
@@ -175,6 +180,44 @@ def audit(request, action, item=""):
     fd = os.open(AUDIT_FILE, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
     with os.fdopen(fd, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+# ── 접속 코드(패스키 대신 쓰는 보조 문 · 배 12843) ────────────────────────────
+def _hash_code(code, salt):
+    return hashlib.scrypt(code.encode(), salt=salt, n=2 ** 14, r=8, p=1).hex()
+
+
+def _entry_state():
+    return _read(os.path.join(VAULT_DIR, "state.json"), {"creds": [], "ch": {}}).get("entry") or {}
+
+
+def _set_entry_code(code):
+    salt = os.urandom(16)
+    h = _hash_code(code, salt)
+
+    def fn(st):
+        st["entry"] = {"salt": b64e(salt), "hash": h, "fails": 0, "locked_until": 0}
+    _mutate("state.json", fn, {"creds": [], "ch": {}})
+
+
+def _entry_code_ok(code, st):
+    if not code or not st.get("hash"):
+        return False
+    return hmac.compare_digest(_hash_code(code, b64d(st["salt"])), st["hash"])
+
+
+def _entry_fail(ok):
+    """ok=성공이면 실패횟수 리셋, 아니면 +1 하고 5회째 10분 잠근다."""
+    def fn(st):
+        e = st.setdefault("entry", {})
+        if ok:
+            e["fails"] = 0
+        else:
+            e["fails"] = e.get("fails", 0) + 1
+            if e["fails"] >= ENTRY_MAX_FAILS:
+                e["locked_until"] = time.time() + ENTRY_LOCK_SEC
+                e["fails"] = 0
+    _mutate("state.json", fn, {"creds": [], "ch": {}})
 
 
 # ── 도전값(일회용) ─────────────────────────────────────────────────────────
@@ -221,7 +264,9 @@ def status(request: Request):
         return _deny("forbidden")
     creds = _creds()
     return {"ok": True, "mode": MODE, "passkeys": len(creds), "prf_supported": [bool(c.get("prf")) for c in creds],
-            "unlocked": is_unlocked(request), "key_ready": os.path.exists(KEY_FILE)}
+            "unlocked": is_unlocked(request), "key_ready": os.path.exists(KEY_FILE),
+            "passkey_meta": [{"label": c.get("label", ""), "created": c.get("created", "")} for c in creds],
+            "entry_code_set": bool(_entry_state().get("hash"))}
 
 
 @router.post("/api/vault/register/options")
@@ -333,6 +378,40 @@ async def unlock_verify(request: Request):
         return _deny("서명 카운터 역행(복제 의심)")
     tok, exp = _issue(request)
     audit(request, "unlock", row["id"][:8])
+    return {"ok": True, "token": tok, "exp": exp}
+
+
+@router.post("/api/vault/entry")
+async def entry(request: Request):
+    """접속 코드 문(패스키가 없을 때 쓰는 보조 문). {set:새코드}=코드 등록/변경(패스키로 이미 잠금해제된 상태에서만) ·
+    {code:...}=코드로 잠금해제 표 발급. 코드 원문은 저장·로그·응답 어디에도 남기지 않는다(해시+salt만)."""
+    bad = _gm_only(request)
+    if bad:
+        return bad
+    body = await request.json()
+    if "set" in body:
+        if not is_unlocked(request):
+            return _deny("패스키 잠금 해제 필요")
+        new_code = str(body.get("set") or "").strip()
+        if not new_code:
+            return _deny("code", 400)
+        _set_entry_code(new_code)
+        audit(request, "entry-set")
+        return {"ok": True}
+
+    st = _entry_state()
+    if not st.get("hash"):
+        return {"ok": False, "unset": True}
+    if st.get("locked_until", 0) > time.time():
+        audit(request, "entry-locked")
+        return _deny("시도 초과 — 10분 뒤 다시", 429)
+    ok = _entry_code_ok(str(body.get("code") or ""), st)
+    _entry_fail(ok)
+    if not ok:
+        audit(request, "entry-refused")
+        return _deny("코드가 맞지 않습니다")
+    tok, exp = _issue(request, ttl=ENTRY_TTL)
+    audit(request, "entry")
     return {"ok": True, "token": tok, "exp": exp}
 
 
@@ -523,6 +602,27 @@ def selftest():
         c.cookies.set("erp_session", "sess-B")
         assert c.post("/api/vault/reveal", json={"compartment": "partner", "id": "jo/naver-blog"}, headers=T).status_code == 403, "다른 세션"
         c.cookies.set("erp_session", "sess-A")
+
+        # 패스키 메타 조회(공개키·id 원문 없이 이름표·시각만)
+        sr = c.get("/api/vault/status", headers=H).json()
+        assert sr["passkey_meta"] == [{"label": "test", "created": sr["passkey_meta"][0]["created"]}]
+        assert sr["passkey_meta"][0]["created"], "등록 시각 없음"
+
+        # 접속 코드 문(배 12843) — unset → 패스키 잠금해제 상태에서만 설정 → 코드로 표 발급 → 5회 오답 잠금
+        assert c.post("/api/vault/entry", json={}, headers=H).json() == {"ok": False, "unset": True}
+        assert c.post("/api/vault/entry", json={"set": "135790"}, headers=H).status_code == 403, "패스키 잠금해제 없이 설정"
+        assert c.post("/api/vault/entry", json={"set": "135790"}, headers=T).json() == {"ok": True}
+        assert c.get("/api/vault/status", headers=H).json()["entry_code_set"] is True
+        state_raw = open(os.path.join(VAULT_DIR, "state.json"), encoding="utf-8").read()
+        assert "135790" not in state_raw, "코드 원문이 state 파일에 남음"
+        r = c.post("/api/vault/entry", json={"code": "135790"}, headers=H)
+        assert r.status_code == 200 and r.json()["token"], r.text
+        for _ in range(5):
+            r = c.post("/api/vault/entry", json={"code": "000000"}, headers=H)
+            assert r.status_code == 403
+        assert c.post("/api/vault/entry", json={"code": "135790"}, headers=H).status_code == 429, "5회 오답 뒤 잠금"
+        log2 = open(AUDIT_FILE, encoding="utf-8").read()
+        assert "135790" not in log2 and "000000" not in log2, "코드 원문이 감사기록에 남음"
 
         # 붙여넣기 → 암호문만 저장
         r = c.post("/api/vault/import", json={"text": "사이트\t아이디\t비밀번호\n은행\tgm_fake\t%s\n\t\t\n" % FAKE}, headers=T)

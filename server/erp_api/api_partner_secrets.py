@@ -2,7 +2,8 @@
 """파트너사 마케팅 채널 계정(아이디·비밀번호) 서버 보관 (배 2652 · 2026-09-15 시토 · GM 확정 「개인 PC 말고 서버 플랫폼관리에 안 보이게 저장 · 보기는 코드 1531」).
 
 정본 = 서버 비밀 파일 하나(/srv/erp/partner_secrets.json · 권한 600 · api.env 와 같은 취급). 다른 어디에도 값을 두지 않는다.
-모양 = {"<tenant>/<channel>": {"id":…, "pw":…, "note":…, "received_at":…, "updated_by":…}}  · tenant = jo/dc/… · channel = naver-blog/naver-cafe/danggn/instagram/threads/google/kakao-channel
+모양 = {"<tenant>/<channel>": {"id":…, "pw":…, "note":…, "url":…, "received_at":…, "updated_by":…}}  · tenant = jo/dc/… · channel = naver-blog/naver-cafe/danggn/instagram/threads/google/gmail/kakao-channel
+url = 공개 채널 주소(비밀 아님) · http/https 로 시작·500자 이내만 저장, 아니면 무시 · 옛 항목은 빈 문자열
 
   GET  /api/admin/partner-secrets                 회사 관리자(ERP_PLATFORM_ADMINS)만 · 목록(아이디 앞 2자만 · 비밀번호는 있다/없다)
   POST /api/admin/partner-secrets/reveal          {"tenant","channel"} + X-Vault-Token(GM 금고 패스키 표 · api_vault.py) → {id, pw} · 코드만으론 안 열린다(배 12843)
@@ -22,12 +23,21 @@ from fastapi.responses import JSONResponse
 router = APIRouter()
 
 SECRETS_FILE = os.environ.get("PARTNER_SECRETS_FILE", "/srv/erp/partner_secrets.json")
-CHANNELS = ("naver-blog", "naver-cafe", "danggn", "instagram", "threads", "google", "kakao-channel", "parking",
-            "bodyfriend",
+CHANNELS = ("naver-blog", "naver-cafe", "danggn", "instagram", "threads", "google", "gmail", "kakao-channel",
+            "parking", "bodyfriend",
             "reception-ops", "reception-admin", "locker-ops", "locker-admin")
             # GM 2026-09-15 스레드·구글 추가 · parking = 주차 관리 서비스(ppark-wall · 배 2668) · 화면은 이 순서로 자리를 만든다
             # 마지막 4개 = 배 12781(2026-09-18 GM 지시) — 리셉션 업무·라커관리 화면의 GAS 비밀번호(읽기·쓰기)를
             # 화면 입력 대신 서버가 여기서 자동 첨부한다(tenant="wellperion" 고정 · parking·bodyfriend 와 같은 1호 전용 선례).
+            # gmail = AX 랩스 주인 계정(배 12843 · 2026-09-19 시토).
+
+URL_MAX = 500
+
+
+def _valid_url(v):
+    """http/https 로 시작·500자 이내만 받고, 아니면 무시(빈 문자열)."""
+    v = str(v or "").strip()
+    return v if len(v) <= URL_MAX and (v.startswith("http://") or v.startswith("https://")) else ""
 
 
 def _user(request):
@@ -96,7 +106,7 @@ def _key(body):
 def listing(data):
     return [{"tenant": k.split("/")[0], "channel": k.split("/")[1], "id_masked": mask_id(v.get("id")),
              "has_pw": bool(v.get("pw")), "note": v.get("note", ""), "received_at": v.get("received_at", ""),
-             "updated_by": v.get("updated_by", "")} for k, v in sorted(data.items())]
+             "updated_by": v.get("updated_by", ""), "url": v.get("url", "")} for k, v in sorted(data.items())]
 
 
 @router.get("/api/admin/partner-secrets")
@@ -164,7 +174,7 @@ async def upsert(request: Request):
     _id, pw = str(body.get("id") or "").strip(), str(body.get("pw") or "")
     if not _id or not pw:
         return JSONResponse({"ok": False, "error": "아이디·비밀번호 둘 다 필요"}, status_code=400)
-    data[key] = {"id": _id, "pw": pw, "note": str(body.get("note") or "")[:200],
+    data[key] = {"id": _id, "pw": pw, "note": str(body.get("note") or "")[:200], "url": _valid_url(body.get("url")),
                  "received_at": dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M"), "updated_by": who}
     _save(data)
     print("[partner-secrets] %s 저장 %s" % (who, key), flush=True)
@@ -209,9 +219,15 @@ def selftest():
         assert row["id_masked"] == "go**********" and row["has_pw"] and "Xample" not in json.dumps(row)
         assert secret_pw("jo", "naver-blog") == "Xample1234!"           # 배 12781 — 있으면 그 값
         assert secret_pw("wellperion", "reception-ops") == ""           # 없으면 빈 문자열(가짜값 금지)
+        assert listing(_load())[0]["url"] == "", "url 없는 옛 항목은 빈 문자열"
+    assert "gmail" in CHANNELS, "AX 랩스 주인 계정 채널 없음"
     assert _key({"tenant": "jo", "channel": "instagram"}) == "jo/instagram"
     assert _key({"tenant": "jo", "channel": "tiktok"}) is None and _key({"tenant": "a/b", "channel": "instagram"}) is None
     assert mask_id("ab") == "ab***"
+    assert _valid_url("https://mail.google.com/x") == "https://mail.google.com/x"
+    assert _valid_url("ftp://x.com") == "" and _valid_url("javascript:alert(1)") == ""
+    assert _valid_url("http://" + "a" * URL_MAX) == "", "500자 초과는 무시"
+    assert _valid_url("") == "" and _valid_url(None) == ""
     print("selftest ok")
 
 
