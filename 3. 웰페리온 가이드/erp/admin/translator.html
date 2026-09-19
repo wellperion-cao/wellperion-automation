@@ -37,6 +37,10 @@
   .pressbtn.active{background:#B3261E; border-color:#B3261E; color:#fff;}
   .pressbtn:disabled{opacity:.5; cursor:not-allowed;}
   .pressbtn.hide{display:none;}
+  /* 자동 통역 브라우저 대체 경로 칩(배 12831후속) — 지금 듣는 언어 표시 + 누르면 전환 */
+  .chip{display:inline-block; margin:0; font:inherit; font-size:var(--fs-1); padding:6px 12px; border-radius:999px;
+        border:1px solid var(--border); background:var(--paper); color:var(--text-soft); cursor:pointer;}
+  .chip.hide{display:none;}
   .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:8px 16px; border-radius:8px; cursor:pointer;
        border:1px solid var(--border); background:var(--paper); color:var(--text);}
   .btn.p{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff;}
@@ -93,6 +97,7 @@
     <!-- 자동 통역 — 언어를 안 고르고 눌러 말하면 서버가 ko/en 을 스스로 판별한다(배 12831 · GM 09-18) -->
     <div class="pressgrid">
       <button type="button" class="pressbtn" id="btnAuto">🎤 자동 통역</button>
+      <button type="button" class="chip hide" id="autoLangChip">지금 듣는 말: 🇰🇷 한국어 ⇄</button>
     </div>
     <div class="typerow">
       <input type="text" id="typeText" placeholder="또는 한국어로 입력">
@@ -102,7 +107,7 @@
 
     <div class="note">
       ① 🇰🇷/🇺🇸 버튼 한 번 누르고 말하기 → 다시 누르면 번역·읽기<br>
-      ② 🎤 자동 통역 = 한 번 누르면 언어를 알아서 알아듣고 말이 끊길 때마다 바로 통역 · 다시 누르면 끝<br>
+      ② 자동 통역 — 켜 두면 말이 끝날 때마다 바로 통역합니다. 한국어→상대 말 순서로 번갈아 듣고, 칩을 누르면 듣는 말을 바꿉니다<br>
       ③ 크롬·사파리 · 처음 한 번 마이크 허용 · 조용한 곳에서 또박또박<br>
       마이크 소리는 브라우저 안에서만 글자로 바뀌고, 텍스트만 번역 서버로 보냅니다.
     </div>
@@ -265,14 +270,15 @@ if (!SR) {
       // skip: 중복 확정 조각 — 아무것도 안 함
     }
     liveFinal = finalSegs.join(' ');
+    if (autoSRActive && !pressing) autoSRMaybeFlush();
   };
   recognition.onerror = function(e){
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      var which = pressing && pressing.which;
+      if (pressing) { clearTimeout(talkTimer); talkTimer = null; pressing = null; setPressUI(null); }
+      if (autoSRActive) stopAutoSRFallback();
       statusMsg.textContent = '마이크 권한이 없습니다 — 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
       statusMsg.className = 'msg bad';
-      var which = pressing && pressing.which;
-      clearTimeout(talkTimer); talkTimer = null;
-      pressing = null; setPressUI(null);
       if (which) restoreTalkLabel(which);
     }
     // no-speech·network·audio-capture 등은 onend 가 이어서 처리(듣는 중이면 재시작)
@@ -285,8 +291,22 @@ if (!SR) {
       finishPress(st);
       return;
     }
-    // 인식이 스스로 끝남(no-speech·network 등) — 아직 누르고 있으면 이어서 듣는다
-    if (pressing) { try { recognition.start(); recActive = true; } catch (e) {} }
+    if (stopReason === 'autoTranslate') {
+      stopReason = null;
+      var text = liveFinal.trim();
+      liveFinal = ''; finalSegs = [];
+      if (text) finishAutoSRUtterance(text);
+      else if (autoSRActive) startAutoSRTurn();
+      return;
+    }
+    if (stopReason === 'autoSwitch') {
+      stopReason = null;
+      if (autoSRActive) startAutoSRTurn();
+      return;
+    }
+    // 인식이 스스로 끝남(no-speech·network 등) — 아직 누르고 있거나 자동 통역 중이면 이어서 듣는다
+    if (pressing) { try { recognition.start(); recActive = true; } catch (e) {} return; }
+    if (autoSRActive) { startAutoSRTurn(); }
   };
 }
 
@@ -312,11 +332,12 @@ function restoreTalkLabel(which){
   else { updateOtherBtnLabel(); }
 }
 function startPress(source, target, mine, which){
-  if (!recognition || pressing || stopReason === 'translate') return;
+  if (!recognition || pressing || stopReason === 'translate' || autoSRActive) return;
   try { speechSynthesis.cancel(); } catch (e) {}
   pressing = { source: source, target: target, mine: mine, which: which };
   liveFinal = ''; finalSegs = [];
   recognition.lang = SPEECH_LOCALE[source] || source;
+  recognition.interimResults = true;
   setPressUI(which);
   setListeningLabel(which);
   statusMsg.textContent = '듣는 중… (' + LANG_NAME[source] + ')'; statusMsg.className = 'msg ok';
@@ -373,7 +394,7 @@ typeOtherSplit.addEventListener('keydown', function(e){ if (e.key === 'Enter') s
 
 /* ── 번역 요청 → 말풍선(크게) → 읽어주기 ── */
 var translateSeq = 0;    // 동시 요청 중 늦게 온 응답이 최신 표시를 덮지 않게(요청 번호 비교)
-function handleUtterance(text, source, target, mine, pauseMicDuringSpeak){
+function handleUtterance(text, source, target, mine, pauseMicDuringSpeak, onDone){
   var seq = ++translateSeq;
   var bubble = addBubble(mine, text, '번역 중…');
   fetch('/api/translate', {
@@ -384,17 +405,19 @@ function handleUtterance(text, source, target, mine, pauseMicDuringSpeak){
     if (d.error) {
       bubble.querySelector('.tr').textContent = '(번역 실패)';
       if (seq === translateSeq) { statusMsg.textContent = d.error; statusMsg.className = 'msg bad'; }
+      if (onDone) onDone();
       return;
     }
     var tr = d.translation || '(번역 실패)';
     bubble.querySelector('.tr').textContent = tr;
-    if (seq !== translateSeq) return;   // 늦게 온 응답 — 최신 표시·읽기는 버림(이 말풍선 자체엔 이미 반영됨)
+    if (seq !== translateSeq) { if (onDone) onDone(); return; }   // 늦게 온 응답 — 최신 표시·읽기는 버림(이 말풍선 자체엔 이미 반영됨)
     if (target === 'ko') lastKoEl.textContent = tr;
     else lastOtherEl.textContent = tr;
     if (pauseMicDuringSpeak) autoPaused = true;
-    speak(tr, target, function(){ if (pauseMicDuringSpeak) autoPaused = false; });
+    speak(tr, target, function(){ if (pauseMicDuringSpeak) autoPaused = false; if (onDone) onDone(); });
   }).catch(function(){
     bubble.querySelector('.tr').textContent = '(번역 요청 실패)';
+    if (onDone) onDone();
   });
 }
 
@@ -462,6 +485,7 @@ function downsampleTo16k(float32Arr, inputRate){
 }
 
 var btnAuto = document.getElementById('btnAuto');
+var autoLangChip = document.getElementById('autoLangChip');
 var AutoAC = window.AudioContext || window.webkitAudioContext;
 var autoRecording = false, autoStarting = false, autoCtx = null, autoStream = null, autoSource = null, autoProcessor = null;
 var autoChunks = [];
@@ -470,6 +494,67 @@ var autoSilenceMs = 0;     // 말소리 시작 뒤 누적 무음 길이
 var autoSegMs = 0;         // 지금 구간 누적 길이
 var autoPaused = false;    // 번역문을 읽어 주는 동안 마이크 구간 수집을 멈춘다(자기 목소리 재수집 방지)
 var autoErrorShown = false; // 서버 오류 안내는 한 번만
+/* ── 브라우저 대체 경로(배 12831 후속 · GM 09-19) — 서버(/api/transcribe)가 오류를 주면 그 세션 동안
+   SpeechRecognition 으로 갈아타 계속 돈다. 한국어↔상대 언어를 차례로 듣는다(SR 은 한 번에 한 언어만). ── */
+var autoSRFallbackTried = false; // 이번 자동 통역 세션에서 이미 브라우저 경로로 갈아탔는가(다시 서버 시도 안 함)
+var autoSRActive = false;        // 지금 듣는 주체가 SR 인가(true 면 recognition 은 자동 통역 전용)
+var autoSRLang = 'ko';           // 지금 듣는 차례 — 'ko' 아니면 'other'(상대 언어)
+function autoSRLangCode(which){ return which === 'ko' ? 'ko' : otherSel.value; }
+function updateAutoLangChip(){
+  var code = autoSRLangCode(autoSRLang);
+  autoLangChip.textContent = '지금 듣는 말: ' + (LANG_FLAG[code] || '🌐') + ' ' + LANG_NAME[code] + ' ⇄';
+}
+if (autoLangChip) autoLangChip.addEventListener('click', function(){
+  if (!autoSRActive || stopReason) return;
+  autoSRLang = autoSRLang === 'ko' ? 'other' : 'ko';
+  liveFinal = ''; finalSegs = [];
+  stopReason = 'autoSwitch';
+  try { recognition.stop(); } catch (e) {}
+});
+function startAutoSRTurn(){
+  liveFinal = ''; finalSegs = [];
+  var code = autoSRLangCode(autoSRLang);
+  recognition.lang = SPEECH_LOCALE[code] || code;
+  recognition.interimResults = false;
+  updateAutoLangChip();
+  try { recognition.start(); recActive = true; } catch (e) {}
+}
+function autoSRMaybeFlush(){
+  if (!autoSRActive || pressing || stopReason) return;
+  if (!liveFinal.trim()) return;
+  stopReason = 'autoTranslate';
+  try { recognition.stop(); } catch (e) {}
+}
+function finishAutoSRUtterance(text){
+  var source = autoSRLangCode(autoSRLang);
+  var target = source === 'ko' ? otherSel.value : 'ko';
+  var mine = source === 'ko';
+  handleUtterance(text, source, target, mine, false, function(){
+    if (!autoSRActive) return;
+    autoSRLang = autoSRLang === 'ko' ? 'other' : 'ko';
+    startAutoSRTurn();
+  });
+}
+function startAutoSRFallback(){
+  if (!recognition) { autoServerError(); return; } // 방어 — 호출부에서 이미 SR 존재를 확인함
+  autoSRActive = true;
+  autoSRLang = 'ko';
+  if (autoLangChip) autoLangChip.classList.remove('hide');
+  btnAuto.classList.add('active');
+  btnAuto.textContent = '⏹ 자동 통역 중(브라우저)… 다시 누르면 끝';
+  statusMsg.textContent = '자동 통역 듣는 중… (브라우저 대체)'; statusMsg.className = 'msg ok';
+  startAutoSRTurn();
+}
+function stopAutoSRFallback(){
+  if (!autoSRActive) return;
+  autoSRActive = false;
+  stopReason = null;
+  try { recognition.stop(); } catch (e) {}
+  btnAuto.classList.remove('active');
+  btnAuto.textContent = '🎤 자동 통역';
+  statusMsg.textContent = ''; statusMsg.className = 'msg';
+  if (autoLangChip) autoLangChip.classList.add('hide');
+}
 
 if (!btnAuto) {
   /* 없음 — 방어. 정상 화면에선 항상 존재 */
@@ -478,12 +563,14 @@ if (!btnAuto) {
 } else {
   btnAuto.addEventListener('click', function(){
     if (autoRecording) { stopAutoRecording(); return; }
+    if (autoSRActive) { stopAutoSRFallback(); return; }
     if (autoStarting) return;
     startAutoRecording();
   });
 }
 
 function startAutoRecording(){
+  autoSRFallbackTried = false; // 새 세션 — 서버 경로부터 다시 한 번 시도
   autoStarting = true;
   btnAuto.disabled = true;
   autoErrorShown = false;
@@ -525,18 +612,17 @@ function flushAutoSegment(){
   if (!hadVoice) return; // 순수 무음 구간 — 버림
   sendAutoPcm(chunks);
 }
-function stopAutoRecording(){
+function stopAutoRecording(keepActive){
   if (!autoRecording) return;
   autoRecording = false;
-  btnAuto.classList.remove('active');
-  btnAuto.textContent = '🎤 자동 통역';
-  if (autoChunks.length && autoVoiced) sendAutoPcm(autoChunks); // 마지막 구간까지 처리
+  if (!keepActive) { btnAuto.classList.remove('active'); btnAuto.textContent = '🎤 자동 통역'; }
+  if (!keepActive && autoChunks.length && autoVoiced) sendAutoPcm(autoChunks); // 마지막 구간까지 처리(수동 종료 때만)
   autoChunks = []; autoVoiced = false; autoSilenceMs = 0; autoSegMs = 0; autoPaused = false;
   if (autoProcessor) { autoProcessor.disconnect(); autoProcessor.onaudioprocess = null; autoProcessor = null; }
   if (autoSource) { autoSource.disconnect(); autoSource = null; }
   if (autoStream) { autoStream.getTracks().forEach(function(t){ t.stop(); }); autoStream = null; }
   if (autoCtx) { autoCtx.close(); autoCtx = null; }
-  statusMsg.textContent = ''; statusMsg.className = 'msg';
+  if (!keepActive) { statusMsg.textContent = ''; statusMsg.className = 'msg'; }
 }
 function sendAutoPcm(chunks){
   var total = 0;
@@ -564,6 +650,13 @@ function sendAutoPcm(chunks){
   }).catch(function(){});
 }
 function autoServerError(){
+  if (SR && !autoSRFallbackTried) {
+    // 서버가 막혀 있다 — 멈추지 않고 이 세션 동안 브라우저 SR 로 갈아탄다(다시 서버로 안 돌아간다)
+    autoSRFallbackTried = true;
+    stopAutoRecording(true);
+    startAutoSRFallback();
+    return;
+  }
   if (!autoErrorShown) {
     autoErrorShown = true;
     statusMsg.textContent = '자동 통역은 서버 준비 중입니다 — 🇰🇷 한국어 / 🇺🇸 영어 버튼을 써 주세요.';
