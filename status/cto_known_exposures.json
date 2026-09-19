@@ -23,11 +23,13 @@
   {
     "id": "funnel_conversion_detail",
     "what": "회원 GAS 공개 액션(연락처 뒷4자리 가입전환 상세명단) — 문의현황.html 계열 무열쇠 직접호출. 미러 있음(/api/funnel/funnel_conversion_detail), 실패 시 GAS 직행이라 공개목록 유지 필요",
-    "open": true
+    "open": false,
+    "closed": "2026-09-19 @337 — 공개목록에서 뺐다. 열쇠 없이 부르면 unauthorized·건수 0, 열쇠 있으면 정상(407KB 응답 확인). 화면은 서버 미러(/api/funnel/funnel_conversion_detail)만 부른다(직행 0건 확인)"
   },
   {
     "id": "member_person_view",
     "what": "회원 GAS 공개 액션(이름·전화·회원번호 사람찾기) — membership.html 호출에 키 파라미터 자체가 없음. 미러 있음(/api/members?q=)이지만 문의단계 사람은 GAS만 찾아 폴백 상시 발생. 공개목록 유지 필요",
-    "open": true
+    "open": false,
+    "closed": "2026-09-19 @337 — 공개목록에서 뺐다. 열쇠 없이 부르면 unauthorized·건수 0, 열쇠 있으면 정상(q 필요 검증까지 통과). membership.html 은 09-19(배2859)에 이미 직행을 걷고 /api/members?q= 만 쓴다(직행 0건 확인)"
   }
 ]

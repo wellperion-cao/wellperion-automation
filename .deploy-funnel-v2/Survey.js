@@ -2046,7 +2046,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_registered_remove:   true,  // 2026-08-06 시토(배295) — "+직접등록" 되돌리기. 비밀번호 게이트 +
                                       //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
-  member_person_view:         true,  // 2026-09-02 시포(배11123) — 사람 찾기(이름·전화·회원번호→원장+문의 한 화면). 읽기전용.
+  // member_person_view — 공개 목록에서 뺐다(배 12818 3차 · 2026-09-19 시토). 전화 원문 노출이라 게이트 뒤로.
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 삭제+유효회원 신규행, 2026-08-26 개정)
   member_registry_build:      true,  // 2026-08-26 시포(GM 승인·배801) — 회원등기부 구축·회원번호 부여(멱등·dryRun 지원)
@@ -2089,7 +2089,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   read_rows_by_rownum:        true,  // 읽기전용: 지정 시트·행번호의 알림 필드 원문 반환 (2026-06-25)
   preview_notify_msg:         true,  // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
   lesson_rewire_audit:        true,  // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
-  funnel_conversion_detail:   true,  // 2026-07-20 GM 지시(배834) — M1 마케팅 대시보드 채널별 가입전환 상세 명단. PII 노출(이름·연락처뒷4자리) — member_inquiry_list 등과 동일 정책(전체공개, 읽기전용·원본시트 미변경). 연락처는 서버에서 뒷4자리로 절단 후 반환(전체번호 미노출).
+  // funnel_conversion_detail — 공개 목록에서 뺐다(배 12818 3차 · 2026-09-19 시토). 이름·연락처뒷4자리 노출이라 게이트 뒤로. 화면은 서버 /api/funnel/funnel_conversion_detail 경유.
   // 오넛티 선물세트(2026-08-07 GM 지시) — remaining은 숫자만(PII 0) 면제 안전. team_list는 이름/전화 원시행이 있지만
   //   서버가 이름을 첫글자만 내보내고 연락처는 아예 안 담아 보낸다(클라이언트 마스킹 아님) + 자체 접속코드(_ohnuttiTeamAuthed_)로
   //   막아 member_registered_remove(STAFF_GATE_PW)와 동일하게 "마스터 토큰 게이트는 면제 + 자체 코드 게이트는 별도 유지" 패턴.
