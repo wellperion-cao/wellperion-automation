@@ -1164,6 +1164,18 @@ def _closed_judge(tenant: str, rules: list):
     return lambda d: any(c(d) for c in checks)
 
 
+def _fmt_day(d) -> str:
+    return "%d/%d(%s)" % (d.month, d.day, _WEEKDAY_NAMES[d.weekday()])
+
+
+def _next_day(judge, d, want_closed):
+    for _ in range(60):
+        d = d + timedelta(days=1)
+        if judge(d) == want_closed:
+            return d
+    return d
+
+
 def _today_hours_line(tenant: str, today=None) -> str:
     """오늘 운영 상태 한 줄(코드 계산 · 모델 없음) — 배1036 GM⑥·설계 §3-1⑦. facts.hours 없는 테넌트
     (프로필에 시간이 없는 테넌트)는 빈 문자열 — 호출부가 핸드오프로 넘어간다. 휴관 판정은 _closed_judge —
@@ -1174,24 +1186,32 @@ def _today_hours_line(tenant: str, today=None) -> str:
         return ""
     judge = _closed_judge(tenant, hours.get("closed_rules"))   # 웰페리온은 close_days 미배포면 None → 휴관 여부 생략
     today = today or datetime.now(timezone(timedelta(hours=9))).date()
-
-    def _fmt(d):
-        return "%d/%d(%s)" % (d.month, d.day, _WEEKDAY_NAMES[d.weekday()])
-
-    def _next(d, want_closed):
-        for _ in range(60):
-            d = d + timedelta(days=1)
-            if judge(d) == want_closed:
-                return d
-        return d
     if judge and judge(today):
-        return "오늘 %s · 휴관 · 다음 영업일 %s" % (_fmt(today), _fmt(_next(today, False)))
+        return "오늘 %s · 휴관 · 다음 영업일 %s" % (_fmt_day(today), _fmt_day(_next_day(judge, today, False)))
     is_holiday = today.strftime("%Y-%m-%d") in _public_holidays()
     is_weekend = today.weekday() >= 5
     today_hours = hours.get("holiday") if is_holiday else (hours.get("weekend") if is_weekend else hours.get("weekday"))
     if not judge:
-        return "오늘 %s · %s" % (_fmt(today), today_hours or "")   # 휴관 여부는 모르니 말하지 않는다
-    return "오늘 %s · %s · 휴관 아님 · 다음 휴관 %s" % (_fmt(today), today_hours or "", _fmt(_next(today, True)))
+        return "오늘 %s · %s" % (_fmt_day(today), today_hours or "")   # 휴관 여부는 모르니 말하지 않는다
+    return "오늘 %s · %s · 휴관 아님 · 다음 휴관 %s" % (_fmt_day(today), today_hours or "", _fmt_day(_next_day(judge, today, True)))
+
+
+def _upcoming_closed_days_line(tenant: str, today=None, days: int = 45) -> str:
+    """오늘 이후 `days`일 안의 휴관일 목록 한 줄(웰리 요청 · 9/27 오답 수리) — 모델 문맥 전용.
+    모델이 「둘째·넷째 일요일」 같은 규칙 문장만 보고 임시 대체(추석→9/27 정상 운영 등)를 스스로
+    추론해 틀리는 것(실측 9/27 오답)을 막는다 — 실제 휴관일을 코드로 나열해 못박는다.
+    judge 없는 테넌트(규칙 해석 불가)는 빈 문자열 — _today_hours_line 과 같은 원칙(모르면 말 안 함)."""
+    hours = (_load_profile(tenant).get("facts") or {}).get("hours")
+    if not isinstance(hours, dict) or not hours.get("weekday"):
+        return ""
+    judge = _closed_judge(tenant, hours.get("closed_rules"))
+    if not judge:
+        return ""
+    today = today or datetime.now(timezone(timedelta(hours=9))).date()
+    closed = [d for d in (today + timedelta(days=i) for i in range(1, days + 1)) if judge(d)]
+    if not closed:
+        return ""
+    return "앞으로 휴관일: %s · 이 목록에 없는 날은 영업" % "·".join(_fmt_day(d) for d in closed)
 
 
 def _is_hours_question(q: str) -> bool:
@@ -1319,6 +1339,9 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict, type_id: str
     sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null 이면 생략(배1036 GM 추가①)
     sales_line = (" 세일즈 결(업체별) — %s" % sales_style) if sales_style else ""
     today_line = _today_hours_line(tenant)
+    upcoming_line = _upcoming_closed_days_line(tenant)
+    if upcoming_line:
+        today_line = "%s\n%s" % (today_line, upcoming_line) if today_line else upcoming_line
     # 대표가 「말해도 된다」고 허락한 금액만 예외로 말할 수 있다(guards_common no_price.exception · GM 승인 2026-09-10).
     # 목록이 비면 이 구역 자체가 없다 — 프롬프트가 종전과 한 글자도 다르지 않다(웰페리온·다캠 무변화).
     allowed_prices = prof.get("allowed_prices") or []
@@ -1764,6 +1787,10 @@ def _selfcheck() -> None:
     assert wp.startswith("오늘 9/13(일) · 휴관"), wp
     assert _closed_judge("2_dietcamp", ["매월 셋째 화요일"]) is None, "해석 못 하는 규칙이면 판정 생략"
     assert _closed_judge("2_dietcamp", []) is None
+    # 웰리 요청 — 9/27 오답 수리: 앞날 휴관 목록에 추석 사흘은 있고 9/27(대체 운영)은 없어야 한다.
+    up = _upcoming_closed_days_line("1_wellperion", _date(2026, 9, 19))
+    assert "9/26" in up and "9/27" not in up and "9/24" in up and "9/25" in up, up
+    assert _upcoming_closed_days_line("3_gocheokgolf", _date(2026, 9, 19)) == "", "규칙 없으면 빈 문자열"
     # #8 FAQ 원자 저장 · 깨진 파일은 폴백 없이 오류.
     saved_faq_dir, FAQ_DIR = FAQ_DIR, _tf.mkdtemp()
     it8 = _edit_faq_locked("1_wellperion", {"q": "새 질문", "a": "새 답"})
