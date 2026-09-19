@@ -2991,6 +2991,11 @@ table.op-t td b{font-size:15px}
     <div id="lmcMemberSection" style="display:none">
       <div class="consult-field-label" style="margin-top:12px">멤버십 현황 <span style="font-size:10px;font-weight:700;color:var(--teal)">✅ 회원 매칭</span></div>
       <div id="lmcMemberBody"></div>
+      <!-- 브로제이 회원권·수강권(읽기 전용) — 배 2755 표1, 2026-09-19 시포. 사람 손 입력 없음. -->
+      <div id="lmcBrojaySection" style="display:none;margin-top:10px">
+        <div class="consult-field-label" style="margin-top:12px">브로제이 회원권·수강권</div>
+        <div id="lmcBrojayBody" style="font-size:12px;color:var(--dim)"></div>
+      </div>
     </div>
     <div id="lmcNoMemberSection" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:12px;color:var(--dim)">
       💡 멤버십 회원 미매칭 — 아직 등록 전이거나 연락처 불일치
@@ -12280,11 +12285,43 @@ function _lessonOpenMemberCard(t, rowIdx) {
       (rem ? '<div class="consult-row"><span class="ck">잔여일</span><span class="cv">' + esc(rem) + '일</span></div>' : '');
     memSec.style.display = '';
     noMemSec.style.display = 'none';
+    _lmcLoadBrojay(phone);
   } else {
     memSec.style.display = 'none';
     noMemSec.style.display = _activeLoaded ? '' : 'none';
+    _lmcLoadBrojay('');
   }
   document.getElementById('lessonMemberCardOverlay').classList.add('open');
+}
+/* 브로제이 회원권·수강권(읽기 전용) — 배 2755 표1, 2026-09-19 시포. 기존 /api/brojay/member_tickets 재사용(전화별
+   1건 · 회원권/수강권 기간뿐 상품 목록 아님 — 있는 기간만 최대 2줄 회원권·수강권으로 보여준다). 값을 쓰지 않는다. */
+var _lmcBrojayReq = 0;
+function _lmcLoadBrojay(digits) {
+  var sec = document.getElementById('lmcBrojaySection'), body = document.getElementById('lmcBrojayBody');
+  if (!sec || !body) return;
+  var reqId = ++_lmcBrojayReq;
+  if (!ERP_API_ON || !digits) { sec.style.display = 'none'; body.innerHTML = ''; return; }
+  sec.style.display = '';
+  body.textContent = '불러오는 중…';
+  _apiJson('/api/brojay/member_tickets?phones=' + digits)
+    .then(function(d){
+      if (reqId !== _lmcBrojayReq) return;
+      var it = (d && d.items && d.items[digits]) || null;
+      var rows = [];
+      if (it) {
+        if (it.member_start || it.member_end) rows.push(['회원권', it.member_start || '—', it.member_end || '—', it.status || '—']);
+        if (it.lesson_start || it.lesson_end) rows.push(['수강권', it.lesson_start || '—', it.lesson_end || '—', it.status || '—']);
+      }
+      if (!rows.length) { body.innerHTML = '<span style="font-size:12px;color:var(--dim)">브로제이 기록 없음</span>'; return; }
+      body.innerHTML = '<div class="reg-table-wrap"><table class="reg-table"><thead><tr><th class="left">상품</th><th>시작일</th><th>종료일</th><th>상태</th></tr></thead><tbody>' +
+        rows.map(function(r){ return '<tr><td class="left">' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>';
+    })
+    .catch(function(e){
+      if (reqId !== _lmcBrojayReq) return;
+      console.warn('[브로제이 회원상세] 실패:', e && e.message);
+      body.innerHTML = '<span style="font-size:12px;color:var(--dim)">브로제이 조회 실패</span>';
+    });
 }
 function _lessonCloseMemberCard() {
   document.getElementById('lessonMemberCardOverlay').classList.remove('open');
