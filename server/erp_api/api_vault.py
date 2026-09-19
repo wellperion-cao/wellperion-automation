@@ -25,11 +25,13 @@
   POST /api/vault/register/options       {code?}  패스키 0개면 결재 GM 코드 필요(첫 등록 가로채기 막기) · 1개 이상이면 잠금해제 표 필요
   POST /api/vault/register/verify        {credential, label, prf}
   POST /api/vault/unlock/options
-  POST /api/vault/unlock/verify          {credential} → {token, exp}
-  POST /api/vault/entry                  {code} → {token,exp}(10분 표) · {set:새코드}(패스키 잠금해제 상태에서만) ·
+  POST /api/vault/unlock/verify          {credential} → {token, exp}(X-Vault-Token · 값 보기·쓰기·코드 변경 전용)
+  POST /api/vault/entry                  {code} → {token,exp}(10분 · X-Vault-Entry 로만 · 목록 화면 보기 전용 —
+                                          reveal·{set}·import 는 이 표로 절대 안 열린다 · purpose 서명이 달라 교차 사용 차단) ·
+                                          {set:새코드}(패스키 잠금해제=X-Vault-Token 상태에서만) ·
                                           코드 없으면 {unset:true} · 5회 오답 10분 잠금 · 코드는 scrypt 해시만 저장
-  GET  /api/vault/items?compartment=gm|partner      표 필요 · 제목·가림표만
-  POST /api/vault/reveal                 {compartment, id}  표 필요 · 값
+  GET  /api/vault/items?compartment=gm|partner      X-Vault-Token 또는 X-Vault-Entry 표 필요 · 제목·가림표만
+  POST /api/vault/reveal                 {compartment, id}  X-Vault-Token 표 필요(진입 표로는 403) · 값
   POST /api/vault/import                 {text}  표 필요 · 붙여넣은 표(TSV/CSV) → gm 칸 · 건수만 돌려준다
 기록 = /srv/erp/logs/vault_audit.jsonl (ts·email·action·item·ip · 값 없음).
 """
@@ -141,22 +143,34 @@ def _sess(request):
     return hashlib.sha256(c.encode()).hexdigest()[:32] if c else ""
 
 
-def _sign(email, sess, exp):
-    return hmac.new(_sub(b"unlock"), ("%s|%s|%d" % (email, sess, exp)).encode(), hashlib.sha256).hexdigest()
+def _sign(purpose, email, sess, exp):
+    """purpose 를 서명에 섞는다 — 'unlock'(패스키) 표와 'entry'(접속 코드) 표가 값이 같아도 서로 검증을 안 통과하게(교차 사용 차단)."""
+    return hmac.new(_sub(b"unlock"), ("%s|%s|%s|%d" % (purpose, email, sess, exp)).encode(), hashlib.sha256).hexdigest()
 
 
-def _issue(request, ttl=UNLOCK_TTL):
+def _issue(request, purpose="unlock", ttl=UNLOCK_TTL):
     exp = int(time.time()) + ttl
-    return "%d.%s" % (exp, _sign(_who(request), _sess(request), exp)), exp
+    return "%d.%s" % (exp, _sign(purpose, _who(request), _sess(request), exp)), exp
 
 
 def is_unlocked(request):
+    """패스키 잠금해제 표(X-Vault-Token) — 값 보기·쓰기·코드 변경이 이걸 요구한다."""
     who, sess = _who(request), _sess(request)
     tok = request.headers.get("x-vault-token") or ""
     exp, _, sig = tok.partition(".")
     if who != GM or not sess or not exp.isdigit() or int(exp) < time.time():
         return False
-    return hmac.compare_digest(sig, _sign(who, sess, int(exp)))
+    return hmac.compare_digest(sig, _sign("unlock", who, sess, int(exp)))
+
+
+def is_entry_unlocked(request):
+    """접속 코드 진입 표(X-Vault-Entry) — 목록 화면 보기 전용. purpose='entry' 로 서명이 달라 is_unlocked 를 절대 통과 못 한다."""
+    who, sess = _who(request), _sess(request)
+    tok = request.headers.get("x-vault-entry") or ""
+    exp, _, sig = tok.partition(".")
+    if who != GM or not sess or not exp.isdigit() or int(exp) < time.time():
+        return False
+    return hmac.compare_digest(sig, _sign("entry", who, sess, int(exp)))
 
 
 def _deny(msg, code=403):
@@ -164,13 +178,24 @@ def _deny(msg, code=403):
 
 
 def require_unlock(request):
-    """None = 통과. 아니면 거절 응답. api_partner_secrets.reveal 도 이걸 쓴다."""
+    """None = 통과. 아니면 거절 응답. 패스키 표(X-Vault-Token)만 — 값 보기·쓰기·코드 변경. api_partner_secrets.reveal 도 이걸 쓴다."""
     if _who(request) != GM:
         return _deny("forbidden")
     if not os.path.exists(KEY_FILE):
         return _deny("vault key 없음", 503)
     if not is_unlocked(request):
         return _deny("금고 잠금 해제 필요(패스키)")
+    return None
+
+
+def require_view(request):
+    """None = 통과. 목록 화면(제목·가림표만)만 — 패스키 표 또는 접속 코드 진입 표 아무거나로 열린다."""
+    if _who(request) != GM:
+        return _deny("forbidden")
+    if not os.path.exists(KEY_FILE):
+        return _deny("vault key 없음", 503)
+    if not (is_unlocked(request) or is_entry_unlocked(request)):
+        return _deny("금고 잠금 해제 필요(패스키 또는 코드)")
     return None
 
 
@@ -410,9 +435,9 @@ async def entry(request: Request):
     if not ok:
         audit(request, "entry-refused")
         return _deny("코드가 맞지 않습니다")
-    tok, exp = _issue(request, ttl=ENTRY_TTL)
+    tok, exp = _issue(request, purpose="entry", ttl=ENTRY_TTL)
     audit(request, "entry")
-    return {"ok": True, "token": tok, "exp": exp}
+    return {"ok": True, "token": tok, "exp": exp}   # 클라이언트는 이 값을 X-Vault-Entry 헤더로만 보낸다(목록 화면 전용)
 
 
 def _gm_items():
@@ -426,7 +451,7 @@ def _mask(v):
 
 @router.get("/api/vault/items")
 def items(request: Request, compartment: str = "gm"):
-    bad = require_unlock(request)
+    bad = require_view(request)   # 화면 보기 = 패스키 표 또는 접속 코드 진입 표. 값 보기(reveal)는 계속 패스키 표만.
     if bad:
         return bad
     if compartment == "partner":
@@ -617,6 +642,18 @@ def selftest():
         assert "135790" not in state_raw, "코드 원문이 state 파일에 남음"
         r = c.post("/api/vault/entry", json={"code": "135790"}, headers=H)
         assert r.status_code == 200 and r.json()["token"], r.text
+        entry_tok = r.json()["token"]
+
+        # 진입 표(X-Vault-Entry) = 목록 화면 보기 전용 — 패스키 표(X-Vault-Token) 자리에선 절대 안 통한다(패스키 우회 차단)
+        # reveal() 은 require_unlock() 을 그대로 부르므로 403 = require_unlock 거절 확인
+        ET = dict(H, **{"X-Vault-Entry": entry_tok})
+        assert c.post("/api/vault/reveal", json={"compartment": "partner", "id": "jo/naver-blog"}, headers=ET).status_code == 403, \
+            "진입 표로 reveal 열림(패스키 우회)"
+        assert c.post("/api/vault/reveal", json={"compartment": "partner", "id": "jo/naver-blog"},
+                       headers=dict(H, **{"X-Vault-Token": entry_tok})).status_code == 403, "진입 표를 X-Vault-Token 자리에 넣어도 통과"
+        assert c.post("/api/vault/entry", json={"set": "999999"}, headers=ET).status_code == 403, "진입 표로 코드 변경 열림"
+        assert c.get("/api/vault/items?compartment=partner", headers=ET).status_code == 200, "진입 표로 목록도 안 열림"
+
         for _ in range(5):
             r = c.post("/api/vault/entry", json={"code": "000000"}, headers=H)
             assert r.status_code == 403
