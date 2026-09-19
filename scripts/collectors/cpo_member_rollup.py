@@ -43,6 +43,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timedelta
 
@@ -53,6 +54,7 @@ if _SCRIPTS_DIR not in sys.path:
 
 from collectors.base import make_payload  # noqa: E402
 import cpo_report  # noqa: E402 — 기존 fetch 로직 재사용(중복 복사 금지)
+import report_stream_1_impl as R  # noqa: E402 — 90일 전환율 재사용(새 조회 로직 금지)
 from module_reporter import REPORT_LOG_PATH, _last_metrics  # noqa: E402 — 지난주 대비용 로그 재사용(새 파일 금지)
 
 # ★2026-09-11 시포 — 화면에 남는 링크는 새 주소(ERP)로. 카톡·텔레그램 발신은 관문
@@ -77,6 +79,17 @@ _OWNER_SPORTS = [
     ("수영 담당자", "수영 Contact"),
 ]
 _UNASSIGNED_OPTION = "담당자 X"  # LESSON_UNASSIGNED_OPTION과 동일값 — 명시적 미배정은 채운 것으로 안 침
+
+# ── 목표 나무(GM 확정 2026-09-19) ────────────────────────────────────────────
+# 연매출 100억 → 신규 전환율(문의→가입) + 재등록률 → 요금·상품·콘텐츠 순.
+# "목표 달성을 위해 해야 할 것들을 시포가 배편을 만들어 진행해 긍정적인 결과가
+# 계속 나오게 하고, 이 과정을 자동화" — GM 09-19. 하락 시에만 배를 띄운다(재등록은 근사치라 제외).
+_GOAL_YEAR_SALES = 10_000_000_000
+_LEDGER_PATH = os.path.join(_PROJECT_ROOT, "status", "monthly_report_ledger.json")
+_ONEPAGER_PATH = os.path.join(_PROJECT_ROOT, "status", "cpo_status_onepager.json")
+_QUEUE_PATH = os.path.join(_PROJECT_ROOT, "status", "_queue.json")
+_QUEUE_ARCHIVE_PATH = os.path.join(_PROJECT_ROOT, "status", "_queue_archive.json")
+_GOAL_SHIP_PREFIX = "[목표나무:"
 
 
 def _norm_key(k) -> str:
@@ -264,12 +277,132 @@ def _fmt_names(items: list, limit: int = 5) -> str:
     return "(" + "·".join(shown) + tail + ")"
 
 
+def _goal_sales_pct():
+    """목표 나무 ① 매출 — 연환산÷100억(%). 원천 = status/monthly_report_ledger.json
+    의 closed=true 인 가장 최근 달 sales.year_cum. 실패 시 (None, "측정 안 됨")."""
+    try:
+        with open(_LEDGER_PATH, "r", encoding="utf-8") as f:
+            months = json.load(f).get("months") or {}
+        closed_keys = sorted(k for k, v in months.items() if isinstance(v, dict) and v.get("closed"))
+        if not closed_keys:
+            return None, "측정 안 됨"
+        key = closed_keys[-1]
+        year_cum = (months[key].get("sales") or {}).get("year_cum")
+        month_n = int(key.split("-")[1])
+        if not isinstance(year_cum, (int, float)) or month_n <= 0:
+            return None, "측정 안 됨"
+        annualized = year_cum / month_n * 12
+        pct = round(annualized / _GOAL_YEAR_SALES * 100, 1)
+        return pct, f"연환산 {annualized / 1e8:.1f}억({pct:.0f}%)"
+    except Exception:
+        return None, "측정 안 됨"
+
+
+def _goal_conversion_pct(today: str):
+    """목표 나무 ② 신규 전환율 — 최근 90일 접수 중 등록완료 비율(멤버십/성인/유소년).
+    원천 = report_stream_1_impl._fetch_list(member/lesson_inquiry_list) 재사용(새 조회 금지).
+    실패·표본 0건이면 (None, "측정 안 됨")."""
+    try:
+        cutoff = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=90)).strftime("%Y-%m-%d")
+        buckets = [
+            ("멤버십", R._fetch_list("member_inquiry_list"), False),
+            ("성인", R._fetch_list("lesson_inquiry_list", type="성인강습"), True),
+            ("유소년", R._fetch_list("lesson_inquiry_list", type="유소년강습"), True),
+        ]
+        parts = []
+        tot_n = tot_reg = 0
+        for label, rows, is_lesson in buckets:
+            recent = [r for r in rows if str(r.get("timestamp", "") or "")[:10] >= cutoff and not R._is_test_row(r)]
+            reg = [r for r in recent if R._is_registered(r, is_lesson)]
+            n, k = len(recent), len(reg)
+            tot_n += n
+            tot_reg += k
+            parts.append(f"{label} {round(k / n * 100, 1) if n else '측정 안 됨'}")
+        if tot_n == 0:
+            return None, "신규 전환(90일) 측정 안 됨"
+        pct = round(tot_reg / tot_n * 100, 1)
+        return pct, f"신규 전환(90일) {pct:.1f}% — " + " · ".join(parts)
+    except Exception:
+        return None, "신규 전환(90일) 측정 안 됨"
+
+
+def _goal_rereg_pct():
+    """목표 나무 ③ 재등록(근사) = 지난달 재등록÷(재등록+LOSS). 정식 계산식 준비 중.
+    원천 = status/cpo_status_onepager.json 월별.지난달. 실패 시 (None, "측정 안 됨")."""
+    try:
+        with open(_ONEPAGER_PATH, "r", encoding="utf-8") as f:
+            last = (json.load(f).get("월별") or {}).get("지난달") or {}
+        rereg, loss = last.get("재등록_건수"), last.get("LOSS_건수")
+        ym = str(last.get("연월", ""))
+        month_label = (ym[-2:].lstrip("0") + "월") if ym else "?월"
+        if not isinstance(rereg, (int, float)) or not isinstance(loss, (int, float)) or (rereg + loss) <= 0:
+            return None, f"재등록(근사) 측정 안 됨"
+        pct = round(rereg / (rereg + loss) * 100)
+        return pct, f"재등록(근사) {month_label} {pct}% — 정식 계산식 준비 중"
+    except Exception:
+        return None, "재등록(근사) 측정 안 됨"
+
+
+def _goal_ships_closed_this_week(today: str) -> int:
+    """이번 주(최근 7일) DONE 처리된 '[목표나무:' 배 수 — status/_queue.json +
+    _queue_archive.json 전부. 조회 실패 시 0(집계 자체를 막지 않는다)."""
+    try:
+        cutoff = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=6)).strftime("%Y-%m-%d")
+        n = 0
+        for path in (_QUEUE_PATH, _QUEUE_ARCHIVE_PATH):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    items = json.load(f)
+            except Exception:
+                continue
+            for it in items if isinstance(items, list) else []:
+                if (str(it.get("clevel", "")) != "cpo" or it.get("status") != "DONE"
+                        or not str(it.get("title", "")).startswith(_GOAL_SHIP_PREFIX)):
+                    continue
+                closed_at = str(it.get("closed_at") or it.get("updated_at") or "")[:10]
+                if closed_at and cutoff <= closed_at <= today:
+                    n += 1
+        return n
+    except Exception:
+        return 0
+
+
+def _goal_pct_delta_tail(prev_v, cur_v) -> str:
+    if prev_v is None or cur_v is None:
+        return ""
+    return f" · 지난주 대비 {cur_v - prev_v:+.1f}%p"
+
+
+def _dispatch_decline_ship(title: str, note: str, next_step: str, force_route: bool = False) -> None:
+    """지표 하락 시 시포 자기 배 생성(--mine · 중복·상한은 queue_dispatch가 막음 —
+    새 가드 안 만든다). CPO_GOAL_TREE_DRYRUN=1 이면 --dry-run(큐에 쓰지 않음).
+    force_route — "매출" 낱말이 담당 어긋남 가드(→시뽀)에 걸린다(실측 2026-09-19).
+    목표 나무 전체(매출 포함)는 GM 확정 2026-09-19로 시포 소관이라 강제 통과시킨다."""
+    cmd = [
+        "C:/Python314/python.exe", os.path.join(_SCRIPTS_DIR, "queue_dispatch.py"),
+        "--to", "cpo", "--sender", "cpo", "--mine",
+        "--waiting", "GM 확정 2026-09-19 목표 나무(연매출 100억) 자동감시",
+        "--title", title, "--note", note, "--next", next_step,
+        "--gm-needed", "no", "--audience", "office", "--reversible", "yes", "--work-type", "update",
+    ]
+    if force_route:
+        cmd.append("--force-route")
+    if os.environ.get("CPO_GOAL_TREE_DRYRUN") == "1":
+        cmd.append("--dry-run")
+    try:
+        subprocess.run(cmd, cwd=_PROJECT_ROOT, capture_output=True, text=True, encoding="utf-8",
+                        timeout=30, check=False)
+    except Exception:
+        pass
+
+
 def collect(module=None) -> dict:
     """표준 payload 반환 — summary_line 안에 GM 확정 5줄(■ 회원 구성/이번 주 등록·LOSS/
     문의에서 등록까지/데이터 위생/데이터 완성도)을 그대로 담는다(metrics는 비움 — module_reporter
     의 "  · label: value" 나열 형식이 이 5줄 표기와 안 맞아, summary_line 통짜로 렌더)."""
     today = cpo_report._today_str()
     week_start = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=6)).strftime("%Y-%m-%d")
+    prev_metrics = _last_metrics(REPORT_LOG_PATH, _MODULE_ID) or {}
 
     active_rows = cpo_report.fetch_active_members("valid")
     ended_rows = cpo_report.fetch_active_members("ended")
@@ -361,8 +494,7 @@ def collect(module=None) -> dict:
     hygiene_metrics: dict = {}
     if comp is not None:
         hygiene_metrics = _hygiene_metrics(comp)
-        prev_hygiene = _last_metrics(REPORT_LOG_PATH, _MODULE_ID)
-        tail = _hygiene_delta_tail(prev_hygiene, hygiene_metrics)
+        tail = _hygiene_delta_tail(prev_metrics or None, hygiene_metrics)
         line4 = (
             f"■ 데이터 위생 — 회원구분 오타 {comp['typo_count']} · 미기재 {comp['blank_type_count']} · "
             f"이름중복 {comp['dup_count']} · 잔여일 공백 {comp['remain_blank']} · "
@@ -404,7 +536,43 @@ def collect(module=None) -> dict:
     else:
         line6 = "■ 법인·단체 열린 건 — 측정 안 됨(문의 데이터 조회 실패)"
 
-    summary = "\n".join([line1, line2, line3, line4, line5, line6])
+    # ── ⓪ 목표 나무(GM 확정 2026-09-19 — 연매출 100억 → 신규 전환·재등록 → 요금·상품·콘텐츠) ──
+    sales_pct, sales_text = _goal_sales_pct()
+    conv_pct, conv_text = _goal_conversion_pct(today)
+    rereg_pct, rereg_text = _goal_rereg_pct()
+    ships_closed = _goal_ships_closed_this_week(today)
+
+    sales_delta = _goal_pct_delta_tail(prev_metrics.get("목표_매출진척%"), sales_pct)
+    conv_delta = _goal_pct_delta_tail(prev_metrics.get("목표_전환율%"), conv_pct)
+
+    if (prev_metrics.get("목표_매출진척%") is not None and sales_pct is not None
+            and sales_pct < prev_metrics["목표_매출진척%"]):
+        _dispatch_decline_ship(
+            "[목표나무:매출] 연환산 하락 원인 찾기·올리기",
+            f"지난주 매출 진척률 {prev_metrics['목표_매출진척%']:.1f}% → 이번주 {sales_pct:.1f}%"
+            "(원천: monthly_report_ledger.json sales.year_cum)",
+            "원인 찾기 → 실무진이 바로 움직일 목록(예: 미연락·만료임박 회원)으로 한 걸음",
+            force_route=True,
+        )
+        sales_delta += " → 시포 배 띄움"
+    if (prev_metrics.get("목표_전환율%") is not None and conv_pct is not None
+            and conv_pct < prev_metrics["목표_전환율%"]):
+        _dispatch_decline_ship(
+            "[목표나무:신규전환] 전환율 하락 원인 찾기·올리기",
+            f"지난주 전환율 {prev_metrics['목표_전환율%']:.1f}% → 이번주 {conv_pct:.1f}%"
+            "(원천: report_stream_1_impl 90일 접수)",
+            "원인 찾기 → 실무진이 바로 움직일 목록(예: 미연락·만료임박 회원)으로 한 걸음",
+        )
+        conv_delta += " → 시포 배 띄움"
+
+    line0 = "\n".join([
+        f"■ 목표 나무(연매출 100억) — {sales_text}{sales_delta}",
+        f"  · {conv_text}{conv_delta}",
+        f"  · {rereg_text}",
+        f"  · 이번 주 닫힌 목표나무 배 {ships_closed}척",
+    ])
+
+    summary = "\n".join([line0, line1, line2, line3, line4, line5, line6])
     all_failed = comp is None and inq_rows is None and ended_rows is None
     if all_failed:
         honesty_tag = "미측정"
@@ -414,6 +582,12 @@ def collect(module=None) -> dict:
         honesty_tag = "측정"
 
     metrics = [{"label": k, "value": v} for k, v in hygiene_metrics.items()]
+    if sales_pct is not None:
+        metrics.append({"label": "목표_매출진척%", "value": sales_pct})
+    if conv_pct is not None:
+        metrics.append({"label": "목표_전환율%", "value": conv_pct})
+    if rereg_pct is not None:
+        metrics.append({"label": "목표_재등록율%", "value": rereg_pct})
 
     return make_payload(
         title="회원 현황 롤업",
