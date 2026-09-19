@@ -181,8 +181,11 @@ def queue_path(repo_root=None):
     return os.path.join(_repo_root(repo_root), "status", "_queue.json")
 
 
-def load_queue(repo_root=None):
-    """_queue.json 전체 로드. 없거나 실패 시 빈 리스트."""
+def load_queue(repo_root=None, strict=False):
+    """_queue.json 전체 로드. 없으면 빈 리스트. 파싱 실패 시 strict=False면 빈 리스트,
+    strict=True면 예외를 올린다 — 쓰기 경로(mutate_queue) 전용. 2026-09-19 강제 재부팅으로
+    큐 파일이 NUL 바이트로 남았는데, 이를 빈 리스트로 읽고 그대로 저장하면 큐 전체가
+    덮어써진다."""
     p = queue_path(repo_root)
     if not os.path.exists(p):
         return []
@@ -190,6 +193,8 @@ def load_queue(repo_root=None):
         with open(p, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
+        if strict:
+            raise
         return []
 
 
@@ -207,6 +212,8 @@ def save_queue_atomic(items, repo_root=None):
     tmp = f"{p}.tmp.{os.getpid()}"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())  # fsync 없으면 전원·커널 크래시 시 교체본이 NUL 로 남는다(2026-09-19)
     last_err = None
     for _ in range(25):  # 최대 ~0.5s 재시도
         try:
@@ -257,6 +264,8 @@ def _atomic_write_text(p: str, text: str) -> None:
     tmp = f"{p}.tmp.{os.getpid()}"
     with open(tmp, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
+        f.flush()
+        os.fsync(f.fileno())  # fsync 없으면 전원·커널 크래시 시 교체본이 NUL 로 남는다(2026-09-19)
     last_err = None
     for _ in range(25):
         try:
@@ -353,7 +362,7 @@ def mutate_queue(mutator, holder="?", repo_root=None, allow_shrink=False):
     저장 직전 _validate_queue_shape 가 계약 위반(비-list·비-dict 원소·대량 축소)을 예외로 막는다
     (INC-039 — allow_shrink=True 없이 배 수가 줄면 차단)."""
     with QueueLock(holder, repo_root):
-        items = load_queue(repo_root)
+        items = load_queue(repo_root, strict=True)
         before_count = len(items) if isinstance(items, list) else None
         before_snap = _snapshot_for_touch(items)
         result = mutator(items)
