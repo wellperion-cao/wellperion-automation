@@ -531,31 +531,41 @@ def guard(draft: str) -> str | None:
 
 def _send(body: str, room: str = ROOM) -> bool:
     # timeout=900: 사람 사용 대기 최대 5분 + 카톡 잠금 대기 최대 3분 + 발신 자체 여유 → 15분.
+    # Popen+communicate 를 쓰는 이유(2026-09-19 시토 전달): subprocess.run 은 시간 초과 때
+    # 자식만 죽이고 파이프를 끝까지 읽으려 기다리는데, 발신기가 띄운 손자 프로세스가 파이프
+    # 핸들을 쥐고 있으면 그 대기가 끝나지 않는다(9/18 21:02~00:15 출력 0줄로 멈춤).
+    print("[agent] 발신 시작 …", flush=True)
+    p = subprocess.Popen(
+        [sys.executable, str(SENDER), "--message", body, "--only-room", room, "--sender", "웰리"],
+        cwd=str(REPO_ROOT), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", errors="replace")
     try:
-        p = subprocess.run(
-            [sys.executable, str(SENDER), "--message", body, "--only-room", room, "--sender", "웰리"],
-            cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=900)
-    except subprocess.TimeoutExpired as exc:
-        out = (exc.stdout or b"") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-        if isinstance(out, bytes):
-            out = out.decode("utf-8", errors="replace")
-        out = out.strip()
-        for line in out.splitlines():
-            print(f"[sender] {line}")
-        print("[agent] 발신 시간 초과(900초) — 미발신으로 처리")
+        out, err = p.communicate(timeout=900)
+    except subprocess.TimeoutExpired:
+        # 손자 프로세스까지 트리째 죽인다(taskkill /T) — p.kill() 은 자식 하나만 죽여 손자가 남는다.
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(p.pid)], capture_output=True, timeout=30)
+        else:
+            p.kill()
+        try:
+            out, err = p.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
+            out, err = "", ""
+        for line in (out or "").strip().splitlines():
+            print(f"[sender] {line}", flush=True)
+        print("[agent] 발신 시간 초과(900초) — 프로세스 트리 종료 · 미발신으로 처리", flush=True)
         # timeout 뒤 .kakao_gui.lock 이 남을 수 있으나 kakao_report_sender 가 10분 지난
         # 잠금을 스스로 걷으므로(자가복구) 여기서 따로 지우지 않는다.
         return False
-    out = (p.stdout or "").strip()
+    out = (out or "").strip()
     # 발신기 출력을 통째로 남긴다 — 마지막 한 줄만 남기면 '왜 안 나갔나'가 사라진다.
     # 2026-09-11(배 2522): 07:00 통이 안 나갔는데 남은 기록이 'DONE …' 한 줄뿐이라 원인을 못 쟀다.
     for line in out.splitlines():
-        print(f"[sender] {line}")
-    err = (p.stderr or "").strip()
+        print(f"[sender] {line}", flush=True)
+    err = (err or "").strip()
     if err:
-        print(f"[sender:stderr] {err[:2000]}")
-    print(f"[agent] 발신 rc={p.returncode} · {out.splitlines()[-1] if out else '(출력없음)'}")
+        print(f"[sender:stderr] {err[:2000]}", flush=True)
+    print(f"[agent] 발신 rc={p.returncode} · {out.splitlines()[-1] if out else '(출력없음)'}", flush=True)
     return p.returncode == 0 and "DONE" in out
 
 
