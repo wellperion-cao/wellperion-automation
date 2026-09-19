@@ -63,7 +63,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><th>랩스가 제공하는 것(모듈)</th><th>다이어트캠프 · 고척 실측</th><th>상품으로 이름 붙이면</th></tr>
 <tr data-module="setup"><td>정본 셋업</td><td>설문 9문(다캠 09-02) · 확인 목록 18문 + 번호 질문 32문(고척) · 질문은행 118문 · 파트너 프로필 1파일(09-18)</td><td>셋업(1회)</td></tr>
 <tr data-module="docs3"><td>문서 3종</td><td>브랜드가이드·회사소개서·운영전략 — 다캠 v0.5/v0.4 · 고척 v0.3 · 운영전략은 프로필에서 자동 생성(09-18)</td><td>셋업(1회)</td></tr>
-<tr data-module="marketing"><td>마케팅 자동화</td><td>① 홈페이지(3D 둘러보기) → ② 문의 폼 → ③ 자동 접수·알림 → ④ CRM 전환 · 평일 06:30 인스타 → 블로그 파생 발행</td><td>월 이용(마케팅 자동화)</td></tr>
+<tr data-module="marketing"><td>마케팅 자동화</td><td>채널 셋팅 → 채널별 맞춤 자동 업로드 · 사람은 기획·전할 이야기·사진·영상만 · 나머지는 AI 자동 · 평일 06:30 인스타 → 블로그 파생 발행</td><td>월 이용(마케팅 자동화)</td></tr>
 <tr data-module="counsel"><td>상담 자동화</td><td>센터 페이지 + 관리자 · FAQ 학습 회로 · 손님 공개는 대표 확인 뒤</td><td>월 이용 + 사용량 실비</td></tr>
 <tr data-module="report"><td>보고 자동화(카톡 저녁 통)</td><td>21:00 한 통 · 답 접수 · 남은 번호 N개 · Before/After 페이지 · 아침 0통(09-18)</td><td>월 이용(운영 비서)</td></tr>
 <tr data-module="ops"><td>운영 자동화(ERP 3모듈)</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
@@ -138,6 +138,20 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-5. 메뉴·모듈이 내려가는 순서 — 전 메뉴·모듈 공통 정본 (GM 09-19)</summary>
 <p class="note"><b>랩스 승인 → 승인된 파트너 ERP 관리자 → ERP 직원.</b> 어떤 메뉴·모듈도 건너뛰지 않는다 — 랩스 미승인은 파트너 관리자에 안 보이고, 관리자가 안 켠 것은 직원 화면에 안 보인다. 규칙 정본은 이 절 하나(다른 문서는 여기를 가리킨다). 배선(erp/modules.json 승인 칸) = 시토 배.</p>
+</details>
+<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-6. 모델 라우터 — 일마다 맞는 AI 모델을 고른다 (검토 · GM 제안 2026-09-19 · 배 12854)</summary>
+<table><colgroup><col style="width:20%"><col></colgroup>
+<tr><th>무엇</th><td>AI 비서(AI 회의비서·AI 상담비서·AI 번역비서)가 부르는 AI 모델을 일·파트너마다 고르고, 비용·속도·품질 기준으로 자동 선택 · 한 회사가 멈추면 다른 회사 모델로 넘긴다</td></tr>
+<tr><th>지금</th><td>전부 Anthropic Claude 한 회사 · AWS Bedrock 경유(상담=Opus 4.6 주·Sonnet 4.6 대체, 회의·번역=Sonnet 4.6) · 모델 이름은 서버 설정값 · 쓰임 기록 usage.jsonl 에 이미 있음 · 사내 자동화(scripts/model_router.py)도 Claude 만</td></tr>
+<tr><th>왜</th><td>같은 품질이면 더 싼 모델로(파트너 구독료 안에서 원가를 낮춤) · 한 회사 장애에도 비서가 멈추지 않게 · 파트너가 쓰는 말·업무에 맞는 모델을 시험셋 점수로 고름</td></tr>
+<tr><th>어떻게(1단계)</th><td>새 회사 계약 없이 지금 쓰는 AWS Bedrock 안에서 — Bedrock 에 OpenAI 모델(GPT-6 Astra · GPT-5.6 Sol·Terra·Luna)이 올라와 있어 같은 AWS 결제·같은 서버 권한으로 부를 수 있다. 호출 관문 한 곳(api_chat 의 Bedrock 클라이언트)에 「일 → 모델」 표 하나만 더한다</td></tr>
+<tr><th>어떻게(2단계)</th><td>Google Gemini(3.1 Pro · 3.6 Flash 등)는 Bedrock 에 없어 구글 API 키가 따로 필요 — 1단계 시험 결과로 필요할 때만</td></tr>
+<tr><th>모델 이름 확인</th><td>GM 말씀의 「Chat GPT 아스트로」 = OpenAI 공식 모델 「GPT-6 Astra」(API 이름 gpt-6-astra · OpenAI 개발자 문서 확인 2026-09-19) · 공식 요금 입력 100만 토큰당 $10 · 출력 $50</td></tr>
+<tr><th>필요한 것</th><td>시험셋(비서별 질문 30개 안팎 · 정답 기준) · 모델별 점수·응답 시간·원가 비교표 · 쓰임 기록에 모델 이름·원가 칸 추가</td></tr>
+<tr><th>언제</th><td>AI 비서 시험 통과율 95%(배 12838) 뒤 — 같은 시험셋을 모델 비교에 그대로 쓴다</td></tr>
+<tr><th>비용·결재</th><td>1단계는 새 계약 없음(쓴 만큼 AWS 청구) · 다른 회사 모델을 켜는 순간부터 💰 GM 결재 · 파트너 요금에 반영하는 것도 GM</td></tr>
+<tr><th>안 하는 것</th><td>새 화면 · 파트너가 직접 모델을 고르는 설정(랩스가 골라 준다 · 2-5 규칙과 같게)</td></tr>
+</table>
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">3. 누구에게 파나</summary>
 <table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
