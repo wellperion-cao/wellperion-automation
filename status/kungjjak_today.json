@@ -1,7 +1,50 @@
 {
   "_doc": "쿵짝표 — 역할별 오늘 GM 지시 접수↔완료. 원천 = status/worklog.jsonl (여기는 잘라낸 화면용)",
   "date": "2026-09-20",
-  "roles": {},
+  "roles": {
+    "cbo": {
+      "nick": "시보",
+      "items": [
+        {
+          "ref": "GM-20260920-9001",
+          "no": "01",
+          "got": "# Autonomous loop tick (dynamic pacing)",
+          "did": "아직",
+          "start": "00:07",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
+      "work": [],
+      "count": 1,
+      "done": 0,
+      "open": 1,
+      "avg_minutes": null,
+      "work_count": 0,
+      "missed": [],
+      "unclosed": [],
+      "just": [
+        {
+          "ref": "GM-20260920-9001",
+          "no": "01",
+          "got": "# Autonomous loop tick (dynamic pacing)",
+          "did": "아직",
+          "start": "00:07",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
+      "repeats": []
+    }
+  },
   "tomorrow": {
     "ok": true,
     "items": [
@@ -12,7 +55,7 @@
     "more": 3
   },
   "board": {
-    "published_at": "2026-09-20T00:01:27",
+    "published_at": "2026-09-20T00:07:11",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -67,9 +110,14 @@
       "cbo": {
         "nick": "시보",
         "session": "welperion-automation-b8",
-        "alive": false,
-        "signal": "23:00",
-        "last": null,
+        "alive": true,
+        "signal": "00:00",
+        "last": {
+          "time": "00:07",
+          "area": "GM요청",
+          "event": "# Autonomous loop tick (dynamic pacing)",
+          "result": "warn"
+        },
         "idle_since": null,
         "saves": 0,
         "lanes": 0
