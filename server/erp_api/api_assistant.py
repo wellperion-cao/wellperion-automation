@@ -87,6 +87,65 @@ def _own_tenant(email: str):
     return safe_tenant(perms.get("tenant"))
 
 
+# 공용 계정 차단 자리(GM 2026-09-19 10:1x) — 채워지면 그 이메일은 세 비서(회의·번역·전사) 어디서도
+# 못 연다. 지금은 빈 목록 — 웰리 계정 검토 결과 GM 확정 뒤 채운다(그 전엔 동작 그대로 · 배 12838).
+SHARED_ACCOUNTS = frozenset()
+
+
+def staff_gate(request: Request):
+    """개인 계정 전용 관문 — 회의·번역·전사(stt) 비서가 모델을 부르기 전 맨 앞에서 통과해야 한다.
+    (email, None) = 통과. (None, JSONResponse) = 거절 — 라우트는 그 응답을 그대로 돌려주면 된다.
+    로그인 자체(X-Erp-User 없음)는 원래 nginx auth_request 가 막지만, 여기서 한 번 더 막아
+    관문이 어긋나도(설정 실수 등) 비서가 열리지 않게 한다."""
+    email = _user_email(request)
+    if not email:
+        return None, JSONResponse({"error": "로그인이 필요합니다."}, status_code=401)
+    if email in SHARED_ACCOUNTS:
+        return None, JSONResponse({"error": "개인 계정으로 로그인해 주세요."}, status_code=403)
+    return email, None
+
+
+def security_report(name: str, checks: list) -> None:
+    """checks = [(설명, bool), ...] — 통과 수부터 찍은 뒤 검사한다(실패해도 요약 줄은 이미 남는다)."""
+    passed = sum(1 for _, ok in checks if ok)
+    print("SECURITY %s items=%d pass=%d" % (name, len(checks), passed), flush=True)
+    for desc, ok in checks:
+        assert ok, "%s 실패: %s" % (name, desc)
+
+
+def _selftest_tenant_isolation() -> bool:
+    """비관리자 계정이 tenant 쿼리로 남의 센터 내역을 못 훔쳐보는지 — 세 비서 보안 시험이 같이 부른다."""
+    global ASSISTANT_DIR
+    import tempfile
+    real_dir = ASSISTANT_DIR
+    ASSISTANT_DIR = tempfile.mkdtemp()
+
+    class _Req:
+        headers = {"x-erp-user": "partner@a"}
+
+    class _FakeCur:
+        def fetchone(self):
+            return {"perms": json.dumps({"tenant": "2_dietcamp"})}
+
+    class _FakeConn:
+        def execute(self, sql, args=()):
+            return _FakeCur()
+
+        def close(self):
+            pass
+
+    orig_connect = db.connect
+    db.connect = lambda **kw: _FakeConn()
+    try:
+        log_usage(_Req(), "summary", 5, title="dietcamp meeting")
+        resp = usage(_Req(), tenant="3_gocheokgolf")            # 남의 tenant 를 달라고 해도
+        items = json.loads(resp.body)["items"]
+        return len(items) == 1 and items[0]["tenant"] == "2_dietcamp"   # 자기 tenant 만 온다
+    finally:
+        db.connect = orig_connect
+        ASSISTANT_DIR = real_dir
+
+
 def _usage_path(tenant) -> str:
     return os.path.join(ASSISTANT_DIR, safe_tenant(tenant), "usage.jsonl")
 
@@ -198,6 +257,31 @@ def _selftest():
         assert resp.status_code == 403, resp.status_code
     finally:
         ASSISTANT_DIR = real_dir
+
+    # 공용 계정 관문 — 로그인 없음(401) · 공용 계정(403) · 개인 계정(통과) 셋 다 (Unit-test the gate with a fake list).
+    class _NoAuthReq:
+        headers = {}
+    email, resp = staff_gate(_NoAuthReq())
+    assert email is None and resp.status_code == 401, "로그인 없으면 401 이어야 한다"
+
+    class _SharedReq:
+        headers = {"x-erp-user": "shared@x"}
+    global SHARED_ACCOUNTS
+    orig_shared = SHARED_ACCOUNTS
+    SHARED_ACCOUNTS = frozenset({"shared@x"})
+    try:
+        email, resp = staff_gate(_SharedReq())
+        assert email is None and resp.status_code == 403, "공용 계정은 403 이어야 한다"
+        assert json.loads(resp.body)["error"] == "개인 계정으로 로그인해 주세요."
+    finally:
+        SHARED_ACCOUNTS = orig_shared
+
+    class _PersonalReq:
+        headers = {"x-erp-user": "person@x"}
+    email, resp = staff_gate(_PersonalReq())
+    assert email == "person@x" and resp is None, "개인 계정(빈 목록)은 통과해야 한다"
+
+    assert _selftest_tenant_isolation(), "비관리자가 tenant 쿼리로 남의 센터를 봐서는 안 된다"
 
     print("api_assistant selftest OK")
 

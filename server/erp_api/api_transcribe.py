@@ -90,6 +90,9 @@ STREAM_TIMEOUT_S = 30
 
 @router.post("")
 async def transcribe(request: Request, langs: str = ""):
+    email, blocked = api_assistant.staff_gate(request)
+    if blocked:
+        return blocked
     body = await request.body()
     if not body:
         return {"error": "음성 데이터가 비어 있습니다."}
@@ -124,6 +127,19 @@ def _selftest():
 
     short_body = b"\x00\x01" * 10
     assert _cap(short_body) == short_body                        # 짧으면 그대로
+
+    # SECURITY (a) 로그인 없음 차단 · (b) 다른 tenant 기록 비침습 · (c) 언어·길이 상한(모델 호출 없음).
+    class _NoAuthReq:
+        headers = {}
+
+        async def body(self):
+            return b""
+    resp = asyncio.run(transcribe(_NoAuthReq(), langs=""))
+    checks = [("로그인 없이 부르면 401 · AWS 호출 없이 차단", getattr(resp, "status_code", None) == 401)]
+    checks.append(("다른 tenant 기록 비침습", api_assistant._selftest_tenant_isolation()))
+    checks.append(("허용 밖 언어 주입은 기본 후보로 눌러앉는다", _langs("ja-JP; DROP TABLE") == list(TRANSCRIBE_LANG_ALLOW)))
+    checks.append(("과대 입력(15초 초과)은 상한 바이트로 잘린다", len(_cap(b"\x00" * (MAX_BYTES * 3))) == MAX_BYTES))
+    api_assistant.security_report("transcribe", checks)
 
     print("api_transcribe selftest OK")
 

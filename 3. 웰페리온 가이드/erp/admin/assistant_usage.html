@@ -53,6 +53,14 @@
   <div class="sub">상담 내역은 <a href="/cbo/counsel_log.html" target="_blank" rel="noopener" style="color:var(--accent-hover);font-weight:600">상담 자동화 › 상담 내역</a>에서 봅니다.</div>
 
   <div class="tabs" id="tabs" hidden></div>
+  <div class="tabs">
+    <select id="kindFilter" style="font-size:var(--fs-2);padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text)">
+      <option value="">전체 비서</option>
+      <option value="summary">AI 회의비서</option>
+      <option value="translate">AI 번역비서</option>
+      <option value="stt">AI 번역비서(음성)</option>
+    </select>
+  </div>
 
   <div class="kpi" id="kpi">
     <div><b id="kToday">—</b><span>오늘 요약</span></div>
@@ -135,15 +143,25 @@ function renderKpi(items){
   document.getElementById('kMonth').textContent = monthTotal;
 }
 
+var LAST_ITEMS = [];
+var kindFilterEl = document.getElementById('kindFilter');
+
+function applyFilter(){
+  var kind = kindFilterEl.value;
+  var items = kind ? LAST_ITEMS.filter(function(it){ return it.kind === kind; }) : LAST_ITEMS;
+  renderRows(items);
+}
+kindFilterEl.addEventListener('change', applyFilter);
+
 function load(tenantId){
   fetch('/api/assistant/usage?tenant=' + encodeURIComponent(tenantId) + '&limit=100', {cache:'no-store'}).then(function(r){
     if (r.status === 404) { throw new Error('no-server'); }
     if (!r.ok) throw new Error('http-' + r.status);
     return r.json();
   }).then(function(d){
-    var items = d.items || [];
-    renderKpi(items);
-    renderRows(items);
+    LAST_ITEMS = d.items || [];
+    renderKpi(LAST_ITEMS);
+    applyFilter();
   }).catch(function(e){
     document.getElementById('kToday').textContent = '—';
     document.getElementById('kTodayTr').textContent = '—';

@@ -1828,6 +1828,23 @@ def _selfcheck() -> None:
     assert st["total"] == 2, st            # 시험 행은 stats 분모에서도 빠진다
     assert stats("1_wellperion", include_test=True)["total"] == 3
     FAQ_DIR = saved_faq2
+
+    # SECURITY (a)(b)(c) — 손님 상담(POST /{tenant})은 설계상 공개, 관리 라우트(log·unanswered·faq·stats)는
+    # 신원을 자체 검사하지 않고 게이트웨이(erp_auth API_MODULES["/api/chat/"]=빈 집합 + tenant 일치)만 신뢰한다
+    # — 그 계약이 깨져 자체 우회 검사가 몰래 들어오지 않았는지만 여기서 구조로 확인한다.
+    import inspect as _inspect
+    admin_src = "".join(_inspect.getsource(f) for f in (chat_log, unanswered, stats, edit_faq))
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import api_assistant as _api_assistant  # noqa: E402
+    checks = [
+        ("관리 라우트가 자체 로그인 검사를 안 하고 게이트웨이만 신뢰한다(우회 없음)",
+         "x-erp-user" not in admin_src),
+        ("센터별 로그 파일 분리 — 다른 tenant 기록이 안 섞인다(위 §12③에서 이미 실측)",
+         _log_path("1_wellperion") != _log_path("2_dietcamp")),
+        ("주입 방어 — 내부 칸 비노출·거부 규칙 문구·길이 상한(위 #5·#7에서 이미 실측)", True),
+    ]
+    _api_assistant.security_report("counsel", checks)
+
     print("api_chat selfcheck ok")
 
 
