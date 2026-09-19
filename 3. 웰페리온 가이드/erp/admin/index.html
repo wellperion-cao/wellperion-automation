@@ -827,38 +827,50 @@
   <h2>파트너사 채널 계정 금고</h2>
   <div class="meta">패스키(지문·얼굴)로 잠금 해제해야 값이 보입니다 · 값은 이 화면·저장소·로그 어디에도 남지 않습니다</div>
 
+  <div id="ps-form" style="border:1px solid var(--line,#ddd);border-radius:12px;background:var(--pf-panel-2,#f7f7f8);padding:14px 16px;margin:10px 0 18px;">
+    <div style="font-weight:700;margin-bottom:10px;">계정 넣기 · 바꾸기 <span id="ps-msg" style="font-weight:400;font-size:12px;color:var(--dim);margin-left:8px"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">① 파트너사</span>
+        <select id="ps-tenant" title="파트너사 — 식별자 표와 같은 번호" style="width:100%">
+          <option value="wellperion">1호 웰페리온</option>
+          <option value="ax">2호 웰페리온 AX 랩스</option>
+          <option value="dc">3호 다이어트캠프</option>
+          <option value="jo">4호 고척GDR QA 골프존</option>
+        </select></label>
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">② 채널</span>
+        <select id="ps-channel" style="width:100%"></select></label>
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">③ 아이디</span>
+        <input id="ps-id" placeholder="아이디" autocomplete="off" style="width:100%"></label>
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">④ 비밀번호</span>
+        <input id="ps-pw" type="password" placeholder="비밀번호" autocomplete="new-password" style="width:100%"></label>
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">채널 주소(선택 · 이름 누르면 이동)</span>
+        <input id="ps-url" placeholder="https://" autocomplete="off" style="width:100%"></label>
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">메모(선택)</span>
+        <input id="ps-note" placeholder="메모(선택)" style="width:100%"></label>
+      <label><span style="display:block;font-size:12px;color:var(--dim);margin-bottom:3px">⑤ GM 코드</span>
+        <input id="ps-code" type="password" inputmode="numeric" placeholder="코드" autocomplete="off" style="width:100%"></label>
+      <div style="display:flex;align-items:flex-end;"><button id="ps-save" style="width:100%;font-weight:700;">서버에 저장</button></div>
+    </div>
+  </div>
+
   <!-- 파트너 채널 계정 — 서버에만 보관(배 2652 · GM 확정 2026-09-15). 이 파일은 공개 배포 파일이라 값도 코드도 안 넣는다.
        원천 = 서버 비밀 파일 · API /api/admin/partner-secrets(회사 관리자만) · 보기·수정 = 금고 패스키 · 저장·삭제는 결재 GM 코드 그대로. -->
   <h3 style="margin:22px 0 6px;">파트너 채널 계정 <span style="font-weight:400;font-size:12px;color:var(--dim);">서버에만 보관 · 보기는 패스키</span></h3>
   <div class="meta" id="ps-line">불러오는 중…</div>
   <!-- 파트너사별 표 하나씩 · 채널 자리는 미리 다 둔다 — 계정이 서버에 있으면 「활성」, 없으면 「비활성」(GM 지시 2026-09-15 「체계적으로」). -->
   <div id="ps-boards"><div class="note">불러오는 중…</div></div>
-  <details class="tip"><summary>계정 넣기 · 바꾸기</summary>
-    <div class="in" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
-      <select id="ps-tenant" title="파트너사 — 식별자 표와 같은 번호">
-        <option value="wellperion">1호 웰페리온</option>
-        <option value="ax">2호 웰페리온 AX 랩스</option>
-        <option value="dc">3호 다이어트캠프</option>
-        <option value="jo">4호 고척GDR QA 골프존</option>
-      </select>
-      <select id="ps-channel"></select>
-      <input id="ps-id" placeholder="아이디" autocomplete="off" style="width:150px">
-      <input id="ps-pw" type="password" placeholder="비밀번호" autocomplete="off" style="width:150px">
-      <input id="ps-note" placeholder="메모(선택)" style="width:160px">
-      <input id="ps-code" type="password" inputmode="numeric" placeholder="코드" autocomplete="off" style="width:70px">
-      <button id="ps-save">서버에 저장</button>
-      <span id="ps-msg"></span>
-    </div></details>
 
   <script>
   (function(){
     var API='/api/admin/partner-secrets', boards=document.getElementById('ps-boards'), line=document.getElementById('ps-line'), sel=document.getElementById('ps-channel');
     // 채널 키 → 사람이 보는 이름. 목록 자체는 서버(d.channels)가 준다 — 서버에 채널이 늘면 자리가 저절로 생긴다.
-    var CN={'naver-blog':'네이버 블로그','naver-cafe':'네이버 카페','danggn':'당근','instagram':'인스타그램','threads':'스레드(Threads)','google':'구글 비즈니스','kakao-channel':'카카오 채널','parking':'주차 관리 서비스(ppark-wall)','bodyfriend':'바디프렌드 라운지(안마의자 매출)','reception-ops':'리셉션 업무 읽기','reception-admin':'리셉션 업무 관리자','locker-ops':'라커 읽기','locker-admin':'라커 관리자'};
+    var CN={'naver-blog':'네이버 블로그','naver-cafe':'네이버 카페','danggn':'당근','instagram':'인스타그램','threads':'스레드(Threads)','google':'구글 비즈니스','kakao-channel':'카카오 채널','gmail':'지메일(주인 계정)','parking':'주차 관리 서비스(ppark-wall)','bodyfriend':'바디프렌드 라운지(안마의자 매출)','reception-ops':'리셉션 업무 읽기','reception-admin':'리셉션 업무 관리자','locker-ops':'라커 읽기','locker-admin':'라커 관리자'};
     // 파트너사 한 곳에만 있는 채널 — 주차 관리 서비스(ppark-wall)·리셉션 업무·라커 관리는 1호 웰페리온 표에만 그린다(GM 2026-09-15 「파트너사 웰페리온 라인으로」 · 배 2668 · 배 12781).
     var TENANT_ONLY={'parking':'wellperion','bodyfriend':'wellperion','reception-ops':'wellperion','reception-admin':'wellperion','locker-ops':'wellperion','locker-admin':'wellperion'};
-    // 리셉션·라커 4자리 = 마케팅 채널이 아니라 업무 화면 비밀번호(시토 배 12781) — 표 안에서 소제목으로 따로 묶는다(GM 지시 2026-09-19).
+    // 서버가 리셉션·라커 화면에 자동 첨부하는 값 — GM 화면에선 숨긴다(GM 지시 2026-09-19 「꼭 필요한 거 아니면 삭제 · 뭔지 모르겠어」 · 값은 서버 유지).
     var WORK_SCREEN={'reception-ops':1,'reception-admin':1,'locker-ops':1,'locker-admin':1};
+    // 채널 이름을 눌러 바로 이동 — 계정에 넣은 주소가 있으면 그것, 없으면 채널별 기본 주소.
+    var DEF_URL={'naver-blog':'https://blog.naver.com','naver-cafe':'https://cafe.naver.com','danggn':'https://www.daangn.com','instagram':'https://www.instagram.com','threads':'https://www.threads.net','google':'https://business.google.com','kakao-channel':'https://center-pf.kakao.com','gmail':'https://mail.google.com','parking':'','bodyfriend':''};
     function cname(c){ return CN[c] || esc(c); }
     // 파트너 키(ax/dc/jo) → 사람이 보는 이름. 식별자 표·계정 넣기 선택칸과 같은 번호를 쓴다.
     // AX 랩스는 2호로 호점 순서에 편입(GM 지시 2026-09-19) — 채널 자리는 비어 있어도(비활성) 표를 그린다.
@@ -867,7 +879,7 @@
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
     function load(){
       fetch(API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
-        sel.innerHTML=(d.channels||[]).map(function(c){ return '<option>'+c+'</option>'; }).join('');
+        sel.innerHTML=(d.channels||[]).filter(function(c){ return !WORK_SCREEN[c]; }).map(function(c){ return '<option>'+c+'</option>'; }).join('');
         var items=d.items||[], allChans=d.channels||[], have={};
         var chans=allChans;
         items.forEach(function(it){ have[it.tenant+'/'+it.channel]=it; });
@@ -876,24 +888,23 @@
         if(window.pcChannels) window.pcChannels(items, chans, TENANT_ONLY);
         function row(t,c){
           var it=have[t+'/'+c];
+          var u = (it && it.url && /^https?:\/\//.test(it.url)) ? it.url : (DEF_URL[c]||'');
+          var nm = u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener">'+cname(c)+'</a>' : cname(c);
           if(it){
-            return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'"><td class="item">'+cname(c)+'</td>'+
+            return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'" data-url="'+esc(it.url||'')+'"><td class="item">'+nm+'</td>'+
               '<td class="ps-id">'+esc(it.id_masked)+'</td><td class="ps-pw">'+(it.has_pw?'••••••••':'—')+'</td>'+
               '<td><span class="st ok">활성</span></td><td>'+esc(it.received_at)+'</td><td class="n">'+esc(it.note||'')+'</td>'+
               '<td><button class="ps-show">보기</button> <button class="ps-edit">수정</button> <button class="ps-del">삭제</button></td></tr>';
           }
-          return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'" style="opacity:.55"><td class="item">'+cname(c)+'</td>'+
+          return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'" style="opacity:.55"><td class="item">'+nm+'</td>'+
             '<td>—</td><td>—</td><td><span class="st wait">비활성</span></td><td>—</td><td>—</td>'+
             '<td><button class="ps-put">넣기</button></td></tr>';
         }
         // 표 제목 옆 (N) = 그 파트너 줄에 그려지는 마케팅 채널 수(주차·바디프렌드·업무 화면 비밀번호 4종 제외) — 하드코딩 아님, 매번 센다.
         boards.innerHTML=Object.keys(TN).map(function(t){
-          var slots=chans.filter(function(c){ return !TENANT_ONLY[c] || TENANT_ONLY[c]===t; });
-          var marketing=slots.filter(function(c){ return !WORK_SCREEN[c]; });
-          var work=slots.filter(function(c){ return WORK_SCREEN[c]; });
+          var slots=chans.filter(function(c){ return (!TENANT_ONLY[c] || TENANT_ONLY[c]===t) && !WORK_SCREEN[c]; });
           var mCount=slots.filter(function(c){ return !TENANT_ONLY[c]; }).length;
-          var body=marketing.map(function(c){ return row(t,c); }).join('');
-          if(work.length) body+='<tr><td colspan="7" style="font-weight:700;font-size:12px;color:var(--dim);background:var(--pf-panel-2);padding:6px 10px;">업무 화면 비밀번호</td></tr>'+work.map(function(c){ return row(t,c); }).join('');
+          var body=slots.map(function(c){ return row(t,c); }).join('');
           // 네 표의 열 폭을 똑같이 고정한다 — 자동 폭이면 계정이 있는 표만 넓어져 칸이 어긋나 보인다(GM 지적 2026-09-15).
           return '<h4 id="ps-b-'+esc(t)+'" style="margin:14px 0 4px;font-size:13px">'+tname(t)+' <span class="n">('+mCount+')</span></h4><div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">'+
             '<colgroup><col style="width:15%"><col style="width:12%"><col style="width:11%"><col style="width:9%"><col style="width:12%"><col><col style="width:150px"></colgroup>'+
@@ -907,7 +918,7 @@
       if(b.classList.contains('ps-put')){
         // 비활성 자리의 「넣기」 — 아래 계정 넣기 칸에 파트너·채널을 미리 채우고 연다
         document.getElementById('ps-tenant').value=tr.dataset.t; sel.value=tr.dataset.c;
-        var det=document.getElementById('ps-save').closest('details'); if(det) det.open=true;
+        document.getElementById('ps-form').scrollIntoView({behavior:'smooth',block:'start'});
         document.getElementById('ps-id').focus();
       } else if(b.classList.contains('ps-edit')){
         // 수정 — 금고 패스키로 값을 풀어 아래 넣기 칸에 채워 두고, 고쳐서 「서버에 저장」하면 덮어쓴다(GM 만 만진다 · 금고 연결 2026-09-19 · 배 12843).
@@ -917,7 +928,8 @@
           document.getElementById('ps-tenant').value=tr.dataset.t; sel.value=tr.dataset.c;
           document.getElementById('ps-id').value=d.user||''; document.getElementById('ps-pw').value=d.pw||'';
           document.getElementById('ps-note').value=d.note||(tr.querySelector('td.n')||{}).textContent||'';
-          var det2=document.getElementById('ps-save').closest('details'); if(det2) det2.open=true;
+          document.getElementById('ps-url').value=tr.dataset.url||'';
+          document.getElementById('ps-form').scrollIntoView({behavior:'smooth',block:'start'});
           document.getElementById('ps-msg').textContent='수정 중 — 고친 뒤 「서버에 저장」(저장은 코드로)'; document.getElementById('ps-id').focus();
         }).catch(function(e){ alert(e.message||'잠금 해제 실패'); });
       } else if(b.classList.contains('ps-show')){
@@ -935,9 +947,9 @@
     boards.addEventListener('click', onClick);
     document.getElementById('ps-save').onclick=function(){
       var g=function(id){ return document.getElementById(id).value; }, msg=document.getElementById('ps-msg');
-      var body={tenant:g('ps-tenant'),channel:sel.value,id:g('ps-id'),pw:g('ps-pw'),note:g('ps-note'),code:g('ps-code')};
+      var body={tenant:g('ps-tenant'),channel:sel.value,id:g('ps-id'),pw:g('ps-pw'),url:g('ps-url'),note:g('ps-note'),code:g('ps-code')};
       fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
-        msg.textContent = d.ok ? '저장됨' : ('안 됨 — '+(d.error||'')); if(d.ok){ ['ps-id','ps-pw','ps-code','ps-note'].forEach(function(i){ document.getElementById(i).value=''; }); load(); }
+        msg.textContent = d.ok ? '저장됨' : ('안 됨 — '+(d.error||'')); if(d.ok){ ['ps-id','ps-pw','ps-code','ps-note','ps-url'].forEach(function(i){ document.getElementById(i).value=''; }); load(); }
       });
     };
     load();
@@ -946,6 +958,7 @@
 
   <!-- GM 개인 금고 — 패스키 등록·잠금 해제·목록/보기·붙여넣기 가져오기(배 12843 · window.WellVault). -->
   <h3 style="margin-top:28px">GM 개인 금고</h3>
+  <div class="note" style="font-size:12px">패스키 = 비밀번호 대신 이 기기의 지문·얼굴(윈도우 헬로·휴대폰 잠금)로 여는 열쇠입니다. 등록한 기기에서만 금고가 열립니다.</div>
   <div class="meta" id="gv-status">불러오는 중…</div>
   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0">
     <button id="gv-unlock">잠금 해제</button>
