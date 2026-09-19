@@ -135,9 +135,9 @@ APPGROUP_IDS = {
             "coo-chairman-회장님-지시사항", "cfo-finance-지출품의"],
     # GM 지시 2026-09-11 「메뉴 맨 아래에 상담봇을 만들어서 거기에 상담 내역 + FAQ 등을 하위메뉴로」.
     # 앱 셸의 하위 메뉴 = 그 그룹 안의 카드다 — 그룹 하나를 맨 아래에 세우고 화면 셋을 담는다.
-    "상담봇": ["cbo-counsel-admin", "cbo-counsel-log", "cbo-counsel-faq"],
+    "AI 상담비서": ["cbo-counsel-admin", "cbo-counsel-log", "cbo-counsel-faq"],
 }
-APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함", "상담봇"]
+APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함", "AI 상담비서"]
 
 # ── 권한 묶음 = 업무영역 (배2540 · GM 2026-09-11 「메뉴를 5분류로 바꿨으니 권한도 단순화될 것 같다」) ──
 # 권한 화면에서 묶음을 고를 때 보이는 이름을 파트너사 직원 화면(/home) 좌측 메뉴와 같은 낱말로 맞춘다.

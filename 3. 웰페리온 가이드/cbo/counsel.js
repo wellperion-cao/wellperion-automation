@@ -7,7 +7,7 @@
   // 경로는 이 스크립트(cbo/) 기준 — 상담봇 관리 화면은 랩스(erp/admin/)로 옮겨 세 화면이 한 폴더에 있지 않다(배 2513 · 2026-09-16).
   var BASE = (document.currentScript && document.currentScript.src || "").replace(/[^\/]*$/, "");
   var PAGES = [
-    { file: "../erp/admin/counsel_admin.html", name: "상담봇" },
+    { file: "../erp/admin/counsel_admin.html", name: "AI 상담비서" },
     { file: "counsel_log.html", name: "상담 내역" },
     { file: "counsel_faq.html", name: "FAQ" }
   ];

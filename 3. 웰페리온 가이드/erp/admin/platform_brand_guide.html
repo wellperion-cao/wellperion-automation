@@ -54,7 +54,7 @@ code{font-family:var(--pf-mono);font-size:12.5px;background:var(--pf-panel-2);pa
   <div class="meta">브랜드가이드 v1.0 · 2026-09-15<br>정본 값 = <code>erp/admin/platform_brand.css</code><br>담당 AI 시모 · 근거 = 디자인 규칙집(UI/UX Pro Max)</div>
 </div>
 
-<p>웰페리온 AX 랩스 관리 화면(<code>/erp/admin/</code>)과 파는 모듈 화면(카톡 전송 · 상담봇 관리 · 마케팅 자동업로드)이 쓰는 한 벌입니다. 웰페리온 회사 화면의 베이지·코랄·Playfair 는 여기서 쓰지 않습니다 — 웰페리온은 이 플랫폼을 쓰는 파트너 1호입니다.</p>
+<p>웰페리온 AX 랩스 관리 화면(<code>/erp/admin/</code>)과 파는 모듈 화면(카톡 전송 · AI 상담비서 관리 · 마케팅 자동업로드)이 쓰는 한 벌입니다. 웰페리온 회사 화면의 베이지·코랄·Playfair 는 여기서 쓰지 않습니다 — 웰페리온은 이 플랫폼을 쓰는 파트너 1호입니다.</p>
 
 <h2>0. 로고 — AX 합자 심볼 + 워드마크</h2>
 <!-- 정본 = 1. AI자료_아카이브/08_로고&워터마크/_assets/logo/axlabs/ · 생성기 scripts/axlabs_logo_build.py · 여기 사본 axlabs_logo.svg·axlabs_logo_white.svg·axlabs_favicon.svg (배 12731 · GM 확정 A 청록 타일 2026-09-17) -->
@@ -90,7 +90,7 @@ code{font-family:var(--pf-mono);font-size:12.5px;background:var(--pf-panel-2);pa
   <div class="pf-card">
     <div class="pf-lb">관리 화면 견본</div>
     <div class="side">
-      <nav><a href="#top">파트너사</a><a href="#top" aria-current="true">카톡 전송</a><a href="#top">상담봇</a><a href="#top">자동업로드</a></nav>
+      <nav><a href="#top">파트너사</a><a href="#top" aria-current="true">카톡 전송</a><a href="#top">AI 상담비서</a><a href="#top">자동업로드</a></nav>
       <div class="pane">
         <table class="pf-table"><colgroup><col style="width:38%"><col style="width:30%"><col style="width:32%"></colgroup>
         <thead><tr><th>파트너사</th><th>방</th><th>상태</th></tr></thead>
@@ -105,7 +105,7 @@ code{font-family:var(--pf-mono);font-size:12.5px;background:var(--pf-panel-2);pa
 <h2>4. 쓰는 법 · 하지 않는 것</h2>
 <table class="rules">
   <tr><td>새 모듈 화면을 만들 때</td><td><code>&lt;link rel="stylesheet" href="../../erp/admin/platform_brand.css"&gt;</code> 한 줄 · 색은 <code>var(--pf-*)</code> 만 · 부품은 <code>.pf-btn .pf-table .pf-st .pf-card</code></td></tr>
-  <tr><td>상담봇 관리처럼 이미 있는 화면</td><td>옛 토큰 링크(<code>erp/brand/tokens.css</code>)를 이 파일로 바꾸면 <code>--paper --ink --accent-text</code> 가 플랫폼 색으로 바뀐다</td></tr>
+  <tr><td>AI 상담비서 관리처럼 이미 있는 화면</td><td>옛 토큰 링크(<code>erp/brand/tokens.css</code>)를 이 파일로 바꾸면 <code>--paper --ink --accent-text</code> 가 플랫폼 색으로 바뀐다</td></tr>
   <tr><td>내놓기 전</td><td><code>.venv/Scripts/python.exe scripts/design_audit.py "&lt;html&gt;"</code> — 걸린 항목 0 이 끝 기준(터치 44px · 초점 표시 · 명암비 4.5 · 이모지 0 · 움직임 줄이기)</td></tr>
   <tr><td class="no">하지 않는 것</td><td>웰페리온 베이지 <code>#B79F8A</code> · 코랄 <code>#ED5B3F</code> · 검정 <code>#221F20</code> · Playfair / 청록 위 흰 작은 글자 / 이모지 아이콘 / 한 화면에 채운 버튼 둘</td></tr>
   <tr><td>이름·문구</td><td>「AX 랩스」 · 영문 「AX LABS」 · 한 줄 「인공지능 전환(AX) — 일하는 방식과 비즈니스 구조를 AI 중심으로 다시 설계합니다」 · 영문 「AI Transformation — redesigning how work and business are structured, AI-first」(GM 2026-09-17) — 회사 정의 초안 = <code>company.html</code>(시보)</td></tr>

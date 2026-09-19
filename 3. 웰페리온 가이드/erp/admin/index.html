@@ -354,7 +354,7 @@
   <!-- AI 번역기 — 상담 자동화에서 분리(GM 지시 2026-09-18 20:1x 「랩스도 번역기 따로 구성해줘」 · 배 2828).
        GM 19:5x 「상담 봇은 상담만, AI 번역기는 번역기만」 — 상담 자동화 하위 번역 탭은 뺐다.
        번역기·쓰임 내역 2탭(axtodo 3탭과 같은 탭 모양). -->
-  <a href="#translate" data-go="translate"><span class="t">AI 번역기</span></a>
+  <a href="#translate" data-go="translate"><span class="t">AI 번역비서</span></a>
   <!-- 업무&결재 자동화 — 업무 SSOT·결재 SSOT·AI 회의비서 3탭(GM 지시 2026-09-18 18:4x·19:1x · 배 2816·2820).
        회의비서는 독립 묶음이 아니라 이 모듈의 기능 하나라는 GM 정정으로 「AI 비서」 사이드 묶음은 없앴다. -->
   <a href="#axtodo" data-go="axtodo"><span class="t">업무&결재 자동화</span></a>
@@ -509,8 +509,8 @@
   (function(){
     var P=[
       {key:'wellperion', no:'1호', name:'웰페리온', who:'김남욱 GM · 1호 파트너 · 시험장', stage:'도입 · 쓰는 중', mods:['운영 자동화(ERP)','상담 자동화','보고 자동화','마케팅 자동화'], links:[['관리자 화면','/erp/'],['직원 화면','/']]},
-      {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['홈 초안','/dietcamp/'],['상담봇','/info/dietcamp/']]},
-      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['상담봇','/info/gocheokgolf/']]},
+      {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['홈 초안','/dietcamp/'],['AI 상담비서','/info/dietcamp/']]},
+      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['AI 상담비서','/info/gocheokgolf/']]},
       // 랩스 자체 메시지 채널(파트너사 아님 · GM 2026-09-16 · 시보 요청) — 계정 자리는 tenant 'ax' · 정본 = 로드맵 §2 「무엇을 계속 말하나」
       {key:'ax', no:'랩스 채널', name:'피트니스 AX', who:'랩스 메시지 채널 · 본명·회사명 앞세우지 않음', stage:'랩스 채널', mods:['마케팅 자동화'], links:[]}
     ];
@@ -534,7 +534,7 @@
       ].map(function(a){return '<div>'+a+'</div>'}).join('');
       $('pc-cards').innerHTML=P.map(function(p){
         var pct=p.asked?Math.round(p.answered*100/p.asked):0;
-        var next=p.pending?'답 없는 질문 '+p.pending+'개 — 카톡 한 통으로 번호 질문 보내기':(p.asked?'온보딩 답 다 받음 — 문서 3종·상담봇 정본 갱신 확인':'온보딩 질문 아직 안 보냄 — 질문은행에서 번호 뽑기');
+        var next=p.pending?'답 없는 질문 '+p.pending+'개 — 카톡 한 통으로 번호 질문 보내기':(p.asked?'온보딩 답 다 받음 — 문서 3종·AI 상담비서 정본 갱신 확인':'온보딩 질문 아직 안 보냄 — 질문은행에서 번호 뽑기');
         var c=ch[p.key];
         return '<section class="pc-card">'
           +'<div class="hd"><div><div class="no">'+p.no+' · '+esc(p.key)+'</div><h3>'+esc(p.name)+'</h3><div class="who">'+esc(p.who)+'</div></div>'
@@ -906,7 +906,7 @@
     <tbody>
       <tr><td class="item">왜 네 칸으로 갈랐나</td><td>회사소개서 = 같이 할 사람을 구하는 문서(방향·하는 일·이익점) · 손님용 내용(공간·수업·상품·오시는 길)은 홈페이지 몫 · 브랜드가이드·운영전략은 겹침 없음 · 업체가 늘어도 네 칸은 같다</td><td class="note">2026-09-14 다이어트캠프 네 문서 절 전수 — 회사소개서 11절 중 9절이 손님용이었다</td></tr>
       <tr><td class="item">둘러보기 촬영</td><td>360° 카메라 없이 휴대폰 한 대 · 동선을 천천히 한 번 걸으며 4K·30fps·가로 영상 → 프레임을 뽑아 걸어 다니는 둘러보기 · 한 곳 10~15분 · 홈페이지 사진 자리에 넣는다</td><td class="note">GM 방향 2026-09-14 「우리가 찍어서 셋업해 드린다」 · 웰페리온과 같은 도구(뷰어 <span class="n">home/tour/</span> · <span class="n">scripts/walk_frames_build.py</span> · <a href="../../cmo/home/360촬영가이드.html" target="_blank" rel="noopener">360 촬영 가이드</a>)</td></tr>
-      <tr><td class="item">깃허브 주소가 섞인 이유</td><td>깃허브 = 만들자마자 눈으로 보는 임시 자리 · 손님이 보는 것(홈페이지·상담봇)은 이 서버(erp.wellperion.com)로 옮긴다 · 업체가 자기 도메인을 가지면 그쪽으로</td><td class="note">상담봇은 옮겨짐 · 다이어트캠프 홈페이지는 옮기는 중</td></tr>
+      <tr><td class="item">깃허브 주소가 섞인 이유</td><td>깃허브 = 만들자마자 눈으로 보는 임시 자리 · 손님이 보는 것(홈페이지·AI 상담비서)은 이 서버(erp.wellperion.com)로 옮긴다 · 업체가 자기 도메인을 가지면 그쪽으로</td><td class="note">AI 상담비서는 옮겨짐 · 다이어트캠프 홈페이지는 옮기는 중</td></tr>
     </tbody>
   </table></div>
 
@@ -926,7 +926,7 @@
       <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담 자동화 · 자주 묻는 질문</b><span>질문·답 28건 · 자력 답변 77%(172문 중 133문)</span></a>
       <a class="pi ok" href="http://wellperion.com/llms.txt" target="_blank" rel="noopener"><b>6 검색 노출 셋팅</b><span>사람 검색(SEO) · AI 검색(GEO) · 즉답(AEO) — robots · sitemap · llms.txt 다 있음</span></a>
       <a class="pi ok" href="../../cmo/funnel/%EC%BD%98%ED%85%90%EC%B8%A0%EB%AC%B8%EC%9D%98%ED%98%84%ED%99%A9.html" target="_blank" rel="noopener"><b>7 마케팅 자동 셋업</b><span>블로그·인스타·카페·당근 자동 발행 돌고 있음</span></a>
-      <a class="pi ok" href="#acct" data-acct="1"><b>8 계정</b><span>발행·상담봇이 쓰는 계정 자리 — 누르면 아이디가 보입니다</span></a>
+      <a class="pi ok" href="#acct" data-acct="1"><b>8 계정</b><span>발행·AI 상담비서가 쓰는 계정 자리 — 누르면 아이디가 보입니다</span></a>
       <div class="pwait">기준판이라 빈 칸이 없어야 합니다. 새 파트너사는 여기를 복제합니다.</div>
     </div>
 
@@ -961,7 +961,7 @@
   </div>
 
   <h3 style="margin:30px 0 4px;font-size:15px">손님 질문 → 자주 묻는 질문</h3>
-  <div class="ppre">상담봇에 들어온 <b>질문과 답을 함께</b> 쌓아, 많이 묻는 것과 <b>못 답한 것</b>을 뽑아 냅니다.
+  <div class="ppre">AI 상담비서에 들어온 <b>질문과 답을 함께</b> 쌓아, 많이 묻는 것과 <b>못 답한 것</b>을 뽑아 냅니다.
   답까지 모인 질문은 그대로 자주 묻는 질문 후보가 됩니다.
   못 답한 질문이 다음에 채울 자주 묻는 질문이 됩니다 — 여기서 늘어난 답이 자력 답변 비율을 올립니다.
   숫자는 매일 다시 셉니다.</div>
@@ -1056,12 +1056,12 @@
       <a class="pi ok" href="gocheokgolf/gc.css" target="_blank" rel="noopener"><b>4 화면 색·서체 정본</b><span>서버 · 고척 화면 3장이 같이 쓰는 스타일 한 벌(9/17 · 로고 파랑 #104088 로 맞춤)</span></a>
       <span class="pi warn"><b>5 사진·영상</b><span>사진 원본 14장(9/9 9 + 9/17 5) · 세로 영상 4편 · 9/17 추가분 = 라커 복도·룸 타석 안 2·밖 간판 2 · 화면 3장에 반영</span></span>
       <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>6 원자료 폴더</b><span>저장소 · 사진 원본 9장 · 선정 8장 · 프로 4분 프로필+3개월 속성반 커리큘럼 6장(9/14 받음) · 기존 블로그 글 100개</span></a>
-      <span class="pi ok"><b>7 사실 정본(공식값)</b><span>서버 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/client.json" target="_blank" rel="noopener">client.json</a> · 부장님이 확인해 준 사실만 여기에 · 상담봇 정본과 어긋남 검사 한 줄 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/blog_style.json" target="_blank" rel="noopener">블로그 글 스타일 정본</a>도 같은 폴더</span></span>
+      <span class="pi ok"><b>7 사실 정본(공식값)</b><span>서버 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/client.json" target="_blank" rel="noopener">client.json</a> · 부장님이 확인해 준 사실만 여기에 · AI 상담비서 정본과 어긋남 검사 한 줄 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/blog_style.json" target="_blank" rel="noopener">블로그 글 스타일 정본</a>도 같은 폴더</span></span>
       <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>8 받을 것 목록</b><span>저장소 · 7건 중 받음 2(코치 원자료 · 정규 요금 구조) · 못 받음 4 · 확인 대기 1</span></a>
       <div class="pdiv">매일 쌓이는 것 — 방에 올라오면 폴더로, 폴더에 쌓이면 글로</div>
       <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C/%EC%82%AC%EC%A7%84_%EC%9B%90%EB%B3%B8" target="_blank" rel="noopener"><b>9 매일 오는 사진·영상</b><span>저장소 · 사진 원본 14장 · 세로 영상 4편(마지막 9/17 17:4x · GM 경유) · 손님 얼굴은 블러</span></a>
       <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/05_%EC%BD%98%ED%85%90%EC%B8%A0_%EC%B4%88%EC%95%88" target="_blank" rel="noopener"><b>10 이벤트·공지·시즌 소재</b><span>저장소 · 초안 v0.1·v0.2 판 · 9월 이벤트 3트랙(체험권 · 30시간 공동구매 · 주말 친구 동반 · 9/8 말씀)</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C/%EC%82%AC%EC%A7%84_%EC%9B%90%EB%B3%B8(%ED%94%84%EB%A1%9C%ED%95%84%2B%EC%BB%A4%EB%A6%AC%ED%81%98%EB%9F%BC)" target="_blank" rel="noopener"><b>11 코치·프로 프로필</b><span>저장소 · 프로 4분 프로필 + 3개월 속성반 커리큘럼(9/14) · 상담봇 coaches·programs 반영</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C/%EC%82%AC%EC%A7%84_%EC%9B%90%EB%B3%B8(%ED%94%84%EB%A1%9C%ED%95%84%2B%EC%BB%A4%EB%A6%AC%ED%81%98%EB%9F%BC)" target="_blank" rel="noopener"><b>11 코치·프로 프로필</b><span>저장소 · 프로 4분 프로필 + 3개월 속성반 커리큘럼(9/14) · AI 상담비서 coaches·programs 반영</span></a>
       <span class="pi warn"><b>12 규정·요금 구조 원문</b><span>약관 원문 사진(9/15 · 개인정보 있어 저장소 밖) · 규정 요약은 설문 27번으로 확인(9/17) · 요금은 구조만(시간권 70분 · 회원권 1일 기준) · 환불은 온라인 비노출</span></span>
       <a class="pi ok" href="https://erp.wellperion.com/gocheokgolf/counsel/" target="_blank" rel="noopener"><b>13 손님 질문·후기 → 글감</b><span>라이브 · 자주 묻는 5문(위치·주차·양도·레슨·휴회) 지점장님 답 그대로(9/17)</span></a>
       <span class="pi ok"><b>14 발행한 글 목록</b><span>블로그 임시저장 매일 1편 · 지점장님이 예약 발행(9/17 47번) · 주제 제한 없음, 매일 다른 주제</span></span>
@@ -1544,12 +1544,12 @@
 <!-- AI 번역기 — 상담 자동화에서 분리(GM 지시 2026-09-18 20:1x · 배 2828). 상담은 상담만, 번역기는 번역기만.
      번역기(translator.html)·쓰임 내역(assistant_usage.html) 2탭 — axtodo 탭 방식과 같다. -->
 <section class="panel" data-panel="translate" hidden>
-  <h2>AI 번역기</h2>
+  <h2>AI 번역비서</h2>
   <div class="pf-tabs" id="translate-tabs">
-    <a href="#" data-trtab="tr">번역기</a>
+    <a href="#" data-trtab="tr">번역비서</a>
     <a href="#" data-trtab="usage">쓰임 내역</a>
   </div>
-  <iframe id="translate-frame" title="AI 번역기" style="width:100%;min-height:70vh;border:1px solid var(--border);border-radius:4px;background:var(--paper);" src="about:blank"></iframe>
+  <iframe id="translate-frame" title="AI 번역비서" style="width:100%;min-height:70vh;border:1px solid var(--border);border-radius:4px;background:var(--paper);" src="about:blank"></iframe>
 </section>
 <script>
 (function(){
@@ -1583,15 +1583,15 @@
       <a href="env_status.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">환경 3벌 현황</b><span style="font-size:11.5px;color:var(--dim);">알파 · 베타 · 라이브</span></a>
       <a href="AWS_ERP_운영가이드.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">ERP 운영 가이드</b><span style="font-size:11.5px;color:var(--dim);">서버를 어떻게 돌리나</span></a>
       <a href="dlive_sms_guide.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">딜라이브 문자연동 가이드</b><span style="font-size:11.5px;color:var(--dim);">문자(SMS/LMS) 자동발송 구조 · 관리자 화면 사용법</span></a>
-      <a href="model/상담봇_기획설계_v1.0.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담봇 기획 설계</b><span style="font-size:11.5px;color:var(--dim);">무엇을 어떻게 만드나</span></a>
-      <a href="model/상담봇_질문세례_v1.0.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담봇 질문 세례</b><span style="font-size:11.5px;color:var(--dim);">업체에서 받아 오는 것</span></a>
-      <a href="model/aeo_chatbot_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담봇 첫 판</b><span style="font-size:11.5px;color:var(--dim);">옛 채팅봇 시절 판</span></a>
+      <a href="model/상담봇_기획설계_v1.0.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">AI 상담비서 기획 설계</b><span style="font-size:11.5px;color:var(--dim);">무엇을 어떻게 만드나</span></a>
+      <a href="model/상담봇_질문세례_v1.0.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">AI 상담비서 질문 세례</b><span style="font-size:11.5px;color:var(--dim);">업체에서 받아 오는 것</span></a>
+      <a href="model/aeo_chatbot_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">AI 상담비서 첫 판</b><span style="font-size:11.5px;color:var(--dim);">옛 채팅봇 시절 판</span></a>
       <a href="model/FAQ통합_파이프라인_v1.0.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">FAQ 통합 파이프라인</b><span style="font-size:11.5px;color:var(--dim);">센터 FAQ 를 공통 유형으로</span></a>
       <a href="model/kakao_ai_partner_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">카톡 AI 브랜딩 파트너</b><span style="font-size:11.5px;color:var(--dim);">확장 모델 초안</span></a>
       <a href="dietcamp/setup_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 자료</b><span style="font-size:11.5px;color:var(--dim);">첫 외부 고객</span></a>
       <a href="gocheokgolf/drafts_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">고척 골프 자료</b><span style="font-size:11.5px;color:var(--dim);">두 번째 고객 초안</span></a>
 
-      <a href="#view/faq" data-view="faq" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담봇 FAQ</b><span style="font-size:11.5px;color:var(--dim);">손님에게 나가는 답</span></a>
+      <a href="#view/faq" data-view="faq" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">AI 상담비서 FAQ</b><span style="font-size:11.5px;color:var(--dim);">손님에게 나가는 답</span></a>
       <a href="#view/log" data-view="log" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담 내역</b><span style="font-size:11.5px;color:var(--dim);">무엇을 물어봤나</span></a>
       <a href="dietcamp/brand.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 브랜드 가이드</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
       <a href="dietcamp/intro.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 회사소개서</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
