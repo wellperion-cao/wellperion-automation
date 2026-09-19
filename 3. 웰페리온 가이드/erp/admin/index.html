@@ -381,17 +381,13 @@
   <a href="#view/upload" data-view="upload"><span class="t">마케팅 자동화</span></a>
   <!-- 강습 예약 자동화 — GM 2026-09-15 19:2x 정의(강사가 시간을 열면 회원이 페이지에서 예약). 화면이 아직 없어(링크 없음) 메뉴 전수검사에서 뺐다(배 2841 · 2026-09-19) — 화면이 생기면 그때 칸을 다시 넣는다. -->
   <div class="sep"></div>
-  <!-- GM 2026-09-15 19:0x: 이 묶음은 「자료」가 아니라 표준화(기준)다 · 다운로드는 모듈 진행 전에 받는 것이라 여기 · 공부는 AI 운영 가이드로 -->
+  <!-- GM 2026-09-19 지시로 7칸 → 3칸 재편(배 12872). 내용은 하나도 안 지웠다 — 탭으로 묶었다.
+       기준(std) = 모듈 기준·화면 UI/UX 표준·콘텐츠 제작·검수·발행 3탭. 문서(doc) = AI 운영 가이드·구조 문서·플랫폼 문서 3탭.
+       옛 해시(#standard #ui #downloads #guide #docs #platform-docs #view/content)는 아래 라우터 스크립트의 LEGACY_HASH 매핑 한 곳이 새 탭으로 연결한다. -->
   <div class="cap">표준화 · 기준</div>
-  <!-- 콘텐츠 제작·검수·발행 — 모듈에서 여기로 이관(GM 지시 2026-09-18 19:1x 「프로세스라서 표준화로」 · 배 2818).
-       ERP 홈 M1 을 끼움으로 (GM 2026-09-18 「콘텐츠 제작&검수발행은 AX 랩스로」). -->
-  <a href="#view/content" data-view="content"><span class="t">콘텐츠 제작·검수·발행</span></a>
-  <a href="#downloads" data-go="downloads"><span class="t">다운로드</span><span class="b" id="b-dl">—</span></a>
-  <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
-  <a href="#ui" data-go="ui"><span class="t">화면 UI/UX 표준</span><span class="b" id="b-ui">—</span></a>
-  <a href="#guide" data-go="guide"><span class="t">AI 운영 가이드</span></a>
-  <a href="#platform-docs" data-go="platform-docs"><span class="t">플랫폼 문서</span></a>
-  <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
+  <a href="#std" data-go="std"><span class="t">기준</span><span class="b" id="b-ui">—</span></a>
+  <a href="#downloads" data-go="downloads"><span class="t">모듈 셋팅</span><span class="b" id="b-dl">—</span></a>
+  <a href="#doc" data-go="doc"><span class="t">문서</span></a>
   <div class="sep"></div>
   <!-- 평가 = 중간관리자 업무목차·GM업무·실무진_업무점수체계_초안 세 자리에 흩어졌던 평가를 여기 하나로
        단일화(GM 지시 2026-09-17 「평가 관련된 부분은 ERP 관리자페이지로 단일화 · 직관적으로」). -->
@@ -457,6 +453,18 @@
        원천 = 아래 표들과 같다(온보딩 발행본 data/partner_onboarding.json · 채널 활성은 아래 「파트너 채널 계정」이 읽은 서버 응답을 그대로 받는다). 아래 표는 하나도 안 뺐다. -->
   <div class="pc-kpi" id="pc-kpi"></div>
   <div class="pc-cards" id="pc-cards"></div>
+
+  <!-- 파트너 자료 — 플랫폼 문서(구 「플랫폼 문서」 판)에서 옮겨왔다(GM 지시 2026-09-19 · 배 12872).
+       파는 회사 것과 갈라 파트너 본인 자료는 그 파트너 자리에 둔다. -->
+  <h3 style="margin:14px 0 4px;font-size:15px">파트너 자료 — 온보딩·제안 문서</h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:16%">파트너</th><th>자료</th></tr></thead>
+    <tbody>
+      <tr><td class="item">2호 · 다이어트캠프</td><td><a href="dietcamp/setup_v0.1.html" target="_blank" rel="noopener">자료</a> · <a href="dietcamp/brand.html" target="_blank" rel="noopener">브랜드 가이드</a> · <a href="dietcamp/intro.html" target="_blank" rel="noopener">회사소개서</a> · <a href="dietcamp/strategy.html" target="_blank" rel="noopener">운영전략</a> · <a href="dietcamp/before_after_01.html" target="_blank" rel="noopener">1차 제안</a> · <a href="dietcamp/before_after_02.html" target="_blank" rel="noopener">2차 제안</a></td></tr>
+      <tr><td class="item">3호 · 고척GDR QA 골프존</td><td><a href="gocheokgolf/drafts_v0.1.html" target="_blank" rel="noopener">자료 초안</a></td></tr>
+    </tbody>
+  </table></div>
+
   <h3 style="margin:8px 0 4px;font-size:15px">기다리는 답 — 시보가 묻지 않아도 여기서 보입니다</h3>
   <div class="ppre">파트너 설문·인스타 임시안·GM 손이 필요한 것을 원천 파일에서 자동으로 모읍니다(07:20 · 22:10 · 저장 때마다). 답이 오면 줄이 「답 옴」으로 바뀝니다 — 정본 = status/labs_waiting.json(scripts/labs_waiting.py).</div>
   <div class="tbl-wrap"><table class="reg" id="wtbl">
@@ -1611,7 +1619,15 @@
 </section>
 
 
-<section class="panel" data-panel="standard" hidden>
+<!-- 「기준」 통합판 — 모듈 기준·화면 UI/UX 표준·콘텐츠 제작·검수·발행 3탭(GM 지시 2026-09-19 · 배 12872 · 7칸→3칸 재편). 내용은 그대로, 탭으로만 묶었다. -->
+<section class="panel" data-panel="std" hidden>
+  <div class="pf-tabs" id="std-tabs">
+    <a href="#" data-stdtab="module">모듈 기준</a>
+    <a href="#" data-stdtab="ui">화면 UI/UX 표준</a>
+    <a href="#" data-stdtab="content">콘텐츠 제작·검수·발행</a>
+  </div>
+
+  <div id="std-module">
   <h2>모듈 기준</h2>
   <div class="meta">카드 하나가 <b>모듈</b>이 되려면 아래 다섯을 모두 채웁니다 · 하나라도 비면 모듈이 아니라 화면·문서·임시입니다</div>
 
@@ -1693,13 +1709,13 @@
   </table></div>
   <p class="lead">읽는 법 — 카드는 42장이지만 <b>실제 모듈은 15개</b>입니다. 낱장을 모듈 아래로 접으면 파트너사 첫 화면은 <b>12칸</b>이 됩니다. 새 파트너사에 켜 주는 단위도, 값을 매기는 단위도 그 12칸입니다.</p>
 
-</section>
+  </div>
 
-<!-- ═══ 화면 UI 표준 (GM 지시 2026-09-14 「UI/UX 표준화를 표로 정리하고, 승인나면 전체 반영」)
-     규격 자체는 파일이 정본이다 — assets/wp-ui.css(간격·글자) · erp/brand/tenant-wellperion.css(색).
-     이 표는 그 규격을 사람 말로 옮기고, 지금 몇 장이 지키는지를 실측값으로 보인다
-     (status/ui_standard.json · scripts/ui_standard_check.py 가 잰다). 숫자를 손으로 적지 않는다. ═══ -->
-<section class="panel" data-panel="ui" hidden>
+  <!-- ═══ 화면 UI 표준 (GM 지시 2026-09-14 「UI/UX 표준화를 표로 정리하고, 승인나면 전체 반영」)
+       규격 자체는 파일이 정본이다 — assets/wp-ui.css(간격·글자) · erp/brand/tenant-wellperion.css(색).
+       이 표는 그 규격을 사람 말로 옮기고, 지금 몇 장이 지키는지를 실측값으로 보인다
+       (status/ui_standard.json · scripts/ui_standard_check.py 가 잰다). 숫자를 손으로 적지 않는다. ═══ -->
+  <div id="std-ui" hidden>
   <h2>화면 UI/UX 표준</h2>
   <div class="meta">화면 한 장이 <b>표준을 지킨다</b>고 하려면 아래 여섯을 모두 채웁니다 · 규격 다섯은 파일을 읽어 세고, UX 하나는 브라우저로 실제 렌더해 셉니다 · 이 표가 승인되면 안 지키는 화면부터 맞춰 갑니다</div>
 
@@ -1747,7 +1763,31 @@
       <tr><td class="item">디자인 도구</td><td id="ui-tools" class="note">—</td></tr>
     </tbody>
   </table></div>
+  </div>
+
+  <div id="std-content" hidden>
+  <h2>콘텐츠 제작·검수·발행</h2>
+  <iframe id="std-content-frame" title="콘텐츠 제작·검수·발행" style="width:100%;min-height:70vh;border:1px solid var(--border);border-radius:4px;background:var(--paper);" src="about:blank"></iframe>
+  </div>
 </section>
+<script>
+(function(){
+  // 「기준」 3탭 — 모듈 기준·화면 UI/UX 표준은 이미 DOM 에 있는 정적 내용을 숨김/보임만 전환.
+  // 콘텐츠 제작·검수·발행은 옛 #view/content 가 쓰던 것과 같은 주소(ERP 홈 M1)를 그대로 끼운다.
+  var CONTENT_SRC = '/home?embed=1#AXC';
+  var tabs = [].slice.call(document.querySelectorAll('#std-tabs a'));
+  var divs = { module: document.getElementById('std-module'), ui: document.getElementById('std-ui'), content: document.getElementById('std-content') };
+  var frame = document.getElementById('std-content-frame');
+  function switchTab(k){
+    tabs.forEach(function(a){ a.classList.toggle('on', a.dataset.stdtab === k); });
+    Object.keys(divs).forEach(function(key){ divs[key].hidden = (key !== k); });
+    if (k === 'content' && frame.getAttribute('data-key') !== 'content') { frame.src = CONTENT_SRC; frame.setAttribute('data-key', 'content'); }
+  }
+  tabs.forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); switchTab(a.dataset.stdtab); }); });
+  window.STD_SWITCH = switchTab;   // 하단 라우터의 LEGACY_HASH 매핑이 옛 해시(#standard #ui #view/content)로 들어오면 이 함수로 탭을 고른다
+  switchTab('module');   // 첫 탭 표시 상태는 이미 hidden 속성으로 맞지만 tabs 의 on 표시를 맞춘다
+})();
+</script>
 
 <!-- 바깥 화면 보기 — 플랫폼관리에서는 모듈·개인 화면을 새 창으로 넘기지 않고 오른쪽에 그대로 띄운다
      (GM 2026-09-15 「ERP플랫폼관리에서는 우측 화면에 보였으면」 · 실사용 ERP 홈은 종전대로 새 페이지). 주소는 #view/이름. -->
@@ -1755,9 +1795,9 @@
   <iframe id="view-frame" title="화면 보기" src="about:blank"></iframe>
 </section>
 
-<!-- 업무&결재 자동화 — 모듈 전체(업무 SSOT·결재 SSOT·AI 회의비서 3탭). 회의비서는 그 안의 기능 하나일 뿐이라는
-     GM 정정(2026-09-18 19:1x · 배 2820)으로, 상담 자동화(counsel_admin 하위 탭)와 같은 구조로 만든다.
-     ⚠️ 업무 현황 SSOT.html·결재 현황 SSOT.html 은 나우열M 라인 — iframe 으로 끼우기만, 내용은 안 건드린다. -->
+<!-- 업무&결재 자동화 — 모듈 전체(업무 현황·결재 현황·AI 회의비서 3탭).
+     GM 2026-09-19 — 랩스 업무&결재는 판매용 시연판(샘플 데이터) · 웰페리온 실제 화면 끼우기 중단.
+     업무 현황·결재 현황 탭은 이제 axtodo_demo.html(가짜 센터·샘플 데이터)을 끼운다 — 나우열M 라인 실제 화면(업무 현황 SSOT.html·결재 현황 SSOT.html)은 더 이상 여기서 안 부른다. -->
 <section class="panel" data-panel="axtodo" hidden>
   <h2>업무&결재 자동화</h2>
   <div class="pf-tabs" id="axtodo-tabs">
@@ -1770,10 +1810,10 @@
 </section>
 <script>
 (function(){
-  // 업무&결재 자동화 3탭 — 나우열M 라인 화면(업무·결재 SSOT)은 iframe 으로 끼우기만 한다(배 2820).
+  // 업무&결재 자동화 3탭 — 업무·결재는 판매용 시연판(GM 2026-09-19), 회의비서만 실제 도구.
   var AXTODO_SRC = {
-    work: '/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html',
-    appr: '/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html',
+    work: '/erp/admin/axtodo_demo.html#work',
+    appr: '/erp/admin/axtodo_demo.html#appr',
     meeting: '/erp/admin/meeting_note.html'
   };
   var frame = document.getElementById('axtodo-frame');
@@ -1826,11 +1866,19 @@
 })();
 </script>
 
-<section class="panel" data-panel="guide" hidden>
-  <iframe id="guide-frame" title="AI C-Level 운영 가이드" src="about:blank"></iframe>
-</section>
+<!-- 「문서」 통합판 — AI 운영 가이드·구조 문서·플랫폼 문서 3탭(GM 지시 2026-09-19 · 배 12872 · 7칸→3칸 재편). -->
+<section class="panel" data-panel="doc" hidden>
+  <div class="pf-tabs" id="doc-tabs">
+    <a href="#" data-doctab="guide">AI 운영 가이드</a>
+    <a href="#" data-doctab="docs">구조 문서</a>
+    <a href="#" data-doctab="platform">플랫폼 문서</a>
+  </div>
 
-<section class="panel" data-panel="platform-docs" hidden>
+  <div id="doc-guide">
+  <iframe id="doc-guide-frame" title="AI C-Level 운영 가이드" style="width:100%;min-height:80vh;border:1px solid var(--border);border-radius:4px;background:var(--paper);" src="about:blank"></iframe>
+  </div>
+
+  <div id="doc-platform" hidden>
   <h2>플랫폼 문서</h2>
   <div class="meta">파는 회사 것 — 파트너사 화면에 두지 않는다 (GM 지시 2026-09-11)</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:8px;">
@@ -1842,20 +1890,14 @@
       <a href="model/aeo_chatbot_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">AI 상담비서 첫 판</b><span style="font-size:11.5px;color:var(--dim);">옛 채팅봇 시절 판</span></a>
       <a href="model/FAQ통합_파이프라인_v1.0.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">FAQ 통합 파이프라인</b><span style="font-size:11.5px;color:var(--dim);">센터 FAQ 를 공통 유형으로</span></a>
       <a href="model/kakao_ai_partner_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">카톡 AI 브랜딩 파트너</b><span style="font-size:11.5px;color:var(--dim);">확장 모델 초안</span></a>
-      <a href="dietcamp/setup_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 자료</b><span style="font-size:11.5px;color:var(--dim);">첫 외부 고객</span></a>
-      <a href="gocheokgolf/drafts_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">고척 골프 자료</b><span style="font-size:11.5px;color:var(--dim);">두 번째 고객 초안</span></a>
 
       <a href="#view/faq" data-view="faq" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">AI 상담비서 FAQ</b><span style="font-size:11.5px;color:var(--dim);">손님에게 나가는 답</span></a>
       <a href="#view/log" data-view="log" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담 내역</b><span style="font-size:11.5px;color:var(--dim);">무엇을 물어봤나</span></a>
-      <a href="dietcamp/brand.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 브랜드 가이드</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
-      <a href="dietcamp/intro.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 회사소개서</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
-      <a href="dietcamp/strategy.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 운영전략</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
-      <a href="dietcamp/before_after_01.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 1차 제안</b><span style="font-size:11.5px;color:var(--dim);">Before & After</span></a>
-      <a href="dietcamp/before_after_02.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 2차 제안</b><span style="font-size:11.5px;color:var(--dim);">숫자로 본 지금과 앞으로</span></a>
   </div>
-</section>
+  <!-- 다이어트캠프·고척 고객 자료(설계·브랜드가이드·소개서·전략·제안 6건)는 「파트너사 관리」 파트너 자료 표로 옮겼다(GM 지시 2026-09-19 · 배 12872) — 플랫폼 문서는 파는 회사 것만. -->
+  </div>
 
-<section class="panel" data-panel="docs" hidden>
+  <div id="doc-docs" hidden>
   <h2>구조 문서</h2>
   <div class="meta">파트너사를 늘릴 때 여는 자료 — 이용자 3층 · 두 겹 구조 · 구성 3갈래 · 설정값 20건 · 뼈대 16건 · <a href="screens.html" target="_blank" rel="noopener"><b>화면 지도(전체 화면 링크 목록)</b></a></div>
 
@@ -1989,7 +2031,29 @@
     </tbody>
   </table></div>
 
+  </div>
 </section>
+<script>
+(function(){
+  // 「문서」 3탭 — AI 운영 가이드는 절대경로 지연 로드(2026-09-11 실사고: 상대경로면 /erp/clevel-guide.html 로 풀려 404).
+  var GUIDE_SRC = '/erp/admin/clevel-guide.html?embed=1';
+  var tabs = [].slice.call(document.querySelectorAll('#doc-tabs a'));
+  var divs = { guide: document.getElementById('doc-guide'), docs: document.getElementById('doc-docs'), platform: document.getElementById('doc-platform') };
+  var frame = document.getElementById('doc-guide-frame');
+  var inited = false;
+  function switchTab(k){
+    tabs.forEach(function(a){ a.classList.toggle('on', a.dataset.doctab === k); });
+    Object.keys(divs).forEach(function(key){ divs[key].hidden = (key !== k); });
+    if (k === 'guide' && frame.getAttribute('data-key') !== 'guide') { frame.src = GUIDE_SRC; frame.setAttribute('data-key', 'guide'); }
+  }
+  function ensureInit(){ if (!inited) { inited = true; switchTab('guide'); } }   // 첫 탭 = AI 운영 가이드
+  tabs.forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); switchTab(a.dataset.doctab); }); });
+  document.querySelectorAll('a[data-go="doc"]').forEach(function(a){ a.addEventListener('click', ensureInit); });
+  window.addEventListener('hashchange', function(){ if (location.hash.slice(1) === 'doc') ensureInit(); });
+  if (location.hash.slice(1) === 'doc') ensureInit();   // 주소를 직접 열고 들어온 경우
+  window.DOC_SWITCH = switchTab;   // 하단 라우터의 LEGACY_HASH 매핑이 옛 해시(#guide #docs #platform-docs)로 들어오면 이 함수로 탭을 고른다(guide 는 ensureInit 이 이미 기본 탭)
+})();
+</script>
 
 <!-- 파트너사 평가 — 회사 평가(책임 항목 4인·실무진 7인)는 2026-09-18 GM 지시로 웰페리온 ERP 관리자 메뉴 「평가」(erp/admin/eval.html · erp/index.html 관리 › 평가)로 옮겼다.
      여기는 파는 쪽(랩스)의 파트너사 평가만 — 파트너별 한 줄. 원천 = 파트너 카드가 이미 읽는 발행본(data/partner_onboarding.json) + 카드 정의(P) ·
@@ -2061,10 +2125,17 @@
   // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
   var VIEWS = { auto:'/erp/admin/자율현황.html', kakao:'/erp/admin/카톡전송관리.html', counsel:'/erp/admin/counsel_admin.html',
                 upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company.html',
-                gm:'/home?embed=1#G1', content:'/home?embed=1#AXC', ideas:'/erp/admin/ideas.html',
+                gm:'/home?embed=1#G1', ideas:'/erp/admin/ideas.html',
                 faq:'/cbo/counsel_faq.html', log:'/cbo/counsel_log.html',   // 상담 자동화 하위(13번 · 셸 안에서 연다)
                 ausage:'/erp/admin/assistant_usage.html' };   // 사이드 메뉴 줄은 없앴다 · 주소만 남김(GM 지시 18:4x · 배 2816)
+  // 옛 해시(메뉴 7칸→3칸 재편 전 주소 · GM 지시 2026-09-19 배 12872) → 새 통합판 탭 매핑 한 곳.
+  var LEGACY_HASH = {
+    standard: { panel:'std', tab:'module' }, ui: { panel:'std', tab:'ui' }, 'view/content': { panel:'std', tab:'content' },
+    guide: { panel:'doc', tab:'guide' }, docs: { panel:'doc', tab:'docs' }, 'platform-docs': { panel:'doc', tab:'platform' }
+  };
   function show(key, scroll){
+    var legacyTab = null;
+    if (LEGACY_HASH[key]) { legacyTab = LEGACY_HASH[key]; key = legacyTab.panel; }
     var viewKey = '';
     if (key.indexOf('view/') === 0) { viewKey = key.slice(5); key = VIEWS[viewKey] ? 'view' : 'partners'; }
     if (!panels.some(function(p){ return p.dataset.panel === key; })) key = 'partners';
@@ -2074,7 +2145,7 @@
       a.classList.toggle('on', on); if(on){a.setAttribute('aria-current','true');}else{a.removeAttribute('aria-current');}
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
-    var VIEW_NAMES = { company:'회사', kakao:'보고 자동화', counsel:'상담 자동화', upload:'마케팅 자동화', content:'콘텐츠 제작·검수·발행', faq:'FAQ', log:'상담 내역', ausage:'쓰임 내역' };
+    var VIEW_NAMES = { company:'회사', kakao:'보고 자동화', counsel:'상담 자동화', upload:'마케팅 자동화', faq:'FAQ', log:'상담 내역', ausage:'쓰임 내역' };
     // 오른쪽 화면 높이 = 안쪽 문서 높이(같은 도메인이라 읽을 수 있다) — 스크롤바가 페이지 하나만 남는다
     // (GM 2026-09-15 「페이지 스크롤바가 있고 또 블럭 안에 스크롤바가 있는데」). 못 읽으면(다른 도메인) 화면 높이로 둔다.
     // 안쪽 문서가 첫 화면이 아닌 곳(소개서·로드맵 등)에 가 있으면 true — 메뉴를 다시 누르면 첫 화면으로 돌아오게(2026-09-15 시보)
@@ -2116,12 +2187,9 @@
       }
     });
     if (key === 'view') key = 'view/' + viewKey;
-    if (key === 'guide') {
-      var gf = document.getElementById('guide-frame');
-      // 절대 경로로 적는다(2026-09-11 실사고). 이 화면 주소는 끝 슬래시가 없는 /erp/admin 이라
-      // 상대 경로가 한 단계 위(/erp/)로 풀려 /erp/clevel-guide.html 을 찾다 404 가 났다.
-      if (gf && gf.src.indexOf('clevel-guide') < 0) gf.src = '/erp/admin/clevel-guide.html?embed=1';
-    }
+    // 옛 해시로 들어온 경우 해당 통합판의 탭까지 고른다(std/doc 자기 스크립트가 만드는 STD_SWITCH·DOC_SWITCH 재사용).
+    if (legacyTab && legacyTab.panel === 'std' && window.STD_SWITCH) window.STD_SWITCH(legacyTab.tab);
+    if (legacyTab && legacyTab.panel === 'doc' && window.DOC_SWITCH) window.DOC_SWITCH(legacyTab.tab);
     if (location.hash.slice(1) !== key) history.replaceState(null, '', '#' + key);
     if (scroll) window.scrollTo(0, 0);
   }

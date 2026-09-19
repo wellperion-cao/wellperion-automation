@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>업무&결재 자동화 — 시연판</title>
+<!-- GM 2026-09-19 — 랩스 업무&결재는 판매용 시연판(샘플 데이터) · 웰페리온 실제 화면 끼우기 중단 -->
+<link rel="stylesheet" href="platform_brand.css">
+<style>
+body{margin:0;padding:14px 16px 40px;font-family:var(--pf-sans);color:var(--pf-ink);background:var(--pf-bg);word-break:keep-all}
+body.embedded{padding:8px 12px 32px;background:transparent}
+.demo-band{position:sticky;top:0;z-index:5;margin:-14px -16px 14px;padding:8px 16px;background:var(--pf-warn-bg);color:var(--pf-warn);font-family:var(--pf-head);font-weight:700;font-size:13px;text-align:center}
+body.embedded .demo-band{margin:-8px -12px 12px}
+h1{font-family:var(--pf-head);font-size:20px;margin:0 0 10px}
+.top-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.center-pick{font-family:var(--pf-sans);font-size:13.5px;padding:8px 10px;min-height:40px;border-radius:var(--pf-radius-sm);border:1px solid var(--pf-line);background:var(--pf-panel);color:var(--pf-ink)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:var(--pf-radius);padding:8px 14px;min-width:110px}
+.stat b{display:block;font-family:var(--pf-head);font-size:20px;color:var(--pf-pri-dk)}
+.stat span{font-size:11.5px;color:var(--pf-soft)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--pf-line)}
+.tabs a{display:inline-block;padding:8px 14px;min-height:40px;line-height:24px;text-decoration:none;color:var(--pf-soft);font-family:var(--pf-head);font-size:13.5px;font-weight:600;border-bottom:2px solid transparent}
+.tabs a.on{color:var(--pf-pri-dk);border-color:var(--pf-pri-dk)}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--pf-line);font-size:12.5px;word-break:keep-all}
+th{color:var(--pf-soft);font-weight:600;font-size:11.5px}
+.tbl-wrap{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:var(--pf-radius);overflow:hidden;margin-bottom:6px}
+.tbl-wrap table{margin:0}
+.tbl-wrap td:first-child, .tbl-wrap th:first-child{padding-left:14px}
+.tbl-wrap td:last-child, .tbl-wrap th:last-child{padding-right:14px}
+.note{color:var(--pf-soft);font-size:11.5px;margin:8px 0 20px}
+@media (max-width:480px){ .stat{min-width:92px;padding:7px 10px} .stat b{font-size:17px} th,td{padding:7px 5px;font-size:11.5px} }
+</style></head><body>
+<script>if(window.self!==window.top){document.body.className+=' embedded';}</script>
+<div class="demo-band">예시 화면 · 샘플 데이터 — 실제 파트너·회원 정보 아님</div>
+<h1>업무&amp;결재 자동화</h1>
+
+<div class="top-row">
+  <select class="center-pick" id="center-pick" aria-label="센터 선택"></select>
+  <div class="stats" id="work-stats" hidden>
+    <div class="stat"><b id="st-prog">—</b><span>진행</span></div>
+    <div class="stat"><b id="st-urgent">—</b><span>마감 임박</span></div>
+    <div class="stat"><b id="st-done">—</b><span>이번 주 완료</span></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <a href="#work" data-tab="work">업무 현황</a>
+  <a href="#appr" data-tab="appr">결재 현황</a>
+</div>
+
+<div id="pane-work">
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>업무명</th><th>담당</th><th>시작</th><th>마감</th><th>상태</th></tr></thead>
+    <tbody id="work-body"></tbody>
+  </table></div>
+  <div class="note">담당은 직함만 표시합니다 · 실제 데이터는 웰페리온 ERP 업무 현황 SSOT 화면에서 관리합니다.</div>
+</div>
+
+<div id="pane-appr" hidden>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>문서명</th><th>요청자</th><th>금액</th><th>단계</th><th></th></tr></thead>
+    <tbody id="appr-body"></tbody>
+  </table></div>
+  <div class="note">「승인」은 시연 동작입니다 — 저장되지 않고 새로고침하면 원래대로 돌아갑니다.</div>
+</div>
+
+<script>
+(function(){
+  var CENTERS = {
+    a: { label: '○○ 스포츠센터',
+      work: [
+        {name:'회원 재등록 캠페인 준비', who:'운영팀장', start:'09-01', due:'09-25', status:'진행', urgent:true},
+        {name:'시설 정기 점검', who:'시설관리자', start:'09-10', due:'09-30', status:'진행', urgent:false},
+        {name:'신규 회원 온보딩 자료 정비', who:'프론트매니저', start:'09-05', due:'09-22', status:'진행', urgent:true},
+        {name:'강습 스케줄 조정', who:'강습팀장', start:'09-12', due:'09-20', status:'대기', urgent:true},
+        {name:'락커 배정 현황 정리', who:'프론트매니저', start:'09-08', due:'09-19', status:'완료', urgent:false},
+        {name:'월간 매출 정산', who:'운영팀장', start:'09-01', due:'09-15', status:'완료', urgent:false},
+        {name:'여름 이벤트 결과 보고', who:'마케팅담당', start:'08-20', due:'09-05', status:'완료', urgent:false},
+        {name:'고객 만족도 설문 취합', who:'프론트매니저', start:'09-14', due:'09-28', status:'진행', urgent:false}
+      ],
+      appr: [
+        {doc:'운동기구 구매 품의', who:'운영팀장', amt:'12,800,000원', stage:'검토'},
+        {doc:'시설 보수 외주 계약', who:'시설관리자', amt:'4,500,000원', stage:'요청'},
+        {doc:'마케팅 캠페인 집행', who:'마케팅담당', amt:'2,300,000원', stage:'승인'},
+        {doc:'강습 강사 추가 채용', who:'강습팀장', amt:'3,600,000원(월)', stage:'요청'},
+        {doc:'소모품 정기 발주', who:'프론트매니저', amt:'980,000원', stage:'검토'}
+      ] },
+    b: { label: '△△ PT 스튜디오',
+      work: [
+        {name:'PT 세션 예약 시스템 점검', who:'운영매니저', start:'09-02', due:'09-24', status:'진행', urgent:true},
+        {name:'트레이너 교육 프로그램 준비', who:'교육팀장', start:'09-09', due:'09-29', status:'진행', urgent:false},
+        {name:'신규 회원 상담 스크립트 개정', who:'상담팀장', start:'09-06', due:'09-21', status:'대기', urgent:true},
+        {name:'체성분 측정기 캘리브레이션', who:'시설관리자', start:'09-11', due:'09-18', status:'완료', urgent:false},
+        {name:'월간 회원 만족도 리포트', who:'운영매니저', start:'09-01', due:'09-15', status:'완료', urgent:false},
+        {name:'PT 패키지 요금 개편 검토', who:'대표', start:'09-13', due:'09-27', status:'진행', urgent:false}
+      ],
+      appr: [
+        {doc:'PT 전용 운동기구 추가 구매', who:'운영매니저', amt:'8,200,000원', stage:'요청'},
+        {doc:'트레이너 신규 채용', who:'교육팀장', amt:'3,200,000원(월)', stage:'검토'},
+        {doc:'회원 이벤트 사은품 발주', who:'상담팀장', amt:'1,150,000원', stage:'승인'},
+        {doc:'스튜디오 인테리어 보수', who:'시설관리자', amt:'6,700,000원', stage:'요청'}
+      ] },
+    c: { label: '□□ 골프 아카데미',
+      work: [
+        {name:'시즌 레슨 프로그램 편성', who:'프로팀장', start:'09-03', due:'09-26', status:'진행', urgent:true},
+        {name:'연습장 타석 정비', who:'시설관리자', start:'09-10', due:'09-30', status:'진행', urgent:false},
+        {name:'신규 회원 레슨 배정', who:'프론트매니저', start:'09-08', due:'09-19', status:'대기', urgent:true},
+        {name:'월간 정산 마감', who:'운영팀장', start:'09-01', due:'09-15', status:'완료', urgent:false},
+        {name:'프로 계약 갱신 검토', who:'대표', start:'09-05', due:'09-25', status:'진행', urgent:false}
+      ],
+      appr: [
+        {doc:'골프 시뮬레이터 장비 구매', who:'운영팀장', amt:'24,500,000원', stage:'요청'},
+        {doc:'연습장 조명 교체 공사', who:'시설관리자', amt:'5,300,000원', stage:'검토'},
+        {doc:'프로 레슨 강사 위촉', who:'프로팀장', amt:'4,000,000원(월)', stage:'승인'}
+      ] }
+  };
+  var STAGES = ['요청','검토','승인'];
+  var STCLASS_WORK = {진행:'warn', 대기:'off', 완료:'on'};
+  var STCLASS_APPR = {요청:'off', 검토:'warn', 승인:'on'};
+  var pick = document.getElementById('center-pick');
+  var tabs = [].slice.call(document.querySelectorAll('#tabs a'));
+  var pWork = document.getElementById('pane-work'), pAppr = document.getElementById('pane-appr');
+  var curCenter = 'a';
+
+  Object.keys(CENTERS).forEach(function(k){
+    var o = document.createElement('option'); o.value = k; o.textContent = CENTERS[k].label; pick.appendChild(o);
+  });
+  pick.addEventListener('change', function(){ curCenter = pick.value; render(); });
+
+  function chip(cls, text){ return '<span class="pf-st ' + cls + '"><i></i>' + text + '</span>'; }
+
+  function renderWork(){
+    var rows = CENTERS[curCenter].work;
+    document.getElementById('work-body').innerHTML = rows.map(function(r){
+      return '<tr><td>' + r.name + '</td><td>' + r.who + '</td><td>' + r.start + '</td><td>' + r.due + '</td>'
+        + '<td>' + chip(STCLASS_WORK[r.status] || 'off', r.status) + '</td></tr>';
+    }).join('');
+    document.getElementById('st-prog').textContent = rows.filter(function(r){ return r.status === '진행'; }).length;
+    document.getElementById('st-urgent').textContent = rows.filter(function(r){ return r.urgent && r.status !== '완료'; }).length;
+    document.getElementById('st-done').textContent = rows.filter(function(r){ return r.status === '완료'; }).length;
+  }
+
+  function renderAppr(){
+    var rows = CENTERS[curCenter].appr;
+    document.getElementById('appr-body').innerHTML = rows.map(function(r, i){
+      var done = r.stage === '승인';
+      return '<tr><td>' + r.doc + '</td><td>' + r.who + '</td><td>' + r.amt + '</td>'
+        + '<td>' + chip(STCLASS_APPR[r.stage] || 'off', r.stage) + '</td>'
+        + '<td><button type="button" class="pf-btn ' + (done ? 'g' : 'p') + '" data-appr-i="' + i + '"' + (done ? ' disabled' : '') + '>' + (done ? '완료' : '승인') + '</button></td></tr>';
+    }).join('');
+  }
+
+  document.getElementById('appr-body').addEventListener('click', function(e){
+    var b = e.target.closest('[data-appr-i]'); if (!b) return;
+    var r = CENTERS[curCenter].appr[+b.dataset.apprI];
+    var next = STAGES.indexOf(r.stage) + 1;
+    if (next < STAGES.length) { r.stage = STAGES[next]; renderAppr(); }
+  });
+
+  function render(){ renderWork(); renderAppr(); pick.value = curCenter; }
+
+  function setTab(k){
+    tabs.forEach(function(a){ a.classList.toggle('on', a.dataset.tab === k); });
+    pWork.hidden = (k !== 'work'); pAppr.hidden = (k !== 'appr');
+    document.getElementById('work-stats').hidden = (k !== 'work');
+  }
+  tabs.forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); location.hash = a.dataset.tab; }); });
+  function currentTab(){ return location.hash.slice(1) === 'appr' ? 'appr' : 'work'; }
+  window.addEventListener('hashchange', function(){ setTab(currentTab()); });
+
+  render();
+  setTab(currentTab());
+})();
+</script>
+</body></html>
