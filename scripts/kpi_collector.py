@@ -724,6 +724,124 @@ def _ceo_staff_reply_gap() -> dict:
     return result
 
 
+def _ceo_gm_burden_indicators() -> dict:
+    """웰리(CEO) 북극성 3지표(GM 승인 2026-09-19) — 「지시 없이 체계로 굴러가는 회사」에
+    맞춘 실측. 옛 마일스톤(ERP 내부완성도·외부판매 첫 사례)은 이 목표와 무관해 폐지했다
+    (memory: feedback_gm_burden_is_the_metric_gate_not_promise). 전부 실측·미측정=None
+    (가짜 % 금지 · ssot/약속 L05). 값이 안 좋아도 그대로 낸다 — 목적은 실태 확인이다.
+
+    ① gm_words_trend_delta = 이번 주(월요일) GM 말 수 → 가장 최근 완결일 GM 말 수의 증감.
+       worklog.jsonl 의 GM_AREAS 접수(warn) 줄 수(hangro_board._gm_answered_yesterday 와
+       같은 방식, 날짜만 바꿔 두 날을 비교). 줄어야(<=0) 정상.
+    ② gm_directive_same_day_rate = 이번 주 접수된 GM지시·GM요청 중 **같은 날 완료(ok) 짝난**
+       비율(%). 아직 안 닫힌 건은 분모에서 뺀다(진행중을 실패로 세지 않는다). 목표 90%.
+    ③ gm_repeat_directive_count = 이번 주 날짜로 lessons.md 에 「재지적·재발·N회째」가 붙은
+       줄 수(같은 실수를 두 번 지적받은 건). 세는 법: 그 줄 머리 "- [YYYY-MM-DD]" 의 날짜가
+       이번 주 안이고, 줄 안에 저 세 낱말 중 하나가 있으면 1건. 목표 0.
+    """
+    out: dict = {
+        "gm_words_trend_delta": None, "gm_words_week_start": None, "gm_words_latest": None,
+        "gm_directive_same_day_rate": None, "gm_directive_closed_total": None,
+        "gm_repeat_directive_count": None,
+    }
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from worklog import GM_AREAS, WORKLOG_PATH  # type: ignore
+    except Exception:
+        return out
+    if not WORKLOG_PATH.exists():
+        return out
+
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # 월요일
+
+    warns: list[tuple[str, str, str]] = []   # (role, ref, date)
+    closes: dict[tuple, str] = {}            # (role, ref) -> 가장 이른 완료일
+    by_day: dict[str, int] = {}
+    try:
+        with open(WORKLOG_PATH, encoding="utf-8") as f:
+            for line in f:
+                if "GM-" not in line and '"result": "warn"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if d.get("area") not in GM_AREAS:
+                    continue
+                ts_d = str(d.get("ts") or "")[:10]
+                if not ts_d:
+                    continue
+                if d.get("result") == "warn":
+                    by_day[ts_d] = by_day.get(ts_d, 0) + 1
+                    ref = str(d.get("ref") or "")
+                    if ref.startswith("GM-"):
+                        warns.append((d.get("role"), ref, ts_d))
+                elif d.get("result") == "ok":
+                    ref = str(d.get("ref") or "")
+                    if ref.startswith("GM-"):
+                        key = (d.get("role"), ref)
+                        if key not in closes or ts_d < closes[key]:
+                            closes[key] = ts_d
+    except Exception:
+        return out
+
+    # ① 이번 주 GM 말 수 추세 — 주 시작일 vs 가장 최근 완결일(오늘 제외)
+    start_v = by_day.get(week_start.isoformat())
+    latest_v = None
+    for i in range(1, 8):
+        d_ = today - timedelta(days=i)
+        if d_ < week_start:
+            break
+        if d_.isoformat() in by_day:
+            latest_v = by_day[d_.isoformat()]
+            break
+    out["gm_words_week_start"] = start_v
+    out["gm_words_latest"] = latest_v
+    if isinstance(start_v, int) and isinstance(latest_v, int):
+        out["gm_words_trend_delta"] = latest_v - start_v
+
+    # ② 이번 주 접수 중 같은 날 종결 비율 — 아직 안 닫힌 건은 분모 제외
+    total, same_day = 0, 0
+    seen_refs = set()
+    for role, ref, wd in warns:
+        if wd < week_start.isoformat():
+            continue
+        key = (role, ref)
+        if key in seen_refs:
+            continue
+        seen_refs.add(key)
+        cd = closes.get(key)
+        if cd is None:
+            continue
+        total += 1
+        if cd == wd:
+            same_day += 1
+    out["gm_directive_closed_total"] = total
+    if total:
+        out["gm_directive_same_day_rate"] = round(same_day / total * 100)
+
+    # ③ 이번 주 재지적·재발 건수 — lessons.md
+    try:
+        lessons_path = Path.home() / ".claude" / "rules" / "lessons.md"
+        if lessons_path.exists():
+            n = 0
+            week_s, today_s = week_start.isoformat(), today.isoformat()
+            for line in lessons_path.read_text(encoding="utf-8").splitlines():
+                if not line.startswith("- ["):
+                    continue
+                date_s = line[3:13]
+                if not (week_s <= date_s <= today_s):
+                    continue
+                if ("재지적" in line) or ("재발" in line) or ("회째" in line):
+                    n += 1
+            out["gm_repeat_directive_count"] = n
+    except Exception:
+        pass
+
+    return out
+
+
 def _integration_health() -> str | None:
     """
     integration_health.py check_bridges() 결과 요약.
@@ -757,6 +875,7 @@ def collect() -> dict:
             # GM기록 미반영·실무진 회신 미완료 병합 (배358 · 아침 자가점검 두 지표 자동화)
             stats.update(_ceo_gm_record_gap())
             stats.update(_ceo_staff_reply_gap())
+            stats.update(_ceo_gm_burden_indicators())
         if role == "coo":
             # 점검완료율 병합 (지원부 한정 · 4부서 전체는 null)
             stats.update(coo_check)

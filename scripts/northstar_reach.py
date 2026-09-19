@@ -57,11 +57,20 @@ def _resolve_source(source: str, kpi: dict | None, home: dict | None, role_id: s
 
 
 def _check_ok(val: object, rule: str | None) -> bool:
-    """indicator ok 규칙 판정. 값 미측정(None/부재)=미달성(정직)."""
+    """indicator ok 규칙 판정. 값 미측정(None/부재)=미달성(정직).
+    le:/ge: = 숫자 임계값(2026-09-19 · 웰리 북극성 GM 부담 3지표에 추가 — 추세·비율 판정용)."""
     if rule == "eq0":
         return isinstance(val, (int, float)) and not isinstance(val, bool) and val == 0
     if isinstance(rule, str) and rule.startswith("eq:"):
         return str(val) == rule[3:]
+    if isinstance(rule, str) and (rule.startswith("le:") or rule.startswith("ge:")):
+        if not isinstance(val, (int, float)) or isinstance(val, bool):
+            return False
+        try:
+            threshold = float(rule[3:])
+        except ValueError:
+            return False
+        return val <= threshold if rule.startswith("le:") else val >= threshold
     return False
 
 

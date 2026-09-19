@@ -39,28 +39,24 @@
         "goal": "목표 GM 확정 필요 — 누적 분리 후",
         "path": "완결률↑ = 전사 배가 북극성까지 도달",
         "reach": {
-          "mode": "milestone",
-          "note": "제안본 — GM/웰리 조정 가능. done=수동 결재 플래그",
-          "milestones": [
+          "mode": "measured",
+          "source": "kpi_values.roles.ceo",
+          "note": "GM 부담 실측 3지표(GM 승인 2026-09-19 13:4x). 옛 마일스톤(ERP 내부완성도·외부판매 첫사례)은 목표('지시 없이 체계로 굴러가는 회사')와 무관해 폐지.",
+          "indicators": [
             {
-              "key": "loop",
-              "label": "C레벨 자율완결 루프 가동",
-              "done": true
+              "key": "gm_words_trend_delta",
+              "label": "이번주 GM말수 추세(줄어야)",
+              "ok": "le:0"
             },
             {
-              "key": "kpi_infra",
-              "label": "KPI 측정 인프라 구축(엔진 완비·역할별 개통 진행)",
-              "done": true
+              "key": "gm_directive_same_day_rate",
+              "label": "GM지시 당일종결율≥90%",
+              "ok": "ge:90"
             },
             {
-              "key": "erp_internal",
-              "label": "ERP 내부 완성도 100%",
-              "done": false
-            },
-            {
-              "key": "first_sale",
-              "label": "외부 판매 첫 사례",
-              "done": false
+              "key": "gm_repeat_directive_count",
+              "label": "같은지시 재지적 0건",
+              "ok": "eq0"
             }
           ]
         }
